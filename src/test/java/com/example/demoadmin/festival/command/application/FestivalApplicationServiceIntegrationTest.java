@@ -2,8 +2,10 @@ package com.example.demoadmin.festival.command.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.example.demoadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.demoadmin.admin.command.application.AdminAccountService;
 import com.example.demoadmin.admin.command.domain.AdminAccount;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.admin.command.domain.AdminRole;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
 import com.example.demoadmin.admin.command.domain.vo.AdminName;
@@ -37,6 +39,9 @@ class FestivalApplicationServiceIntegrationTest {
     @Autowired
     private AdminAccountService adminAccountService;
 
+    @Autowired
+    private AdminFestivalRoleService adminFestivalRoleService;
+
     @Nested
     @DisplayName("create")
     class Create {
@@ -57,15 +62,18 @@ class FestivalApplicationServiceIntegrationTest {
             );
 
             // then
-            AdminAccount foundAdmin = adminAccountService.getById(adminAccount.getId());
             Festival foundFestival = festivalService.getById(festival.getId());
+            AdminFestivalRole role =
+                    adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                            adminAccount.getId(),
+                            foundFestival.getId()
+                    );
             assertThat(foundFestival.getNameValue()).isEqualTo(command.name());
             assertThat(foundFestival.getSeriesId()).isNotNull();
             assertThat(foundFestival.getYear()).isEqualTo(2026);
             assertThat(festivalSeriesService.getById(foundFestival.getSeriesId()))
                     .isNotNull();
-            assertThat(foundAdmin.getFestivalId()).isEqualTo(foundFestival.getId());
-            assertThat(foundAdmin.getRole()).isEqualTo(AdminRole.FESTIVAL_OWNER);
+            assertThat(role.getRole()).isEqualTo(AdminRole.FESTIVAL_OWNER);
         }
     }
 

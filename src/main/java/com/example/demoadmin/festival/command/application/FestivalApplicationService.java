@@ -2,6 +2,8 @@ package com.example.demoadmin.festival.command.application;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
 import com.example.demoadmin.admin.command.application.AdminAccountService;
+import com.example.demoadmin.admin.command.application.AdminFestivalRoleService;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.auth.support.AdminPrincipal;
 import com.example.demoadmin.festival.command.application.dto.CreateFestivalCommand;
 import com.example.demoadmin.festival.command.application.dto.UpdateFestivalCommand;
@@ -30,6 +32,7 @@ public class FestivalApplicationService {
     private final FestivalService festivalService;
     private final FestivalSeriesService festivalSeriesService;
     private final AdminAccountService adminAccountService;
+    private final AdminFestivalRoleService adminFestivalRoleService;
 
     /**
      * 축제 묶음을 연결한 뒤 연도별 축제 기본 정보를 저장하고 생성자를 1관리자로 배정한다.
@@ -61,7 +64,14 @@ public class FestivalApplicationService {
         );
 
         Festival savedFestival = festivalService.save(festival);
-        creator.assignFestivalOwner(savedFestival.getId());
+        if (adminFestivalRoleService == null) {
+            creator.assignFestivalOwner(savedFestival.getId());
+        } else {
+            adminFestivalRoleService.assignFestivalOwner(
+                    creator.getId(),
+                    savedFestival.getId()
+            );
+        }
 
         return savedFestival;
     }
@@ -100,7 +110,7 @@ public class FestivalApplicationService {
     ) {
         AdminAccount adminAccount = findAuthenticatedAdmin(principal);
         Festival festival = festivalService.getByPublicId(festivalId);
-        validateFestivalOwner(festival.getId(), adminAccount);
+        validateFestivalOwner(festival, adminAccount);
         festival.updateBasicInfo(
                 FestivalName.of(command.name()),
                 FestivalDescription.of(command.description()),
@@ -116,11 +126,23 @@ public class FestivalApplicationService {
     }
 
     private void validateFestivalOwner(
-            Long internalFestivalId,
+            Festival festival,
             AdminAccount adminAccount
     ) {
-        if (!adminAccount.canModifyFestivalInfo()
-                || !internalFestivalId.equals(adminAccount.getFestivalId())) {
+        if (adminFestivalRoleService == null) {
+            if (!festival.getId().equals(adminAccount.getFestivalId())
+                    || !adminAccount.canModifyFestivalInfo()) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
+            return;
+        }
+
+        AdminFestivalRole role = adminFestivalRoleService
+                .getByAdminAccountIdAndFestivalId(
+                        adminAccount.getId(),
+                        festival.getId()
+                );
+        if (!role.canModifyFestivalInfo()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
     }
