@@ -2,6 +2,8 @@ package com.example.demoadmin.dashboard.query.application;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
 import com.example.demoadmin.admin.command.application.AdminAccountService;
+import com.example.demoadmin.admin.command.application.AdminFestivalRoleService;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.auth.support.AdminPrincipal;
 import com.example.demoadmin.dashboard.query.application.dto.FestivalDashboardView;
 import com.example.demoadmin.festival.command.domain.Festival;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FestivalDashboardQueryApplicationService {
 
     private final AdminAccountService adminAccountService;
+    private final AdminFestivalRoleService adminFestivalRoleService;
     private final FestivalService festivalService;
 
     /**
@@ -34,7 +37,7 @@ public class FestivalDashboardQueryApplicationService {
     ) {
         AdminAccount adminAccount = findAuthenticatedAdmin(principal);
         Festival festival = festivalService.getByPublicId(festivalId);
-        validateReportAccess(festival.getId(), adminAccount);
+        validateReportAccess(festival, adminAccount);
 
         // TODO(dashboard): 실제 운영 DB/API 정보 확정 후 실시간 혼잡도, 대기열, 방문자 지표 조회로 교체한다.
         return new FestivalDashboardView(
@@ -48,11 +51,23 @@ public class FestivalDashboardQueryApplicationService {
     }
 
     private void validateReportAccess(
-            Long internalFestivalId,
+            Festival festival,
             AdminAccount adminAccount
     ) {
-        if (!internalFestivalId.equals(adminAccount.getFestivalId())
-                || !adminAccount.canViewOperationReport()) {
+        if (adminFestivalRoleService == null) {
+            if (!festival.getId().equals(adminAccount.getFestivalId())
+                    || !adminAccount.canViewOperationReport()) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
+            return;
+        }
+
+        AdminFestivalRole role = adminFestivalRoleService
+                .getByAdminAccountIdAndFestivalId(
+                        adminAccount.getId(),
+                        festival.getId()
+                );
+        if (!role.canViewOperationReport()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
     }

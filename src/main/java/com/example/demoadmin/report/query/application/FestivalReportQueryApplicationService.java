@@ -2,6 +2,8 @@ package com.example.demoadmin.report.query.application;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
 import com.example.demoadmin.admin.command.application.AdminAccountService;
+import com.example.demoadmin.admin.command.application.AdminFestivalRoleService;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.auth.support.AdminPrincipal;
 import com.example.demoadmin.festival.command.domain.Festival;
 import com.example.demoadmin.festival.command.application.FestivalService;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FestivalReportQueryApplicationService {
 
     private final AdminAccountService adminAccountService;
+    private final AdminFestivalRoleService adminFestivalRoleService;
     private final FestivalService festivalService;
 
     /**
@@ -34,7 +37,7 @@ public class FestivalReportQueryApplicationService {
     ) {
         AdminAccount adminAccount = findAuthenticatedAdmin(principal);
         Festival festival = festivalService.getByPublicId(festivalId);
-        validateReportAccess(festival.getId(), adminAccount);
+        validateReportAccess(festival, adminAccount);
 
         // TODO(report): 실제 운영 DB/API 정보 확정 후 방문자, 혼잡 피크, 대기 시간 집계 결과로 교체한다.
         return new FestivalReportSummaryView(
@@ -47,11 +50,23 @@ public class FestivalReportQueryApplicationService {
     }
 
     private void validateReportAccess(
-            Long internalFestivalId,
+            Festival festival,
             AdminAccount adminAccount
     ) {
-        if (!internalFestivalId.equals(adminAccount.getFestivalId())
-                || !adminAccount.canViewOperationReport()) {
+        if (adminFestivalRoleService == null) {
+            if (!festival.getId().equals(adminAccount.getFestivalId())
+                    || !adminAccount.canViewOperationReport()) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
+            return;
+        }
+
+        AdminFestivalRole role = adminFestivalRoleService
+                .getByAdminAccountIdAndFestivalId(
+                        adminAccount.getId(),
+                        festival.getId()
+                );
+        if (!role.canViewOperationReport()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
     }
