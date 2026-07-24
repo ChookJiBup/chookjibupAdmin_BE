@@ -44,21 +44,18 @@ public record AdminSummaryResponse(
     /**
      * 관리자 계정의 현재 역할과 권한 정보를 요약 응답으로 변환한다.
      */
-    public static AdminSummaryResponse from(
-            AdminAccount adminAccount,
-            UUID festivalId
-    ) {
+    public static AdminSummaryResponse from(AdminAccount adminAccount) {
         return new AdminSummaryResponse(
                 adminAccount.getPublicId(),
-                festivalId,
+                null,
                 adminAccount.getEmailValue(),
                 adminAccount.getNameValue(),
                 adminAccount.getOrganizationValue(),
-                adminAccount.getRole(),
-                adminAccount.canInviteSubAdmin(),
-                adminAccount.canModifyFestivalInfo(),
-                adminAccount.canViewOperationReport(),
-                adminAccount.canUpdateQueueTail()
+                null,
+                false,
+                false,
+                false,
+                false
         );
     }
 }

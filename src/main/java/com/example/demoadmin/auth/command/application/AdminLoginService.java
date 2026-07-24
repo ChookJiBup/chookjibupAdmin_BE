@@ -1,16 +1,13 @@
 package com.example.demoadmin.auth.command.application;
 
-import com.example.demoadmin.admin.command.domain.AdminAccount;
 import com.example.demoadmin.admin.command.application.AdminAccountService;
+import com.example.demoadmin.admin.command.domain.AdminAccount;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
-import com.example.demoadmin.auth.command.infrastructure.JwtTokenProvider;
 import com.example.demoadmin.api.auth.dto.AdminLoginRequest;
 import com.example.demoadmin.api.auth.dto.AdminLoginResponse;
-import com.example.demoadmin.festival.command.application.FestivalService;
-import com.example.demoadmin.festival.command.domain.Festival;
+import com.example.demoadmin.auth.command.infrastructure.JwtTokenProvider;
 import com.example.demoadmin.global.response.CustomException;
 import com.example.demoadmin.global.response.ErrorCode;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminLoginService {
 
     private final AdminAccountService adminAccountService;
-    private final FestivalService festivalService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -49,17 +45,8 @@ public class AdminLoginService {
         return AdminLoginResponse.of(
                 accessToken,
                 jwtTokenProvider.getAccessTokenExpirationSeconds(),
-                adminAccount,
-                findFestivalPublicId(adminAccount)
+                adminAccount
         );
-    }
-
-    private UUID findFestivalPublicId(AdminAccount adminAccount) {
-        if (adminAccount.getFestivalId() == null) {
-            return null;
-        }
-
-        return festivalService.getById(adminAccount.getFestivalId()).getPublicId();
     }
 }
 

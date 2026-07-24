@@ -7,8 +7,19 @@ import com.example.demoadmin.admin.command.domain.AdminRole;
  */
 public record AdminPrincipal(
         Long adminId,
-        Long festivalId,
-        String email,
-        AdminRole role
+        String email
 ) {
+
+    /**
+     * TODO(auth): 기존 테스트 Fixture 정리 완료 후 제거한다.
+     */
+    @Deprecated(forRemoval = true)
+    public AdminPrincipal(
+            Long adminId,
+            Long ignoredFestivalId,
+            String email,
+            AdminRole ignoredRole
+    ) {
+        this(adminId, email);
+    }
 }

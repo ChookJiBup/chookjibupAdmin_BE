@@ -43,7 +43,7 @@ public record AdminSignupResponse(
                 adminAccount.getEmailValue(),
                 adminAccount.getNameValue(),
                 adminAccount.getOrganizationValue(),
-                adminAccount.getRole(),
+                null,
                 adminAccount.getStatus()
         );
     }

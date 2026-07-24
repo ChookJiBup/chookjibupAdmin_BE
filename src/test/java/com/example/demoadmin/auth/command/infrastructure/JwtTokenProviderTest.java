@@ -3,7 +3,6 @@ package com.example.demoadmin.auth.command.infrastructure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
-import com.example.demoadmin.admin.command.domain.AdminRole;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
 import com.example.demoadmin.admin.command.domain.vo.AdminName;
 import com.example.demoadmin.admin.command.domain.vo.AdminOrganization;
@@ -25,8 +24,8 @@ class JwtTokenProviderTest {
     class CreateAccessToken {
 
         @Test
-        @DisplayName("축제 생성 전 관리자 토큰은 역할과 축제 ID 없이 발급한다")
-        void success_CreateAccessToken_UnassignedAdmin() {
+        @DisplayName("관리자 토큰은 계정 식별자와 이메일을 포함한다")
+        void success_CreateAccessToken() {
             // given
             AdminAccount adminAccount = adminAccount();
             ReflectionTestUtils.setField(adminAccount, "id", 1L);
@@ -37,26 +36,7 @@ class JwtTokenProviderTest {
 
             // then
             assertThat(principal.adminId()).isEqualTo(1L);
-            assertThat(principal.festivalId()).isNull();
-            assertThat(principal.role()).isNull();
-        }
-
-        @Test
-        @DisplayName("축제 생성 후 관리자 토큰은 1관리자 역할과 축제 ID를 포함한다")
-        void success_CreateAccessToken_FestivalOwner() {
-            // given
-            AdminAccount adminAccount = adminAccount();
-            ReflectionTestUtils.setField(adminAccount, "id", 1L);
-            adminAccount.assignFestivalOwner(10L);
-
-            // when
-            String accessToken = jwtTokenProvider.createAccessToken(adminAccount);
-            AdminPrincipal principal = jwtTokenProvider.parse(accessToken);
-
-            // then
-            assertThat(principal.adminId()).isEqualTo(1L);
-            assertThat(principal.festivalId()).isEqualTo(10L);
-            assertThat(principal.role()).isEqualTo(AdminRole.FESTIVAL_OWNER);
+            assertThat(principal.email()).isEqualTo("owner@mapo.go.kr");
         }
     }
 

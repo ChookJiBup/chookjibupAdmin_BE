@@ -68,8 +68,7 @@ class JwtAuthenticationFilterTest {
             assertThat(SecurityContextHolder.getContext()
                     .getAuthentication()
                     .getAuthorities())
-                    .extracting("authority")
-                    .containsExactly("ROLE_SUB_ADMIN");
+                    .isEmpty();
         }
 
         @Test

@@ -1,7 +1,6 @@
 package com.example.demoadmin.auth.command.infrastructure;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
-import com.example.demoadmin.admin.command.domain.AdminRole;
 import com.example.demoadmin.auth.support.AdminPrincipal;
 import com.example.demoadmin.global.response.CustomException;
 import com.example.demoadmin.global.response.ErrorCode;
@@ -31,7 +30,7 @@ public class JwtTokenProvider {
     private final JwtProperties jwtProperties;
 
     /**
-     * 관리자 계정의 ID, 축제 ID, 이메일, 역할을 담은 Access Token을 발급한다.
+     * 관리자 계정의 ID와 이메일을 담은 Access Token을 발급한다.
      */
     public String createAccessToken(AdminAccount adminAccount) {
         Instant now = Instant.now();
@@ -44,11 +43,7 @@ public class JwtTokenProvider {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("subjectType", ADMIN_SUBJECT_TYPE);
         payload.put("sub", adminAccount.getId());
-        payload.put("festivalId", adminAccount.getFestivalId());
         payload.put("email", adminAccount.getEmailValue());
-        payload.put("role", adminAccount.getRole() == null
-                ? null
-                : adminAccount.getRole().name());
         payload.put("iat", now.getEpochSecond());
         payload.put("exp", expiresAt.getEpochSecond());
 
@@ -83,9 +78,7 @@ public class JwtTokenProvider {
 
         return new AdminPrincipal(
                 payload.path("sub").asLong(),
-                nullableLong(payload.get("festivalId")),
-                payload.path("email").asText(),
-                nullableRole(payload.get("role"))
+                payload.path("email").asText()
         );
     }
 
@@ -112,14 +105,6 @@ public class JwtTokenProvider {
         } catch (Exception exception) {
             throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
         }
-    }
-
-    private Long nullableLong(JsonNode node) {
-        return node == null || node.isNull() ? null : node.asLong();
-    }
-
-    private AdminRole nullableRole(JsonNode node) {
-        return node == null || node.isNull() ? null : AdminRole.valueOf(node.asText());
     }
 
     private void validateAdminSubject(JsonNode payload) {
