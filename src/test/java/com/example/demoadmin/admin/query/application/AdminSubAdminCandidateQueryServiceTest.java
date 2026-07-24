@@ -33,13 +33,14 @@ class AdminSubAdminCandidateQueryServiceTest {
         @DisplayName("검색어를 정리해서 후보자를 검색한다")
         void success_SearchCandidates() {
             // given
+            Long festivalId = 1L;
             AdminSubAdminCandidateView view = candidateView();
-            given(queryRepository.searchCandidates("mapo"))
+            given(queryRepository.searchCandidates(festivalId, "mapo"))
                     .willReturn(List.of(view));
 
             // when
             List<AdminSubAdminCandidateView> result =
-                    queryService.searchCandidates(" MAPO ");
+                    queryService.searchCandidates(festivalId, " MAPO ");
 
             // then
             assertThat(result).containsExactly(view);
@@ -49,13 +50,14 @@ class AdminSubAdminCandidateQueryServiceTest {
         @DisplayName("빈 검색어는 전체 조회로 처리한다")
         void success_SearchCandidates_BlankKeywordBoundary() {
             // given
+            Long festivalId = 1L;
             AdminSubAdminCandidateView view = candidateView();
-            given(queryRepository.searchCandidates(null))
+            given(queryRepository.searchCandidates(festivalId, null))
                     .willReturn(List.of(view));
 
             // when
             List<AdminSubAdminCandidateView> result =
-                    queryService.searchCandidates(" ");
+                    queryService.searchCandidates(festivalId, " ");
 
             // then
             assertThat(result).containsExactly(view);

@@ -2,6 +2,7 @@ package com.example.demoadmin.admin.query.infrastructure.persistence;
 
 import com.example.demoadmin.admin.command.domain.AdminStatus;
 import com.example.demoadmin.admin.command.domain.QAdminAccount;
+import com.example.demoadmin.admin.command.domain.QAdminFestivalRole;
 import com.example.demoadmin.admin.query.application.dto.AdminSubAdminCandidateView;
 import com.example.demoadmin.admin.query.repository.AdminSubAdminCandidateQueryRepository;
 import com.querydsl.core.types.Projections;
@@ -19,8 +20,12 @@ public class AdminSubAdminCandidateQueryRepositoryImpl
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<AdminSubAdminCandidateView> searchCandidates(String keyword) {
+    public List<AdminSubAdminCandidateView> searchCandidates(
+            Long festivalId,
+            String keyword
+    ) {
         QAdminAccount adminAccount = QAdminAccount.adminAccount;
+        QAdminFestivalRole adminFestivalRole = QAdminFestivalRole.adminFestivalRole;
 
         return queryFactory
                 .select(Projections.constructor(
@@ -32,9 +37,11 @@ public class AdminSubAdminCandidateQueryRepositoryImpl
                         adminAccount.status
                 ))
                 .from(adminAccount)
+                .leftJoin(adminFestivalRole)
+                .on(adminFestivalRole.adminAccountId.eq(adminAccount.id)
+                        .and(adminFestivalRole.festivalId.eq(festivalId)))
                 .where(
-                        adminAccount.festivalId.isNull(),
-                        adminAccount.role.isNull(),
+                        adminFestivalRole.id.isNull(),
                         adminAccount.status.eq(AdminStatus.ACTIVE),
                         keywordContains(adminAccount, keyword)
                 )

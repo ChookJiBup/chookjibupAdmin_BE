@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.example.demoadmin.admin.command.application.AdminAccountService;
+import com.example.demoadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.demoadmin.admin.command.domain.AdminAccount;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.admin.command.domain.AdminStatus;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
 import com.example.demoadmin.admin.command.domain.vo.AdminName;
@@ -45,6 +47,9 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
     private AdminAccountService adminAccountService;
 
     @Mock
+    private AdminFestivalRoleService adminFestivalRoleService;
+
+    @Mock
     private FestivalService festivalService;
 
     @Mock
@@ -66,7 +71,15 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
                     .willReturn(owner);
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
-            given(candidateQueryService.searchCandidates("마포"))
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    owner.getId(),
+                    festival.getId()
+            ))
+                    .willReturn(AdminFestivalRole.createFestivalOwner(
+                            owner.getId(),
+                            festival.getId()
+                    ));
+            given(candidateQueryService.searchCandidates(festival.getId(), "마포"))
                     .willReturn(List.of(view));
 
             // when
@@ -107,6 +120,15 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
                     .willReturn(subAdmin);
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    subAdmin.getId(),
+                    festival.getId()
+            ))
+                    .willReturn(AdminFestivalRole.createSubAdmin(
+                            subAdmin.getId(),
+                            festival.getId(),
+                            1L
+                    ));
 
             // when & then
             assertThatThrownBy(() ->

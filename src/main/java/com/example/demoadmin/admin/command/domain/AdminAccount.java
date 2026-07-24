@@ -17,6 +17,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -24,7 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 축제별 관리자 계정 Aggregate이다.
+ * 관리자 계정 Aggregate이다.
  */
 @Entity
 @Getter
@@ -73,9 +74,6 @@ public class AdminAccount extends BaseTimeEntity {
     )
     private AdminOrganization organization;
 
-    @Column(name = "festival_id")
-    private Long festivalId;
-
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -84,34 +82,39 @@ public class AdminAccount extends BaseTimeEntity {
     private AdminPasswordHash passwordHash;
 
     @Enumerated(EnumType.STRING)
-    @Column(length = 50)
-    private AdminRole role;
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private AdminStatus status;
 
-    @Column(name = "invited_by_admin_id")
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다. 영속 권한은 AdminFestivalRole에서만 관리한다.
+     */
+    @Transient
+    private Long festivalId;
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다. 영속 권한은 AdminFestivalRole에서만 관리한다.
+     */
+    @Transient
+    private AdminRole role;
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다. 영속 권한은 AdminFestivalRole에서만 관리한다.
+     */
+    @Transient
     private Long invitedByAdminId;
 
     private AdminAccount(
             AdminEmail email,
             AdminName name,
             AdminOrganization organization,
-            Long festivalId,
-            AdminPasswordHash passwordHash,
-            AdminRole role,
-            Long invitedByAdminId
+            AdminPasswordHash passwordHash
     ) {
         this.publicId = UUID.randomUUID();
         this.email = email;
         this.name = name;
         this.organization = organization;
-        this.festivalId = festivalId;
         this.passwordHash = passwordHash;
-        this.role = role;
         this.status = AdminStatus.ACTIVE;
-        this.invitedByAdminId = invitedByAdminId;
     }
 
     /**
@@ -127,16 +130,14 @@ public class AdminAccount extends BaseTimeEntity {
                 email,
                 name,
                 organization,
-                null,
-                passwordHash,
-                null,
-                null
+                passwordHash
         );
     }
 
     /**
-     * 한 축제의 최상위 관리자인 1관리자 계정을 생성한다.
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
      */
+    @Deprecated(forRemoval = true)
     public static AdminAccount createFestivalOwner(
             AdminEmail email,
             AdminName name,
@@ -144,20 +145,20 @@ public class AdminAccount extends BaseTimeEntity {
             Long festivalId,
             AdminPasswordHash passwordHash
     ) {
-        return new AdminAccount(
+        AdminAccount adminAccount = createAdmin(
                 email,
                 name,
                 organization,
-                festivalId,
-                passwordHash,
-                AdminRole.FESTIVAL_OWNER,
-                null
+                passwordHash
         );
+        adminAccount.assignFestivalOwner(festivalId);
+        return adminAccount;
     }
 
     /**
-     * 1관리자의 초대를 통해 서브관리자 계정을 생성한다.
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
      */
+    @Deprecated(forRemoval = true)
     public static AdminAccount createSubAdmin(
             AdminEmail email,
             AdminName name,
@@ -166,15 +167,29 @@ public class AdminAccount extends BaseTimeEntity {
             AdminPasswordHash passwordHash,
             Long invitedByAdminId
     ) {
-        return new AdminAccount(
+        AdminAccount adminAccount = createAdmin(
                 email,
                 name,
                 organization,
-                festivalId,
-                passwordHash,
-                AdminRole.SUB_ADMIN,
-                invitedByAdminId
+                passwordHash
         );
+        adminAccount.festivalId = festivalId;
+        adminAccount.role = AdminRole.SUB_ADMIN;
+        adminAccount.invitedByAdminId = invitedByAdminId;
+        return adminAccount;
+    }
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
+     */
+    @Deprecated(forRemoval = true)
+    public void assignFestivalOwner(Long festivalId) {
+        if (this.festivalId != null || festivalId == null) {
+            throw new CustomException(ErrorCode.AUTH_ADMIN_ALREADY_ASSIGNED);
+        }
+
+        this.festivalId = festivalId;
+        this.role = AdminRole.FESTIVAL_OWNER;
     }
 
     /**
@@ -189,53 +204,6 @@ public class AdminAccount extends BaseTimeEntity {
      */
     public boolean isDeleted() {
         return status == AdminStatus.DELETED;
-    }
-
-    /**
-     * 서브관리자 초대 권한을 가진 계정인지 확인한다.
-     */
-    public boolean canInviteSubAdmin() {
-        return role != null && role.canInviteSubAdmin();
-    }
-
-    /**
-     * 행사 기본 정보 수정 권한을 가진 계정인지 확인한다.
-     */
-    public boolean canModifyFestivalInfo() {
-        return role != null && role.canModifyFestivalInfo();
-    }
-
-    /**
-     * 현장 스태프 계정 추가와 삭제 권한을 가진 계정인지 확인한다.
-     */
-    public boolean canManageFieldStaff() {
-        return role != null && role.canManageFieldStaff();
-    }
-
-    /**
-     * 현장 줄 끝 라인 갱신 권한을 가진 계정인지 확인한다.
-     */
-    public boolean canUpdateQueueTail() {
-        return role != null && role.canUpdateQueueTail();
-    }
-
-    /**
-     * 운영 보고서와 대시보드 조회 권한을 가진 계정인지 확인한다.
-     */
-    public boolean canViewOperationReport() {
-        return role != null && role.canViewOperationReport();
-    }
-
-    /**
-     * 축제를 생성한 관리자를 해당 축제의 1관리자로 배정한다.
-     */
-    public void assignFestivalOwner(Long festivalId) {
-        if (festivalId == null || this.festivalId != null || this.role != null) {
-            throw new CustomException(ErrorCode.AUTH_ADMIN_ALREADY_ASSIGNED);
-        }
-
-        this.festivalId = festivalId;
-        this.role = AdminRole.FESTIVAL_OWNER;
     }
 
     /**
@@ -263,5 +231,45 @@ public class AdminAccount extends BaseTimeEntity {
 
     public String getPasswordHashValue() {
         return passwordHash.getValue();
+    }
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
+     */
+    @Deprecated(forRemoval = true)
+    public boolean canInviteSubAdmin() {
+        return role != null && role.canInviteSubAdmin();
+    }
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
+     */
+    @Deprecated(forRemoval = true)
+    public boolean canModifyFestivalInfo() {
+        return role != null && role.canModifyFestivalInfo();
+    }
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
+     */
+    @Deprecated(forRemoval = true)
+    public boolean canManageFieldStaff() {
+        return role != null && role.canManageFieldStaff();
+    }
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
+     */
+    @Deprecated(forRemoval = true)
+    public boolean canViewOperationReport() {
+        return role != null && role.canViewOperationReport();
+    }
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
+     */
+    @Deprecated(forRemoval = true)
+    public boolean canUpdateQueueTail() {
+        return role != null && role.canUpdateQueueTail();
     }
 }

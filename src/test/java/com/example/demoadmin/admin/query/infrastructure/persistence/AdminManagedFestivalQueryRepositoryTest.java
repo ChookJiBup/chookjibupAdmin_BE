@@ -3,6 +3,7 @@ package com.example.demoadmin.admin.query.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.admin.command.domain.AdminRole;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
 import com.example.demoadmin.admin.command.domain.vo.AdminName;
@@ -170,6 +171,15 @@ class AdminManagedFestivalQueryRepositoryTest {
     private <T> T persist(T entity) {
         entityManager.persist(entity);
         entityManager.flush();
+        if (entity instanceof AdminAccount adminAccount
+                && adminAccount.getFestivalId() != null
+                && adminAccount.getRole() == AdminRole.FESTIVAL_OWNER) {
+            entityManager.persist(AdminFestivalRole.createFestivalOwner(
+                    adminAccount.getId(),
+                    adminAccount.getFestivalId()
+            ));
+            entityManager.flush();
+        }
         return entity;
     }
 

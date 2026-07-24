@@ -2,6 +2,7 @@ package com.example.demoadmin.admin.query.infrastructure.persistence;
 
 import com.example.demoadmin.admin.command.domain.AdminStatus;
 import com.example.demoadmin.admin.command.domain.QAdminAccount;
+import com.example.demoadmin.admin.command.domain.QAdminFestivalRole;
 import com.example.demoadmin.admin.query.application.dto.AdminManagedFestivalCondition;
 import com.example.demoadmin.admin.query.application.dto.AdminManagedFestivalView;
 import com.example.demoadmin.admin.query.repository.AdminManagedFestivalQueryRepository;
@@ -28,6 +29,7 @@ public class AdminManagedFestivalQueryRepositoryImpl
             AdminManagedFestivalCondition condition
     ) {
         QAdminAccount adminAccount = QAdminAccount.adminAccount;
+        QAdminFestivalRole adminFestivalRole = QAdminFestivalRole.adminFestivalRole;
         QFestival festival = QFestival.festival;
 
         return queryFactory
@@ -36,20 +38,19 @@ public class AdminManagedFestivalQueryRepositoryImpl
                         festival.publicId,
                         festival.name.value,
                         festival.year,
-                        adminAccount.role,
+                        adminFestivalRole.role,
                         festival.status,
                         festival.address.value,
                         festival.period.startDate,
                         festival.period.endDate
                 ))
-                .from(adminAccount)
-                .join(festival).on(festival.id.eq(adminAccount.festivalId))
+                .from(adminFestivalRole)
+                .join(adminAccount).on(adminAccount.id.eq(adminFestivalRole.adminAccountId))
+                .join(festival).on(festival.id.eq(adminFestivalRole.festivalId))
                 .where(
-                        adminAccount.id.eq(adminAccountId),
+                        adminFestivalRole.adminAccountId.eq(adminAccountId),
                         adminAccount.status.eq(AdminStatus.ACTIVE),
-                        adminAccount.festivalId.isNotNull(),
-                        adminAccount.role.isNotNull(),
-                        roleEq(adminAccount, condition),
+                        roleEq(adminFestivalRole, condition),
                         yearEq(festival, condition),
                         keywordContains(festival, condition)
                 )
@@ -63,6 +64,7 @@ public class AdminManagedFestivalQueryRepositoryImpl
             UUID festivalId
     ) {
         QAdminAccount adminAccount = QAdminAccount.adminAccount;
+        QAdminFestivalRole adminFestivalRole = QAdminFestivalRole.adminFestivalRole;
         QFestival festival = QFestival.festival;
 
         AdminManagedFestivalView result = queryFactory
@@ -71,19 +73,18 @@ public class AdminManagedFestivalQueryRepositoryImpl
                         festival.publicId,
                         festival.name.value,
                         festival.year,
-                        adminAccount.role,
+                        adminFestivalRole.role,
                         festival.status,
                         festival.address.value,
                         festival.period.startDate,
                         festival.period.endDate
                 ))
-                .from(adminAccount)
-                .join(festival).on(festival.id.eq(adminAccount.festivalId))
+                .from(adminFestivalRole)
+                .join(adminAccount).on(adminAccount.id.eq(adminFestivalRole.adminAccountId))
+                .join(festival).on(festival.id.eq(adminFestivalRole.festivalId))
                 .where(
-                        adminAccount.id.eq(adminAccountId),
+                        adminFestivalRole.adminAccountId.eq(adminAccountId),
                         adminAccount.status.eq(AdminStatus.ACTIVE),
-                        adminAccount.festivalId.isNotNull(),
-                        adminAccount.role.isNotNull(),
                         festival.publicId.eq(festivalId)
                 )
                 .fetchOne();
@@ -92,14 +93,14 @@ public class AdminManagedFestivalQueryRepositoryImpl
     }
 
     private BooleanExpression roleEq(
-            QAdminAccount adminAccount,
+            QAdminFestivalRole adminFestivalRole,
             AdminManagedFestivalCondition condition
     ) {
         if (condition.role() == null) {
             return null;
         }
 
-        return adminAccount.role.eq(condition.role());
+        return adminFestivalRole.role.eq(condition.role());
     }
 
     private BooleanExpression yearEq(

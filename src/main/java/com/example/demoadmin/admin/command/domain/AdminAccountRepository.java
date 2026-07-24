@@ -30,11 +30,6 @@ public interface AdminAccountRepository {
     boolean existsByEmail(AdminEmail email);
 
     /**
-     * 지정한 축제에 특정 관리자 역할이 이미 존재하는지 확인한다.
-     */
-    boolean existsByFestivalIdAndRole(Long festivalId, AdminRole role);
-
-    /**
      * 로그인 이메일로 관리자 계정을 조회한다.
      */
     Optional<AdminAccount> findByEmail(AdminEmail email);

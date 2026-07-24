@@ -3,6 +3,8 @@ package com.example.demoadmin.admin.query.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
+import com.example.demoadmin.admin.command.domain.AdminRole;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
 import com.example.demoadmin.admin.command.domain.vo.AdminName;
 import com.example.demoadmin.admin.command.domain.vo.AdminOrganization;
@@ -232,6 +234,22 @@ class AdminSubAdminQueryRepositoryTest {
 
     private AdminAccount persist(AdminAccount adminAccount) {
         entityManager.persist(adminAccount);
+        entityManager.flush();
+        if (adminAccount.getFestivalId() != null
+                && adminAccount.getRole() == AdminRole.FESTIVAL_OWNER) {
+            entityManager.persist(AdminFestivalRole.createFestivalOwner(
+                    adminAccount.getId(),
+                    adminAccount.getFestivalId()
+            ));
+        }
+        if (adminAccount.getFestivalId() != null
+                && adminAccount.getRole() == AdminRole.SUB_ADMIN) {
+            entityManager.persist(AdminFestivalRole.createSubAdmin(
+                    adminAccount.getId(),
+                    adminAccount.getFestivalId(),
+                    adminAccount.getInvitedByAdminId()
+            ));
+        }
         entityManager.flush();
         return adminAccount;
     }

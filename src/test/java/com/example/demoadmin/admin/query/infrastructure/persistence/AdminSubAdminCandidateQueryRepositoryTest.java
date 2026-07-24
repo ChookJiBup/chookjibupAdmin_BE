@@ -3,6 +3,7 @@ package com.example.demoadmin.admin.query.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
 import com.example.demoadmin.admin.command.domain.vo.AdminName;
 import com.example.demoadmin.admin.command.domain.vo.AdminOrganization;
@@ -36,16 +37,26 @@ class AdminSubAdminCandidateQueryRepositoryTest {
         @DisplayName("아직 축제에 배정되지 않은 활성 관리자만 조회한다")
         void success_SearchCandidates_ActiveUnassignedAdmins() {
             // given
+            Long festivalId = 1L;
             persist(admin("candidate1@mapo.go.kr", "김후보", "마포구청 소속"));
             persist(admin("candidate2@mapo.go.kr", "이후보", "서울시 소속"));
-            persist(owner("owner@mapo.go.kr", 1L));
-            persist(subAdmin("sub@mapo.go.kr", 1L, 1L));
+            AdminAccount owner = persist(admin("owner@mapo.go.kr", "홍길동", "마포구청 소속"));
+            entityManager.persist(AdminFestivalRole.createFestivalOwner(
+                    owner.getId(),
+                    festivalId
+            ));
+            AdminAccount subAdmin = persist(admin("sub@mapo.go.kr", "김관리", "마포구청 소속"));
+            entityManager.persist(AdminFestivalRole.createSubAdmin(
+                    subAdmin.getId(),
+                    festivalId,
+                    owner.getId()
+            ));
             AdminAccount deleted = admin("deleted@mapo.go.kr", "박후보", "마포구청 소속");
             deleted.withdraw();
             persist(deleted);
 
             // when
-            var result = queryRepository.searchCandidates(null);
+            var result = queryRepository.searchCandidates(festivalId, null);
 
             // then
             assertThat(result)
@@ -60,11 +71,12 @@ class AdminSubAdminCandidateQueryRepositoryTest {
         @DisplayName("검색어가 있으면 이메일, 이름, 조직으로 필터링한다")
         void success_SearchCandidates_ByKeyword() {
             // given
+            Long festivalId = 1L;
             persist(admin("candidate1@mapo.go.kr", "김후보", "마포구청 소속"));
             persist(admin("candidate2@seoul.go.kr", "이검색", "서울시 소속"));
 
             // when
-            var result = queryRepository.searchCandidates("검색");
+            var result = queryRepository.searchCandidates(festivalId, "검색");
 
             // then
             assertThat(result)
@@ -76,10 +88,11 @@ class AdminSubAdminCandidateQueryRepositoryTest {
         @DisplayName("후보자가 없으면 빈 목록을 반환한다")
         void success_SearchCandidates_EmptyBoundary() {
             // given
+            Long festivalId = 1L;
             String keyword = "없음";
 
             // when
-            var result = queryRepository.searchCandidates(keyword);
+            var result = queryRepository.searchCandidates(festivalId, keyword);
 
             // then
             assertThat(result).isEmpty();
@@ -96,31 +109,6 @@ class AdminSubAdminCandidateQueryRepositoryTest {
                 AdminName.of(name),
                 AdminOrganization.of(organization),
                 AdminPasswordHash.of("encoded-password")
-        );
-    }
-
-    private AdminAccount owner(String email, Long festivalId) {
-        return AdminAccount.createFestivalOwner(
-                AdminEmail.of(email),
-                AdminName.of("홍길동"),
-                AdminOrganization.of("마포구청 소속"),
-                festivalId,
-                AdminPasswordHash.of("encoded-password")
-        );
-    }
-
-    private AdminAccount subAdmin(
-            String email,
-            Long festivalId,
-            Long invitedByAdminId
-    ) {
-        return AdminAccount.createSubAdmin(
-                AdminEmail.of(email),
-                AdminName.of("김관리"),
-                AdminOrganization.of("마포구청 소속"),
-                festivalId,
-                AdminPasswordHash.of("encoded-password"),
-                invitedByAdminId
         );
     }
 

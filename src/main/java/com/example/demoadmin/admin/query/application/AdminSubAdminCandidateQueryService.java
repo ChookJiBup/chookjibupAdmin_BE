@@ -20,8 +20,11 @@ public class AdminSubAdminCandidateQueryService {
     /**
      * 초대 가능한 활성 관리자 계정을 검색한다.
      */
-    public List<AdminSubAdminCandidateView> searchCandidates(String keyword) {
-        return queryRepository.searchCandidates(normalizeKeyword(keyword));
+    public List<AdminSubAdminCandidateView> searchCandidates(
+            Long festivalId,
+            String keyword
+    ) {
+        return queryRepository.searchCandidates(festivalId, normalizeKeyword(keyword));
     }
 
     private String normalizeKeyword(String keyword) {

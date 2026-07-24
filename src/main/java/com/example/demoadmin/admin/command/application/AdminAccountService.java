@@ -2,7 +2,6 @@ package com.example.demoadmin.admin.command.application;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
 import com.example.demoadmin.admin.command.domain.AdminAccountRepository;
-import com.example.demoadmin.admin.command.domain.AdminRole;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
 import com.example.demoadmin.global.response.CustomException;
 import com.example.demoadmin.global.response.ErrorCode;
@@ -60,13 +59,4 @@ public class AdminAccountService {
         return adminAccountRepository.existsByEmail(email);
     }
 
-    /**
-     * 지정한 축제에 특정 관리자 역할이 이미 존재하는지 확인한다.
-     */
-    public boolean existsByFestivalIdAndRole(
-            Long festivalId,
-            AdminRole role
-    ) {
-        return adminAccountRepository.existsByFestivalIdAndRole(festivalId, role);
-    }
 }

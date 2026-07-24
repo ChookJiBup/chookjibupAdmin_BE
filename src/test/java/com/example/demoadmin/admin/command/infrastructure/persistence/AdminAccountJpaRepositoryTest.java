@@ -3,7 +3,6 @@ package com.example.demoadmin.admin.command.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
-import com.example.demoadmin.admin.command.domain.AdminRole;
 import com.example.demoadmin.admin.command.domain.AdminStatus;
 import com.example.demoadmin.admin.command.domain.vo.AdminEmail;
 import com.example.demoadmin.admin.command.domain.vo.AdminName;
@@ -29,10 +28,7 @@ class AdminAccountJpaRepositoryTest {
         @DisplayName("관리자 계정 상태를 DB에 저장한다")
         void success_Save_Status() {
             // given
-            AdminAccount adminAccount = festivalOwner(
-                    "owner@mapo.go.kr",
-                    1L
-            );
+            AdminAccount adminAccount = adminAccount("owner@mapo.go.kr");
 
             // when
             AdminAccount saved = adminAccountJpaRepository.save(adminAccount);
@@ -51,8 +47,7 @@ class AdminAccountJpaRepositoryTest {
         void success_FindByPublicId() {
             // given
             AdminAccount saved = adminAccountJpaRepository.save(festivalOwner(
-                    "owner@mapo.go.kr",
-                    1L
+                    "owner@mapo.go.kr"
             ));
 
             // when
@@ -75,10 +70,7 @@ class AdminAccountJpaRepositoryTest {
         @DisplayName("관리자 계정을 저장하고 이메일로 조회한다")
         void success_FindByEmail_IgnoreCase() {
             // given
-            AdminAccount adminAccount = festivalOwner(
-                    "owner@mapo.go.kr",
-                    1L
-            );
+            AdminAccount adminAccount = adminAccount("owner@mapo.go.kr");
             adminAccountJpaRepository.save(adminAccount);
 
             // when
@@ -90,8 +82,8 @@ class AdminAccountJpaRepositoryTest {
             assertThat(found)
                     .isPresent()
                     .get()
-                    .extracting(AdminAccount::getFestivalId)
-                    .isEqualTo(1L);
+                    .extracting(AdminAccount::getEmailValue)
+                    .isEqualTo("owner@mapo.go.kr");
         }
 
         @Test
@@ -117,8 +109,7 @@ class AdminAccountJpaRepositoryTest {
         void success_ExistsByEmail_ExistingEmail() {
             // given
             adminAccountJpaRepository.save(festivalOwner(
-                    "owner@mapo.go.kr",
-                    1L
+                    "owner@mapo.go.kr"
             ));
 
             // when
@@ -144,71 +135,15 @@ class AdminAccountJpaRepositoryTest {
         }
     }
 
-    @Nested
-    @DisplayName("existsByFestivalIdAndRole")
-    class ExistsByFestivalIdAndRole {
-
-        @Test
-        @DisplayName("축제별 1관리자가 있으면 true를 반환한다")
-        void success_ExistsByFestivalIdAndRole_ExistingOwner() {
-            // given
-            adminAccountJpaRepository.save(festivalOwner(
-                    "owner@mapo.go.kr",
-                    1L
-            ));
-
-            // when
-            boolean exists = adminAccountJpaRepository.existsByFestivalIdAndRole(
-                    1L,
-                    AdminRole.FESTIVAL_OWNER
-            );
-
-            // then
-            assertThat(exists).isTrue();
-        }
-
-        @Test
-        @DisplayName("축제 ID 최소 경계값에서 저장된 역할이 없으면 false를 반환한다")
-        void success_ExistsByFestivalIdAndRole_MinFestivalIdBoundary() {
-            // given
-            Long festivalId = 1L;
-
-            // when
-            boolean exists = adminAccountJpaRepository.existsByFestivalIdAndRole(
-                    festivalId,
-                    AdminRole.FESTIVAL_OWNER
-            );
-
-            // then
-            assertThat(exists).isFalse();
-        }
-
-        @Test
-        @DisplayName("다른 축제에만 1관리자가 있으면 false를 반환한다")
-        void success_ExistsByFestivalIdAndRole_DifferentFestival() {
-            // given
-            adminAccountJpaRepository.save(festivalOwner(
-                    "owner@mapo.go.kr",
-                    1L
-            ));
-
-            // when
-            boolean exists = adminAccountJpaRepository.existsByFestivalIdAndRole(
-                    2L,
-                    AdminRole.FESTIVAL_OWNER
-            );
-
-            // then
-            assertThat(exists).isFalse();
-        }
+    private AdminAccount festivalOwner(String email) {
+        return adminAccount(email);
     }
 
-    private AdminAccount festivalOwner(String email, Long festivalId) {
-        return AdminAccount.createFestivalOwner(
+    private AdminAccount adminAccount(String email) {
+        return AdminAccount.createAdmin(
                 AdminEmail.of(email),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("서울시 소속"),
-                festivalId,
                 AdminPasswordHash.of("{noop}password")
         );
     }

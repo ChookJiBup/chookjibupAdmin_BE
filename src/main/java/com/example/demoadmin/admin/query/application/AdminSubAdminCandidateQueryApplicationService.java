@@ -1,7 +1,9 @@
 package com.example.demoadmin.admin.query.application;
 
 import com.example.demoadmin.admin.command.application.AdminAccountService;
+import com.example.demoadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.demoadmin.admin.command.domain.AdminAccount;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.admin.query.application.dto.AdminSubAdminCandidateView;
 import com.example.demoadmin.auth.support.AdminPrincipal;
 import com.example.demoadmin.festival.command.application.FestivalService;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminSubAdminCandidateQueryApplicationService {
 
     private final AdminAccountService adminAccountService;
+    private final AdminFestivalRoleService adminFestivalRoleService;
     private final FestivalService festivalService;
     private final AdminSubAdminCandidateQueryService candidateQueryService;
 
@@ -36,9 +39,9 @@ public class AdminSubAdminCandidateQueryApplicationService {
     ) {
         AdminAccount adminAccount = findAuthenticatedAdmin(principal);
         Festival festival = festivalService.getByPublicId(festivalId);
-        validateOwnerAccess(adminAccount, festival);
+        validateOwnerAccess(adminAccount.getId(), festival);
 
-        return candidateQueryService.searchCandidates(keyword);
+        return candidateQueryService.searchCandidates(festival.getId(), keyword);
     }
 
     private AdminAccount findAuthenticatedAdmin(AdminPrincipal principal) {
@@ -50,11 +53,15 @@ public class AdminSubAdminCandidateQueryApplicationService {
     }
 
     private void validateOwnerAccess(
-            AdminAccount adminAccount,
+            Long adminAccountId,
             Festival festival
     ) {
-        if (!adminAccount.canInviteSubAdmin()
-                || !festival.getId().equals(adminAccount.getFestivalId())) {
+        AdminFestivalRole role = adminFestivalRoleService
+                .getByAdminAccountIdAndFestivalId(
+                        adminAccountId,
+                        festival.getId()
+                );
+        if (!role.canInviteSubAdmin()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
     }

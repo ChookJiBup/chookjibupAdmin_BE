@@ -1,7 +1,9 @@
 package com.example.demoadmin.admin.query.application;
 
 import com.example.demoadmin.admin.command.application.AdminAccountService;
+import com.example.demoadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.demoadmin.admin.command.domain.AdminAccount;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.admin.query.application.dto.AdminSubAdminView;
 import com.example.demoadmin.auth.support.AdminPrincipal;
 import com.example.demoadmin.festival.command.application.FestivalService;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminSubAdminQueryApplicationService {
 
     private final AdminAccountService adminAccountService;
+    private final AdminFestivalRoleService adminFestivalRoleService;
     private final FestivalService festivalService;
     private final AdminSubAdminQueryService subAdminQueryService;
 
@@ -76,8 +79,20 @@ public class AdminSubAdminQueryApplicationService {
             AdminAccount adminAccount,
             Festival festival
     ) {
-        if (!adminAccount.canInviteSubAdmin()
-                || !festival.getId().equals(adminAccount.getFestivalId())) {
+        if (adminFestivalRoleService == null) {
+            if (!festival.getId().equals(adminAccount.getFestivalId())
+                    || !adminAccount.canInviteSubAdmin()) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
+            return;
+        }
+
+        AdminFestivalRole role = adminFestivalRoleService
+                .getByAdminAccountIdAndFestivalId(
+                        adminAccount.getId(),
+                        festival.getId()
+                );
+        if (!role.canInviteSubAdmin()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
     }
