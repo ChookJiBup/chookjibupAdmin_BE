@@ -2,6 +2,8 @@ package com.example.demoadmin.operator.command.application;
 
 import com.example.demoadmin.admin.command.domain.AdminAccount;
 import com.example.demoadmin.admin.command.application.AdminAccountService;
+import com.example.demoadmin.admin.command.application.AdminFestivalRoleService;
+import com.example.demoadmin.admin.command.domain.AdminFestivalRole;
 import com.example.demoadmin.auth.support.AdminPrincipal;
 import com.example.demoadmin.festival.command.domain.Festival;
 import com.example.demoadmin.festival.command.application.FestivalService;
@@ -36,6 +38,7 @@ public class FieldStaffManagementService {
     private final FieldStaffAccountService fieldStaffAccountService;
     private final FestivalService festivalService;
     private final AdminAccountService adminAccountService;
+    private final AdminFestivalRoleService adminFestivalRoleService;
     private final PasswordEncoder passwordEncoder;
     private final FieldStaffPasswordGenerator passwordGenerator;
 
@@ -112,8 +115,20 @@ public class FieldStaffManagementService {
             AdminAccount adminAccount,
             Festival festival
     ) {
-        if (!adminAccount.canManageFieldStaff()
-                || !festival.getId().equals(adminAccount.getFestivalId())) {
+        if (adminFestivalRoleService == null) {
+            if (!festival.getId().equals(adminAccount.getFestivalId())
+                    || !adminAccount.canManageFieldStaff()) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
+            return;
+        }
+
+        AdminFestivalRole role = adminFestivalRoleService
+                .getByAdminAccountIdAndFestivalId(
+                        adminAccount.getId(),
+                        festival.getId()
+                );
+        if (!role.canManageFieldStaff()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
     }
