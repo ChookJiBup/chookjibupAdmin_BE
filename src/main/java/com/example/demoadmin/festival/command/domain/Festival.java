@@ -3,6 +3,7 @@ package com.example.demoadmin.festival.command.domain;
 import com.example.demoadmin.common.domain.BaseTimeEntity;
 import com.example.demoadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.demoadmin.festival.command.domain.vo.FestivalDescription;
+import com.example.demoadmin.festival.command.domain.vo.FestivalDetailAddress;
 import com.example.demoadmin.festival.command.domain.vo.FestivalName;
 import com.example.demoadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.demoadmin.festival.command.domain.vo.FestivalPeriod;
@@ -88,6 +89,14 @@ public class Festival extends BaseTimeEntity {
     private FestivalAddress address;
 
     @Embedded
+    @AttributeOverride(
+            name = "value",
+            column = @Column(name = "detail_address", length = 100)
+    )
+    // TODO(festival): 운영 배포 전 festivals.detail_address 컬럼 마이그레이션을 작성한다.
+    private FestivalDetailAddress detailAddress;
+
+    @Embedded
     @AttributeOverrides({
             @AttributeOverride(
                     name = "startDate",
@@ -125,6 +134,7 @@ public class Festival extends BaseTimeEntity {
             FestivalName name,
             FestivalDescription description,
             FestivalAddress address,
+            FestivalDetailAddress detailAddress,
             FestivalPeriod period,
             FestivalOperationTime operationTime
     ) {
@@ -135,6 +145,7 @@ public class Festival extends BaseTimeEntity {
         this.name = name;
         this.description = description;
         this.address = address;
+        this.detailAddress = detailAddress;
         this.period = period;
         this.operationTime = operationTime;
         this.status = FestivalStatus.DRAFT;
@@ -149,6 +160,7 @@ public class Festival extends BaseTimeEntity {
             FestivalName name,
             FestivalDescription description,
             FestivalAddress address,
+            FestivalDetailAddress detailAddress,
             FestivalPeriod period,
             FestivalOperationTime operationTime
     ) {
@@ -163,6 +175,31 @@ public class Festival extends BaseTimeEntity {
                 name,
                 description,
                 address,
+                detailAddress,
+                period,
+                operationTime
+        );
+    }
+
+    /**
+     * 상세주소 없이 축제 기본 정보를 생성한다.
+     */
+    public static Festival create(
+            Long seriesId,
+            UUID seriesPublicId,
+            FestivalName name,
+            FestivalDescription description,
+            FestivalAddress address,
+            FestivalPeriod period,
+            FestivalOperationTime operationTime
+    ) {
+        return create(
+                seriesId,
+                seriesPublicId,
+                name,
+                description,
+                address,
+                FestivalDetailAddress.of(null),
                 period,
                 operationTime
         );
@@ -187,6 +224,7 @@ public class Festival extends BaseTimeEntity {
             FestivalName name,
             FestivalDescription description,
             FestivalAddress address,
+            FestivalDetailAddress detailAddress,
             FestivalPeriod period,
             FestivalOperationTime operationTime
     ) {
@@ -195,8 +233,29 @@ public class Festival extends BaseTimeEntity {
         this.name = name;
         this.description = description;
         this.address = address;
+        this.detailAddress = detailAddress;
         this.period = period;
         this.operationTime = operationTime;
+    }
+
+    /**
+     * 상세주소 없이 축제 기본 정보를 수정한다.
+     */
+    public void updateBasicInfo(
+            FestivalName name,
+            FestivalDescription description,
+            FestivalAddress address,
+            FestivalPeriod period,
+            FestivalOperationTime operationTime
+    ) {
+        updateBasicInfo(
+                name,
+                description,
+                address,
+                FestivalDetailAddress.of(null),
+                period,
+                operationTime
+        );
     }
 
     private void validateSameYear(FestivalPeriod period) {
@@ -215,6 +274,10 @@ public class Festival extends BaseTimeEntity {
 
     public String getAddressValue() {
         return address.getValue();
+    }
+
+    public String getDetailAddressValue() {
+        return detailAddress == null ? null : detailAddress.getValue();
     }
 
     public LocalDate getStartDate() {

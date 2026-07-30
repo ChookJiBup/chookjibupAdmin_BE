@@ -13,6 +13,7 @@ public record InternalFestivalSummaryView(
         String name,
         String description,
         String address,
+        String detailAddress,
         int year,
         LocalDate startDate,
         LocalDate endDate,

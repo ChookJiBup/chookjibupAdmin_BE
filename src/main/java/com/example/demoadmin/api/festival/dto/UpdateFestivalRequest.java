@@ -25,6 +25,10 @@ public record UpdateFestivalRequest(
         @Size(min = 2, max = 255)
         String address,
 
+        @Schema(description = "축제 상세주소", example = "광주비엔날레 전시관")
+        @Size(max = 100)
+        String detailAddress,
+
         @Schema(description = "축제 시작일", example = "2026-10-16")
         @NotNull
         LocalDate startDate,
@@ -50,6 +54,7 @@ public record UpdateFestivalRequest(
                 name,
                 description,
                 address,
+                detailAddress,
                 startDate,
                 endDate,
                 operationStartTime,

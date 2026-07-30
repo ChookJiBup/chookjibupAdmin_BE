@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.example.demoadmin.festival.command.domain.Festival;
 import com.example.demoadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.demoadmin.festival.command.domain.vo.FestivalDescription;
+import com.example.demoadmin.festival.command.domain.vo.FestivalDetailAddress;
 import com.example.demoadmin.festival.command.domain.vo.FestivalName;
 import com.example.demoadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.demoadmin.festival.command.domain.vo.FestivalPeriod;
@@ -62,6 +63,8 @@ class InternalFestivalQueryRepositoryTest {
             assertThat(result.getContent())
                     .extracting(InternalFestivalSummaryProjection::name)
                     .containsExactly("진행 예정 축제");
+            assertThat(result.getContent().getFirst().detailAddress())
+                    .isEqualTo("월드컵공원");
         }
 
         @Test
@@ -220,6 +223,7 @@ class InternalFestivalQueryRepositoryTest {
                 FestivalName.of(name),
                 FestivalDescription.of("지역 축제 설명"),
                 FestivalAddress.of(address),
+                FestivalDetailAddress.of("월드컵공원"),
                 FestivalPeriod.of(startDate, endDate),
                 FestivalOperationTime.of(
                         LocalTime.of(10, 0),

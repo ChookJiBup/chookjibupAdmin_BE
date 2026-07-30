@@ -99,6 +99,8 @@ class FestivalApplicationServiceTest {
             then(festivalService).should().save(captor.capture());
             assertThat(captor.getValue().getAddressValue())
                     .isEqualTo(command.address());
+            assertThat(captor.getValue().getDetailAddressValue())
+                    .isEqualTo(command.detailAddress());
         }
 
         @Test
@@ -175,6 +177,37 @@ class FestivalApplicationServiceTest {
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FESTIVAL_SERIES_NOT_FOUND.getMessage());
         }
+
+        @Test
+        @DisplayName("선택한 축제 묶음과 축제명이 다르면 생성할 수 없다")
+        void fail_Create_SeriesNameMismatch_CustomException() {
+            // given
+            FestivalSeries festivalSeries = festivalSeries(10L);
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    festivalSeries.getPublicId(),
+                    "다른 축제",
+                    "마포구 대표 지역 축제",
+                    "서울특별시 마포구 월드컵로 243",
+                    "월드컵공원",
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            AdminPrincipal principal = principal(null, null);
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.getByPublicId(festivalSeries.getPublicId()))
+                    .willReturn(festivalSeries);
+
+            // when & then
+            assertThatThrownBy(() -> festivalApplicationService.create(
+                    command,
+                    principal
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+        }
     }
 
     @Nested
@@ -208,6 +241,8 @@ class FestivalApplicationServiceTest {
             // then
             assertThat(updated.getNameValue()).isEqualTo(command.name());
             assertThat(updated.getAddressValue()).isEqualTo(command.address());
+            assertThat(updated.getDetailAddressValue())
+                    .isEqualTo(command.detailAddress());
             then(festivalService).should().getByPublicId(publicId);
         }
 
@@ -292,6 +327,7 @@ class FestivalApplicationServiceTest {
                     "수정 축제",
                     "수정 설명",
                     "서울특별시 마포구 수정로 1",
+                    "수정 행사장",
                     LocalDate.of(2027, 11, 1),
                     LocalDate.of(2027, 11, 3),
                     LocalTime.of(9, 0),
@@ -327,6 +363,7 @@ class FestivalApplicationServiceTest {
                 "마포나루 새우젓축제",
                 "마포구 대표 지역 축제",
                 "서울특별시 마포구 월드컵로 243",
+                "월드컵공원",
                 LocalDate.of(2026, 10, 16),
                 LocalDate.of(2026, 10, 18),
                 LocalTime.of(10, 0),
@@ -339,6 +376,7 @@ class FestivalApplicationServiceTest {
                 "수정 축제",
                 "수정 설명",
                 "서울특별시 마포구 수정로 1",
+                "수정 행사장",
                 LocalDate.of(2026, 11, 1),
                 LocalDate.of(2026, 11, 3),
                 LocalTime.of(9, 0),

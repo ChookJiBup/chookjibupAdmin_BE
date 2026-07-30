@@ -11,6 +11,7 @@ import com.example.demoadmin.festival.command.domain.Festival;
 import com.example.demoadmin.festival.command.domain.FestivalSeries;
 import com.example.demoadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.demoadmin.festival.command.domain.vo.FestivalDescription;
+import com.example.demoadmin.festival.command.domain.vo.FestivalDetailAddress;
 import com.example.demoadmin.festival.command.domain.vo.FestivalName;
 import com.example.demoadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.demoadmin.festival.command.domain.vo.FestivalPeriod;
@@ -48,6 +49,7 @@ public class FestivalApplicationService {
                 command.endDate()
         );
         FestivalSeries series = findOrCreateSeries(command.seriesId(), name);
+        validateSeriesName(series, name);
         validateUniqueFestivalYear(series.getId(), period.getStartDate().getYear());
 
         Festival festival = Festival.create(
@@ -56,6 +58,7 @@ public class FestivalApplicationService {
                 name,
                 FestivalDescription.of(command.description()),
                 FestivalAddress.of(command.address()),
+                FestivalDetailAddress.of(command.detailAddress()),
                 period,
                 FestivalOperationTime.of(
                         command.operationStartTime(),
@@ -74,6 +77,15 @@ public class FestivalApplicationService {
         }
 
         return savedFestival;
+    }
+
+    private void validateSeriesName(
+            FestivalSeries series,
+            FestivalName name
+    ) {
+        if (!series.getNormalizedName().equals(FestivalSeries.normalize(name))) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
     }
 
     private FestivalSeries findOrCreateSeries(
@@ -115,6 +127,7 @@ public class FestivalApplicationService {
                 FestivalName.of(command.name()),
                 FestivalDescription.of(command.description()),
                 FestivalAddress.of(command.address()),
+                FestivalDetailAddress.of(command.detailAddress()),
                 FestivalPeriod.of(command.startDate(), command.endDate()),
                 FestivalOperationTime.of(
                         command.operationStartTime(),

@@ -133,6 +133,7 @@ class AdminManagedFestivalQueryServiceTest {
                 AdminRole.FESTIVAL_OWNER,
                 FestivalStatus.DRAFT,
                 "서울특별시 마포구 월드컵로 243",
+                "월드컵공원",
                 LocalDate.of(2026, 10, 16),
                 LocalDate.of(2026, 10, 18)
         );

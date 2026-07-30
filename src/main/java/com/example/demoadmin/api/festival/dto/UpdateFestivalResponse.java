@@ -20,6 +20,8 @@ public record UpdateFestivalResponse(
         String description,
         @Schema(description = "축제 주소", example = "서울특별시 마포구 월드컵로 243")
         String address,
+        @Schema(description = "축제 상세주소", example = "광주비엔날레 전시관")
+        String detailAddress,
         @Schema(description = "축제 시작일", example = "2026-10-16")
         LocalDate startDate,
         @Schema(description = "축제 종료일", example = "2026-10-18")
@@ -41,6 +43,7 @@ public record UpdateFestivalResponse(
                 festival.getNameValue(),
                 festival.getDescriptionValue(),
                 festival.getAddressValue(),
+                festival.getDetailAddressValue(),
                 festival.getStartDate(),
                 festival.getEndDate(),
                 festival.getOperationStartTime(),

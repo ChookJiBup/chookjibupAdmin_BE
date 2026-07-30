@@ -143,6 +143,7 @@ class InternalFestivalQueryApplicationServiceTest {
                 "마포나루 새우젓축제",
                 "지역 축제 설명",
                 "서울특별시 마포구 월드컵로 243",
+                "월드컵공원",
                 2026,
                 LocalDate.of(2026, 10, 9),
                 LocalDate.of(2026, 10, 18),

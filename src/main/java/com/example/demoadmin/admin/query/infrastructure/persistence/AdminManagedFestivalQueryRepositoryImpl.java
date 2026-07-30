@@ -41,6 +41,7 @@ public class AdminManagedFestivalQueryRepositoryImpl
                         adminFestivalRole.role,
                         festival.status,
                         festival.address.value,
+                        festival.detailAddress.value,
                         festival.period.startDate,
                         festival.period.endDate
                 ))
@@ -76,6 +77,7 @@ public class AdminManagedFestivalQueryRepositoryImpl
                         adminFestivalRole.role,
                         festival.status,
                         festival.address.value,
+                        festival.detailAddress.value,
                         festival.period.startDate,
                         festival.period.endDate
                 ))
@@ -123,6 +125,7 @@ public class AdminManagedFestivalQueryRepositoryImpl
         }
 
         return festival.name.value.containsIgnoreCase(condition.keyword())
-                .or(festival.address.value.containsIgnoreCase(condition.keyword()));
+                .or(festival.address.value.containsIgnoreCase(condition.keyword()))
+                .or(festival.detailAddress.value.containsIgnoreCase(condition.keyword()));
     }
 }

@@ -7,6 +7,7 @@ public record UpdateFestivalCommand(
         String name,
         String description,
         String address,
+        String detailAddress,
         LocalDate startDate,
         LocalDate endDate,
         LocalTime operationStartTime,

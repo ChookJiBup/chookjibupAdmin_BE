@@ -6,6 +6,7 @@ import com.example.demoadmin.festival.command.domain.Festival;
 import com.example.demoadmin.festival.command.domain.FestivalRepository;
 import com.example.demoadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.demoadmin.festival.command.domain.vo.FestivalDescription;
+import com.example.demoadmin.festival.command.domain.vo.FestivalDetailAddress;
 import com.example.demoadmin.festival.command.domain.vo.FestivalName;
 import com.example.demoadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.demoadmin.festival.command.domain.vo.FestivalPeriod;
@@ -42,7 +43,8 @@ class FestivalRepositoryTest {
             // then
             assertThat(saved.getId()).isNotNull();
             assertThat(saved.getPublicId()).isNotNull();
-            assertThat(saved.getNameValue()).isEqualTo("마포나루 새우젓축제");
+        assertThat(saved.getNameValue()).isEqualTo("마포나루 새우젓축제");
+        assertThat(saved.getDetailAddressValue()).isEqualTo("월드컵공원");
         }
     }
 
@@ -149,6 +151,7 @@ class FestivalRepositoryTest {
                 FestivalName.of("마포나루 새우젓축제"),
                 FestivalDescription.of("마포구 대표 지역 축제"),
                 FestivalAddress.of("서울특별시 마포구 월드컵로 243"),
+                FestivalDetailAddress.of("월드컵공원"),
                 FestivalPeriod.of(
                         LocalDate.of(2026, 10, 16),
                         LocalDate.of(2026, 10, 18)

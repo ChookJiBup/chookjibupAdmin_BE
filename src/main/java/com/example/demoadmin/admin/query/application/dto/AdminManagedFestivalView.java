@@ -15,6 +15,7 @@ public record AdminManagedFestivalView(
         AdminRole role,
         FestivalStatus festivalStatus,
         String address,
+        String detailAddress,
         LocalDate startDate,
         LocalDate endDate
 ) {

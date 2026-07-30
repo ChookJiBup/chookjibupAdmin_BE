@@ -30,6 +30,9 @@ public record AdminManagedFestivalResponse(
         @Schema(description = "축제 주소", example = "서울특별시 마포구 월드컵로 243")
         String address,
 
+        @Schema(description = "축제 상세주소", example = "광주비엔날레 전시관")
+        String detailAddress,
+
         @Schema(description = "축제 시작일", example = "2026-10-16")
         LocalDate startDate,
 
@@ -50,6 +53,7 @@ public record AdminManagedFestivalResponse(
                 view.role(),
                 view.festivalStatus(),
                 view.address(),
+                view.detailAddress(),
                 view.startDate(),
                 view.endDate()
         );

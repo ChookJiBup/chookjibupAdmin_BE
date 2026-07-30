@@ -39,6 +39,7 @@ public class InternalFestivalQueryRepositoryImpl
                         festival.name.value,
                         festival.description.value,
                         festival.address.value,
+                        festival.detailAddress.value,
                         festival.year,
                         festival.period.startDate,
                         festival.period.endDate,
@@ -100,6 +101,7 @@ public class InternalFestivalQueryRepositoryImpl
         }
 
         return festival.name.value.containsIgnoreCase(condition.keyword())
-                .or(festival.address.value.containsIgnoreCase(condition.keyword()));
+                .or(festival.address.value.containsIgnoreCase(condition.keyword()))
+                .or(festival.detailAddress.value.containsIgnoreCase(condition.keyword()));
     }
 }

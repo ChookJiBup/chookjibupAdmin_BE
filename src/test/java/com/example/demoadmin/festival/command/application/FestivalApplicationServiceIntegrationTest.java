@@ -69,6 +69,8 @@ class FestivalApplicationServiceIntegrationTest {
                             foundFestival.getId()
                     );
             assertThat(foundFestival.getNameValue()).isEqualTo(command.name());
+            assertThat(foundFestival.getDetailAddressValue())
+                    .isEqualTo(command.detailAddress());
             assertThat(foundFestival.getSeriesId()).isNotNull();
             assertThat(foundFestival.getYear()).isEqualTo(2026);
             assertThat(festivalSeriesService.getById(foundFestival.getSeriesId()))
@@ -83,6 +85,7 @@ class FestivalApplicationServiceIntegrationTest {
                 "마포나루 새우젓축제",
                 "마포구 대표 지역 축제",
                 "서울특별시 마포구 월드컵로 243",
+                "월드컵공원",
                 LocalDate.of(2026, 10, 16),
                 LocalDate.of(2026, 10, 18),
                 LocalTime.of(10, 0),
