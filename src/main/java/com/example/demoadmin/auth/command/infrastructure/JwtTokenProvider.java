@@ -7,6 +7,7 @@ import com.example.demoadmin.global.response.ErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -65,14 +66,17 @@ public class JwtTokenProvider {
 
         String unsignedToken = parts[0] + "." + parts[1];
         String expectedSignature = sign(unsignedToken);
-        if (!expectedSignature.equals(parts[2])) {
+        if (!MessageDigest.isEqual(
+                expectedSignature.getBytes(StandardCharsets.US_ASCII),
+                parts[2].getBytes(StandardCharsets.US_ASCII)
+        )) {
             throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
         }
 
         JsonNode payload = decodePayload(parts[1]);
         validateAdminSubject(payload);
         long exp = payload.path("exp").asLong();
-        if (Instant.now().getEpochSecond() > exp) {
+        if (Instant.now().getEpochSecond() >= exp) {
             throw new CustomException(ErrorCode.AUTH_TOKEN_EXPIRED);
         }
 

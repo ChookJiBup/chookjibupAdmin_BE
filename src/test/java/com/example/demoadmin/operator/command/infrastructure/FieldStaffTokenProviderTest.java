@@ -1,13 +1,17 @@
 package com.example.demoadmin.operator.command.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.demoadmin.auth.command.infrastructure.JwtProperties;
+import com.example.demoadmin.global.response.CustomException;
+import com.example.demoadmin.global.response.ErrorCode;
 import com.example.demoadmin.operator.command.domain.FieldStaffAccount;
 import com.example.demoadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.demoadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.demoadmin.operator.command.domain.vo.FieldStaffPasswordHash;
 import com.example.demoadmin.operator.command.domain.vo.FieldStaffPhoneNumber;
+import com.example.demoadmin.operator.support.FieldStaffPrincipal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
@@ -45,6 +49,43 @@ class FieldStaffTokenProviderTest {
             assertThat(payload.path("festivalId").asLong()).isEqualTo(10L);
             assertThat(payload.path("loginId").asText()).isEqualTo("staff01");
             assertThat(tokenProvider.getAccessTokenExpirationSeconds()).isEqualTo(1800L);
+        }
+    }
+
+    @Nested
+    @DisplayName("parse")
+    class Parse {
+
+        @Test
+        @DisplayName("유효한 현장 스태프 토큰을 인증 주체로 변환한다")
+        void success_Parse() {
+            // given
+            FieldStaffAccount account = fieldStaffAccount();
+            ReflectionTestUtils.setField(account, "id", 1L);
+            String accessToken = tokenProvider.createAccessToken(account);
+
+            // when
+            FieldStaffPrincipal principal = tokenProvider.parse(accessToken);
+
+            // then
+            assertThat(principal.fieldStaffId()).isEqualTo(1L);
+            assertThat(principal.festivalId()).isEqualTo(10L);
+            assertThat(principal.loginId()).isEqualTo("staff01");
+        }
+
+        @Test
+        @DisplayName("서명이 변경된 토큰은 인증할 수 없다")
+        void fail_Parse_CustomException_InvalidSignature() {
+            // given
+            FieldStaffAccount account = fieldStaffAccount();
+            ReflectionTestUtils.setField(account, "id", 1L);
+            String accessToken = tokenProvider.createAccessToken(account);
+            String tamperedToken = accessToken + "x";
+
+            // when & then
+            assertThatThrownBy(() -> tokenProvider.parse(tamperedToken))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.AUTH_TOKEN_INVALID.getMessage());
         }
     }
 

@@ -8,7 +8,7 @@ import com.example.demoadmin.admin.command.domain.AdminRole;
 public record AdminPrincipal(
         Long adminId,
         String email
-) {
+) implements FestivalAccessPrincipal {
 
     /**
      * TODO(auth): 기존 테스트 Fixture 정리 완료 후 제거한다.

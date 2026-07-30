@@ -2,6 +2,7 @@ package com.example.demoadmin.global.config;
 
 import com.example.demoadmin.auth.support.JwtAuthenticationFilter;
 import com.example.demoadmin.global.security.internal.InternalApiAuthenticationFilter;
+import com.example.demoadmin.operator.support.FieldStaffAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,13 +16,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * 관리자 API의 JWT 기반 Stateless 보안 설정을 구성한다.
+ * 관리자와 현장 스태프 API의 JWT 기반 Stateless 보안 설정을 구성한다.
  */
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final FieldStaffAuthenticationFilter fieldStaffAuthenticationFilter;
     private final InternalApiAuthenticationFilter internalApiAuthenticationFilter;
 
     /**
@@ -61,6 +63,10 @@ public class SecurityConfig {
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterAfter(
+                        fieldStaffAuthenticationFilter,
+                        JwtAuthenticationFilter.class
                 )
                 .build();
     }
