@@ -35,3 +35,11 @@ app:
       demo-user-server:
         secret: ${APP_INTERNAL_DEMO_USER_SECRET:}
         previous-secret: ${APP_INTERNAL_DEMO_USER_PREVIOUS_SECRET:}
+  map:
+    analysis:
+      provider: ${APP_MAP_ANALYSIS_PROVIDER:fake}
+      test-endpoint-enabled: ${APP_MAP_TEST_ENDPOINT_ENABLED:false}
+  openai:
+    api-key: ${APP_OPENAI_API_KEY:}
+    base-url: ${APP_OPENAI_BASE_URL:https://api.openai.com/v1}
+    model: ${APP_OPENAI_MODEL:gpt-5.6}
