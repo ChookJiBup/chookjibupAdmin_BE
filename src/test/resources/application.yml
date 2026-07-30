@@ -21,3 +21,8 @@ app:
   jwt:
     secret: test-jwt-secret-key-for-demo-admin-local-tests
     access-token-expiration-seconds: 1800
+  road-address:
+    base-url: https://business.juso.go.kr
+    confirmation-key:
+    connect-timeout: 3s
+    read-timeout: 5s

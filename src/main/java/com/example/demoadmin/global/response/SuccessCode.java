@@ -19,6 +19,7 @@ public enum SuccessCode {
     FIELD_STAFF_DELETE_SUCCESS(22003, "현장 스태프 계정이 삭제되었습니다."),
     FIELD_STAFF_READ_SUCCESS(22004, "현장 스태프 계정 조회가 완료되었습니다."),
     FESTIVAL_SERIES_SEARCH_SUCCESS(22005, "기존 축제 검색이 완료되었습니다."),
+    ROAD_ADDRESS_SEARCH_SUCCESS(22006, "도로명주소 검색이 완료되었습니다."),
     FESTIVAL_DASHBOARD_READ_SUCCESS(23000, "축제 대시보드 조회가 완료되었습니다."),
     FESTIVAL_REPORT_SUMMARY_READ_SUCCESS(24000, "축제 결과 보고서 요약 조회가 완료되었습니다."),
     FIELD_STAFF_LOGIN_SUCCESS(25000, "현장 스태프 로그인에 성공했습니다."),

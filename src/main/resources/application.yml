@@ -35,3 +35,8 @@ app:
       demo-user-server:
         secret: ${APP_INTERNAL_DEMO_USER_SECRET:}
         previous-secret: ${APP_INTERNAL_DEMO_USER_PREVIOUS_SECRET:}
+  road-address:
+    base-url: ${APP_ROAD_ADDRESS_BASE_URL:https://business.juso.go.kr}
+    confirmation-key: ${APP_ROAD_ADDRESS_CONFIRMATION_KEY:}
+    connect-timeout: ${APP_ROAD_ADDRESS_CONNECT_TIMEOUT:3s}
+    read-timeout: ${APP_ROAD_ADDRESS_READ_TIMEOUT:5s}

@@ -40,6 +40,9 @@ public enum ErrorCode {
     FIELD_STAFF_NOT_ACTIVE(40302, HttpStatus.FORBIDDEN, "사용할 수 없는 현장 스태프 계정입니다."),
     FIELD_STAFF_VALID_PERIOD_EXPIRED(40303, HttpStatus.FORBIDDEN, "현장 스태프 계정 유효기간이 아닙니다."),
 
+    ROAD_ADDRESS_SEARCH_FAILED(50200, HttpStatus.BAD_GATEWAY, "도로명주소 검색에 실패했습니다."),
+    ROAD_ADDRESS_API_KEY_NOT_CONFIGURED(50300, HttpStatus.SERVICE_UNAVAILABLE, "도로명주소 검색 설정이 필요합니다."),
+
     INTERNAL_SERVER_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러가 발생하였습니다.");
 
     private final int code;
