@@ -33,12 +33,22 @@ public enum ErrorCode {
     FESTIVAL_SERIES_NOT_FOUND(40402, HttpStatus.NOT_FOUND, "축제 묶음을 찾을 수 없습니다."),
     FIELD_STAFF_NOT_FOUND(40403, HttpStatus.NOT_FOUND, "현장 스태프 계정을 찾을 수 없습니다."),
     ADMIN_SUB_ADMIN_NOT_FOUND(40404, HttpStatus.NOT_FOUND, "서브관리자를 찾을 수 없습니다."),
+    BOOTH_NOT_FOUND(40405, HttpStatus.NOT_FOUND, "축제 부스를 찾을 수 없습니다."),
+    BOOTH_QUEUE_LINE_NOT_FOUND(40406, HttpStatus.NOT_FOUND, "부스 대기 라인을 찾을 수 없습니다."),
+    FESTIVAL_MAP_NOT_FOUND(40407, HttpStatus.NOT_FOUND, "축제 배치도를 찾을 수 없습니다."),
+    MAP_ANALYSIS_JOB_NOT_FOUND(40408, HttpStatus.NOT_FOUND, "배치도 분석 작업을 찾을 수 없습니다."),
     FESTIVAL_YEAR_ALREADY_EXISTS(40904, HttpStatus.CONFLICT, "해당 축제 묶음에는 이미 같은 연도 축제가 존재합니다."),
     FESTIVAL_YEAR_CANNOT_BE_CHANGED(40905, HttpStatus.CONFLICT, "축제 개최 연도는 수정할 수 없습니다."),
     FIELD_STAFF_LOGIN_ID_DUPLICATED(40906, HttpStatus.CONFLICT, "이미 사용 중인 현장 스태프 아이디입니다."),
     FIELD_STAFF_INVALID_CREDENTIALS(40105, HttpStatus.UNAUTHORIZED, "현장 스태프 아이디 또는 비밀번호가 올바르지 않습니다."),
     FIELD_STAFF_NOT_ACTIVE(40302, HttpStatus.FORBIDDEN, "사용할 수 없는 현장 스태프 계정입니다."),
     FIELD_STAFF_VALID_PERIOD_EXPIRED(40303, HttpStatus.FORBIDDEN, "현장 스태프 계정 유효기간이 아닙니다."),
+    BOOTH_QUEUE_LINE_ORDER_DUPLICATED(40908, HttpStatus.CONFLICT, "이미 사용 중인 부스 대기 라인 순서입니다."),
+    BOOTH_QUEUE_LINE_NOT_BELONG_TO_BOOTH(40909, HttpStatus.CONFLICT, "해당 부스의 대기 라인이 아닙니다."),
+    BOOTH_CLOSED(40910, HttpStatus.CONFLICT, "마감된 부스는 줄 끝을 갱신할 수 없습니다."),
+    MAP_ANALYSIS_STATUS_INVALID(40911, HttpStatus.CONFLICT, "현재 상태에서는 배치도 분석 작업을 변경할 수 없습니다."),
+    FESTIVAL_MAP_STATUS_INVALID(40912, HttpStatus.CONFLICT, "현재 상태에서는 축제 배치도를 변경할 수 없습니다."),
+    MAP_OBJECT_REVIEW_STATUS_INVALID(40913, HttpStatus.CONFLICT, "현재 상태에서는 배치도 객체 검수 상태를 변경할 수 없습니다."),
 
     INTERNAL_SERVER_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러가 발생하였습니다.");
 
