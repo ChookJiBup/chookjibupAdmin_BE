@@ -5,6 +5,8 @@ import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRoleReposit
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.util.Collection;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,5 +77,27 @@ public class AdminFestivalRoleService {
         return adminFestivalRoleRepository
                 .findByAdminAccountIdAndFestivalId(adminAccountId, festivalId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FORBIDDEN));
+    }
+
+    /**
+     * 관리자 계정 목록이 특정 축제에서 갖는 역할을 잠금 조회한다.
+     */
+    public List<AdminFestivalRole> getAllByAdminAccountIdsAndFestivalId(
+            Collection<Long> adminAccountIds,
+            Long festivalId
+    ) {
+        return adminFestivalRoleRepository
+                .findAllByAdminAccountIdInAndFestivalId(
+                        adminAccountIds,
+                        festivalId
+                );
+    }
+
+    /**
+     * 축제 관리자 역할 관계를 일괄 삭제한다.
+     */
+    @Transactional
+    public void deleteAll(Collection<AdminFestivalRole> roles) {
+        adminFestivalRoleRepository.deleteAll(roles);
     }
 }

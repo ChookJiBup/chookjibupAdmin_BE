@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,32 @@ class AdminFestivalRoleJpaRepositoryTest {
             assertThat(saved.getId()).isNotNull();
             assertThat(saved.getPublicId()).isNotNull();
             assertThat(saved.getRole()).isEqualTo(AdminRole.FESTIVAL_OWNER);
+        }
+    }
+
+    @Nested
+    @DisplayName("findAllByAdminAccountIdInAndFestivalId")
+    class FindAllByAdminAccountIdInAndFestivalId {
+
+        @Test
+        @DisplayName("관리자 ID 목록과 축제 ID로 역할을 모두 조회한다")
+        void success_FindAllByAdminAccountIdInAndFestivalId() {
+            // given
+            adminFestivalRoleJpaRepository.save(
+                    AdminFestivalRole.createSubAdmin(2L, 1L, 1L)
+            );
+            adminFestivalRoleJpaRepository.save(
+                    AdminFestivalRole.createSubAdmin(3L, 1L, 1L)
+            );
+
+            // when
+            var found = adminFestivalRoleJpaRepository
+                    .findAllByAdminAccountIdInAndFestivalId(List.of(2L, 3L), 1L);
+
+            // then
+            assertThat(found)
+                    .extracting(AdminFestivalRole::getAdminAccountId)
+                    .containsExactlyInAnyOrder(2L, 3L);
         }
     }
 

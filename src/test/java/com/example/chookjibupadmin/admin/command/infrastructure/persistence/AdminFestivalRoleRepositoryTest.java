@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRoleRepository;
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,32 @@ class AdminFestivalRoleRepositoryTest {
             // then
             assertThat(saved.getId()).isNotNull();
             assertThat(saved.getRole()).isEqualTo(AdminRole.FESTIVAL_OWNER);
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteAll")
+    class DeleteAll {
+
+        @Test
+        @DisplayName("관리자 축제 역할 관계를 모두 삭제한다")
+        void success_DeleteAll() {
+            // given
+            AdminFestivalRole first = adminFestivalRoleRepository.save(
+                    AdminFestivalRole.createSubAdmin(2L, 1L, 1L)
+            );
+            AdminFestivalRole second = adminFestivalRoleRepository.save(
+                    AdminFestivalRole.createSubAdmin(3L, 1L, 1L)
+            );
+
+            // when
+            adminFestivalRoleRepository.deleteAll(List.of(first, second));
+
+            // then
+            assertThat(adminFestivalRoleRepository
+                    .existsByAdminAccountIdAndFestivalId(2L, 1L)).isFalse();
+            assertThat(adminFestivalRoleRepository
+                    .existsByAdminAccountIdAndFestivalId(3L, 1L)).isFalse();
         }
     }
 

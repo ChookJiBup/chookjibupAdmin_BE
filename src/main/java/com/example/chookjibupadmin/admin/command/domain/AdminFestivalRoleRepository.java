@@ -1,5 +1,7 @@
 package com.example.chookjibupadmin.admin.command.domain;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -20,4 +22,11 @@ public interface AdminFestivalRoleRepository {
             Long adminAccountId,
             Long festivalId
     );
+
+    List<AdminFestivalRole> findAllByAdminAccountIdInAndFestivalId(
+            Collection<Long> adminAccountIds,
+            Long festivalId
+    );
+
+    void deleteAll(Collection<AdminFestivalRole> roles);
 }

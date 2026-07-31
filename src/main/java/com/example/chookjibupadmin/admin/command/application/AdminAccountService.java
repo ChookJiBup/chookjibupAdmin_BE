@@ -5,6 +5,8 @@ import com.example.chookjibupadmin.admin.command.domain.AdminAccountRepository;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,20 @@ public class AdminAccountService {
     public AdminAccount getByPublicId(UUID publicId) {
         return adminAccountRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new CustomException(ErrorCode.UNAUTHORIZED));
+    }
+
+    /**
+     * 제2관리자 삭제 대상 UUID에 해당하는 관리자 계정을 모두 조회한다.
+     */
+    public List<AdminAccount> getAllSubAdminsByPublicIds(
+            Collection<UUID> publicIds
+    ) {
+        List<AdminAccount> accounts =
+                adminAccountRepository.findAllByPublicIdIn(publicIds);
+        if (accounts.size() != publicIds.size()) {
+            throw new CustomException(ErrorCode.ADMIN_SUB_ADMIN_NOT_FOUND);
+        }
+        return accounts;
     }
 
     /**

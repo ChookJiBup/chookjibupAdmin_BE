@@ -9,6 +9,7 @@ import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,32 @@ class AdminAccountRepositoryTest {
             assertThat(saved.getPublicId()).isNotNull();
             assertThat(saved.getEmailValue()).isEqualTo("owner@mapo.go.kr");
             assertThat(saved.getStatus()).isEqualTo(AdminStatus.ACTIVE);
+        }
+    }
+
+    @Nested
+    @DisplayName("findAllByPublicIdIn")
+    class FindAllByPublicIdIn {
+
+        @Test
+        @DisplayName("관리자 UUID 목록으로 계정을 모두 조회한다")
+        void success_FindAllByPublicIdIn() {
+            // given
+            AdminAccount first = adminAccountRepository.save(
+                    adminAccount("first@mapo.go.kr")
+            );
+            AdminAccount second = adminAccountRepository.save(
+                    adminAccount("second@mapo.go.kr")
+            );
+
+            // when
+            var found = adminAccountRepository.findAllByPublicIdIn(List.of(
+                    first.getPublicId(),
+                    second.getPublicId()
+            ));
+
+            // then
+            assertThat(found).containsExactlyInAnyOrder(first, second);
         }
     }
 

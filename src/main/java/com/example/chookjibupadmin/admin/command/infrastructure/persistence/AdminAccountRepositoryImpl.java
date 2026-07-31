@@ -5,6 +5,8 @@ import com.example.chookjibupadmin.admin.command.domain.AdminAccountRepository;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -60,6 +62,11 @@ public class AdminAccountRepositoryImpl implements AdminAccountRepository {
     @Override
     public Optional<AdminAccount> findByPublicId(UUID publicId) {
         return jpaRepository.findByPublicId(publicId);
+    }
+
+    @Override
+    public List<AdminAccount> findAllByPublicIdIn(Collection<UUID> publicIds) {
+        return jpaRepository.findAllByPublicIdIn(publicIds);
     }
 
     @Override

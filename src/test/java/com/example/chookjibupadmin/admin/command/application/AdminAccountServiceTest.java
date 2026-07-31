@@ -13,7 +13,9 @@ import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,6 +50,45 @@ class AdminAccountServiceTest {
             // then
             assertThat(saved).isSameAs(adminAccount);
             then(adminAccountRepository).should().save(adminAccount);
+        }
+    }
+
+    @Nested
+    @DisplayName("getAllSubAdminsByPublicIds")
+    class GetAllSubAdminsByPublicIds {
+
+        @Test
+        @DisplayName("외부 UUID 목록에 해당하는 관리자 계정을 모두 조회한다")
+        void success_GetAllSubAdminsByPublicIds() {
+            // given
+            AdminAccount first = adminAccount("first@mapo.go.kr");
+            AdminAccount second = adminAccount("second@mapo.go.kr");
+            List<UUID> publicIds = List.of(first.getPublicId(), second.getPublicId());
+            given(adminAccountRepository.findAllByPublicIdIn(publicIds))
+                    .willReturn(List.of(first, second));
+
+            // when
+            List<AdminAccount> found =
+                    adminAccountService.getAllSubAdminsByPublicIds(publicIds);
+
+            // then
+            assertThat(found).containsExactly(first, second);
+        }
+
+        @Test
+        @DisplayName("요청한 관리자 계정이 하나라도 없으면 예외를 던진다")
+        void fail_GetAllSubAdminsByPublicIds_CustomException() {
+            // given
+            AdminAccount account = adminAccount("first@mapo.go.kr");
+            List<UUID> publicIds = List.of(account.getPublicId(), UUID.randomUUID());
+            given(adminAccountRepository.findAllByPublicIdIn(publicIds))
+                    .willReturn(List.of(account));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    adminAccountService.getAllSubAdminsByPublicIds(publicIds))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.ADMIN_SUB_ADMIN_NOT_FOUND.getMessage());
         }
     }
 
@@ -118,8 +159,12 @@ class AdminAccountServiceTest {
     }
 
     private AdminAccount adminAccount() {
+        return adminAccount("admin@mapo.go.kr");
+    }
+
+    private AdminAccount adminAccount(String email) {
         return AdminAccount.createAdmin(
-                AdminEmail.of("admin@mapo.go.kr"),
+                AdminEmail.of(email),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
                 AdminPasswordHash.of("encoded-password")

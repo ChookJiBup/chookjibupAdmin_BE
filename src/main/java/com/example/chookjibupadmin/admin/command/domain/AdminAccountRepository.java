@@ -1,6 +1,8 @@
 package com.example.chookjibupadmin.admin.command.domain;
 
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,6 +25,11 @@ public interface AdminAccountRepository {
      * 외부 노출용 관리자 UUID로 계정을 조회한다.
      */
     Optional<AdminAccount> findByPublicId(UUID publicId);
+
+    /**
+     * 외부 노출용 관리자 UUID 목록에 해당하는 계정을 조회한다.
+     */
+    List<AdminAccount> findAllByPublicIdIn(Collection<UUID> publicIds);
 
     /**
      * 같은 이메일로 가입된 관리자 계정이 있는지 확인한다.
