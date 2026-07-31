@@ -14,5 +14,5 @@ public record AdminSubAdminView(
         String department,
         String rank,
         AdminStatus status
-) {
+) implements AdminNameEmailSearchTarget {
 }
