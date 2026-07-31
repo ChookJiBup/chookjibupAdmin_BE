@@ -1,6 +1,6 @@
-# demoAdmin
+# chookjibupAdmin_BE
 
-관광 프로젝트의 관리자용 Spring Boot 백엔드 애플리케이션이다.
+`ChookJiBup`의 관리자용 Spring Boot 백엔드 애플리케이션이다.
 축제 운영자가 축제를 등록하고, 축제별 관리자 권한을 관리하며,
 현장 스태프와 운영 대시보드, 결과 리포트 기능으로 확장하는 것을 목표로 한다.
 

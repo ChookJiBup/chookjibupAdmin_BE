@@ -1,21 +1,21 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: demo-admin-postgres
+    container_name: chookjibup-admin-postgres
     environment:
-      POSTGRES_DB: demo_admin
-      POSTGRES_USER: demo_admin
-      POSTGRES_PASSWORD: demo_admin
+      POSTGRES_DB: chookjibup_admin
+      POSTGRES_USER: chookjibup_admin
+      POSTGRES_PASSWORD: chookjibup_admin
     ports:
       - "5432:5432"
     volumes:
-      - demo-admin-postgres-data:/var/lib/postgresql/data
+      - chookjibup-admin-postgres-data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
-    container_name: demo-admin-redis
+    container_name: chookjibup-admin-redis
     ports:
       - "6379:6379"
 
 volumes:
-  demo-admin-postgres-data:
+  chookjibup-admin-postgres-data:

@@ -1,13 +1,13 @@
 spring:
   application:
-    name: demoAdmin
+    name: chookjibupAdmin_BE
   config:
     import: optional:application-secret.yml
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/demo_admin}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/chookjibup_admin}
     driver-class-name: org.postgresql.Driver
-    username: ${DB_USERNAME:demo_admin}
-    password: ${DB_PASSWORD:demo_admin}
+    username: ${DB_USERNAME:chookjibup_admin}
+    password: ${DB_PASSWORD:chookjibup_admin}
   jpa:
     hibernate:
       ddl-auto: update
@@ -32,9 +32,9 @@ app:
     timestamp-tolerance: ${APP_INTERNAL_AUTH_TIMESTAMP_TOLERANCE:5m}
     nonce-ttl: ${APP_INTERNAL_AUTH_NONCE_TTL:10m}
     clients:
-      demo-user-server:
-        secret: ${APP_INTERNAL_DEMO_USER_SECRET:}
-        previous-secret: ${APP_INTERNAL_DEMO_USER_PREVIOUS_SECRET:}
+      chookjibup-user-server:
+        secret: ${APP_INTERNAL_CHOOKJIBUP_USER_SECRET:}
+        previous-secret: ${APP_INTERNAL_CHOOKJIBUP_USER_PREVIOUS_SECRET:}
   road-address:
     base-url: ${APP_ROAD_ADDRESS_BASE_URL:https://business.juso.go.kr}
     confirmation-key: ${APP_ROAD_ADDRESS_CONFIRMATION_KEY:}

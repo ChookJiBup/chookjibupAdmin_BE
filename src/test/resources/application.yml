@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:demo_admin_test;MODE=PostgreSQL;DATABASE_TO_UPPER=false
+    url: jdbc:h2:mem:chookjibup_admin_test;MODE=PostgreSQL;DATABASE_TO_UPPER=false
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -19,7 +19,7 @@ spring:
 
 app:
   jwt:
-    secret: test-jwt-secret-key-for-demo-admin-local-tests
+    secret: test-jwt-secret-key-for-chookjibup-admin-local-tests
     access-token-expiration-seconds: 1800
   road-address:
     base-url: https://business.juso.go.kr

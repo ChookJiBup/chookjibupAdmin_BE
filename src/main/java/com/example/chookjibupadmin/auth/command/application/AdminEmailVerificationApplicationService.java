@@ -1,0 +1,64 @@
+package com.example.chookjibupadmin.auth.command.application;
+
+import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
+import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationConfirmRequest;
+import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationRequest;
+import com.example.chookjibupadmin.auth.command.application.port.AdminEmailVerificationSender;
+import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerification;
+import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+/**
+ * 관리자 회원가입 전 이메일 인증 코드 발급과 확인을 처리한다.
+ */
+@Service
+@RequiredArgsConstructor
+public class AdminEmailVerificationApplicationService {
+
+    private static final int CODE_BOUND = 1_000_000;
+    private static final Duration CODE_TTL = Duration.ofMinutes(5);
+
+    private final AdminAccountService adminAccountService;
+    private final AdminEmailVerificationService verificationService;
+    private final AdminEmailVerificationSender verificationSender;
+    private final SecureRandom secureRandom = new SecureRandom();
+
+    /**
+     * 정부 공식 이메일인지 확인한 뒤 인증 코드를 발급한다.
+     */
+    public void request(AdminEmailVerificationRequest request) {
+        AdminEmail email = AdminEmail.of(request.email());
+        if (adminAccountService.existsByEmail(email)) {
+            throw new CustomException(ErrorCode.AUTH_EMAIL_DUPLICATED);
+        }
+
+        String code = generateCode();
+        verificationService.save(AdminEmailVerification.issue(
+                email,
+                code,
+                LocalDateTime.now().plus(CODE_TTL)
+        ));
+        verificationSender.send(email, code);
+    }
+
+    /**
+     * 사용자가 입력한 이메일 인증 코드를 검증한다.
+     */
+    public void confirm(AdminEmailVerificationConfirmRequest request) {
+        AdminEmail email = AdminEmail.of(request.email());
+        AdminEmailVerification verification = verificationService.getByEmail(email);
+
+        verification.verify(request.code(), LocalDateTime.now());
+        verificationService.save(verification);
+    }
+
+    private String generateCode() {
+        return String.format("%06d", secureRandom.nextInt(CODE_BOUND));
+    }
+}
