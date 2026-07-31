@@ -3,9 +3,11 @@ package com.example.chookjibupadmin.auth.command.application;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.api.auth.dto.AdminSignupRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminSignupResponse;
 import com.example.chookjibupadmin.global.response.CustomException;
@@ -38,6 +40,8 @@ public class AdminSignupService {
         AdminEmail email = AdminEmail.of(request.email());
         AdminName name = AdminName.of(request.name());
         AdminOrganization organization = AdminOrganization.of(request.organization());
+        AdminDepartment department = AdminDepartment.of(request.department());
+        AdminRank rank = AdminRank.of(request.rank());
 
         if (adminAccountService.existsByEmail(email)) {
             throw new CustomException(ErrorCode.AUTH_EMAIL_DUPLICATED);
@@ -47,6 +51,8 @@ public class AdminSignupService {
                 email,
                 name,
                 organization,
+                department,
+                rank,
                 AdminPasswordHash.of(passwordEncoder.encode(request.password()))
         );
 
@@ -57,4 +63,3 @@ public class AdminSignupService {
         return AdminSignupResponse.from(savedAdminAccount);
     }
 }
-

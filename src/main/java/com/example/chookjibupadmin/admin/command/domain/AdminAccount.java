@@ -1,9 +1,11 @@
 package com.example.chookjibupadmin.admin.command.domain;
 
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.common.domain.BaseTimeEntity;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
@@ -74,6 +76,21 @@ public class AdminAccount extends BaseTimeEntity {
     )
     private AdminOrganization organization;
 
+    // TODO(admin): 운영 DB 반영 전 기존 계정의 부서와 직급을 백필하는 마이그레이션을 작성한다.
+    @Embedded
+    @AttributeOverride(
+            name = "value",
+            column = @Column(name = "department", nullable = false, length = 100)
+    )
+    private AdminDepartment department;
+
+    @Embedded
+    @AttributeOverride(
+            name = "value",
+            column = @Column(name = "job_rank", nullable = false, length = 50)
+    )
+    private AdminRank rank;
+
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -107,12 +124,20 @@ public class AdminAccount extends BaseTimeEntity {
             AdminEmail email,
             AdminName name,
             AdminOrganization organization,
+            AdminDepartment department,
+            AdminRank rank,
             AdminPasswordHash passwordHash
     ) {
+        if (department == null || rank == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
         this.publicId = UUID.randomUUID();
         this.email = email;
         this.name = name;
         this.organization = organization;
+        this.department = department;
+        this.rank = rank;
         this.passwordHash = passwordHash;
         this.status = AdminStatus.ACTIVE;
     }
@@ -124,12 +149,35 @@ public class AdminAccount extends BaseTimeEntity {
             AdminEmail email,
             AdminName name,
             AdminOrganization organization,
+            AdminDepartment department,
+            AdminRank rank,
             AdminPasswordHash passwordHash
     ) {
         return new AdminAccount(
                 email,
                 name,
                 organization,
+                department,
+                rank,
+                passwordHash
+        );
+    }
+
+    /**
+     * TODO(admin): 기존 테스트 Fixture를 부서·직급 필수 팩터리로 이전한 뒤 제거한다.
+     */
+    public static AdminAccount createAdmin(
+            AdminEmail email,
+            AdminName name,
+            AdminOrganization organization,
+            AdminPasswordHash passwordHash
+    ) {
+        return createAdmin(
+                email,
+                name,
+                organization,
+                AdminDepartment.of("미지정"),
+                AdminRank.of("미지정"),
                 passwordHash
         );
     }
@@ -227,6 +275,14 @@ public class AdminAccount extends BaseTimeEntity {
 
     public String getOrganizationValue() {
         return organization.getValue();
+    }
+
+    public String getDepartmentValue() {
+        return department.getValue();
+    }
+
+    public String getRankValue() {
+        return rank.getValue();
     }
 
     public String getPasswordHashValue() {

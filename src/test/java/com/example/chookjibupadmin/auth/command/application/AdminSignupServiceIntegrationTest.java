@@ -46,6 +46,10 @@ class AdminSignupServiceIntegrationTest {
                     AdminEmail.of(request.email())
             );
             assertThat(response.adminId()).isEqualTo(saved.getPublicId());
+            assertThat(response.department()).isEqualTo("관광정책과");
+            assertThat(response.rank()).isEqualTo("주무관");
+            assertThat(saved.getDepartmentValue()).isEqualTo("관광정책과");
+            assertThat(saved.getRankValue()).isEqualTo("주무관");
             assertThat(saved.getFestivalId()).isNull();
             assertThat(saved.getRole()).isNull();
         }
@@ -56,6 +60,8 @@ class AdminSignupServiceIntegrationTest {
                 "admin@mapo.go.kr",
                 "홍길동",
                 "마포구청 소속",
+                "관광정책과",
+                "주무관",
                 "Password!123",
                 "Password!123"
         );

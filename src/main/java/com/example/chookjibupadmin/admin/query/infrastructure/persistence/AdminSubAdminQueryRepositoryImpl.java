@@ -38,6 +38,8 @@ public class AdminSubAdminQueryRepositoryImpl
                         adminAccount.email.value,
                         adminAccount.name.value,
                         adminAccount.organization.value,
+                        adminAccount.department.value,
+                        adminAccount.rank.value,
                         adminAccount.status
                 ))
                 .from(adminFestivalRole)
@@ -69,6 +71,8 @@ public class AdminSubAdminQueryRepositoryImpl
                         adminAccount.email.value,
                         adminAccount.name.value,
                         adminAccount.organization.value,
+                        adminAccount.department.value,
+                        adminAccount.rank.value,
                         adminAccount.status
                 ))
                 .from(adminFestivalRole)
@@ -95,6 +99,8 @@ public class AdminSubAdminQueryRepositoryImpl
 
         return adminAccount.email.value.containsIgnoreCase(keyword)
                 .or(adminAccount.name.value.containsIgnoreCase(keyword))
-                .or(adminAccount.organization.value.containsIgnoreCase(keyword));
+                .or(adminAccount.organization.value.containsIgnoreCase(keyword))
+                .or(adminAccount.department.value.containsIgnoreCase(keyword))
+                .or(adminAccount.rank.value.containsIgnoreCase(keyword));
     }
 }

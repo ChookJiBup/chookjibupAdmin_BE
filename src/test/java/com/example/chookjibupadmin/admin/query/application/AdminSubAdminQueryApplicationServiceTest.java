@@ -231,6 +231,8 @@ class AdminSubAdminQueryApplicationServiceTest {
                 "sub@mapo.go.kr",
                 "김관리",
                 "마포구청 소속",
+                "관광정책과",
+                "주무관",
                 AdminStatus.ACTIVE
         );
     }

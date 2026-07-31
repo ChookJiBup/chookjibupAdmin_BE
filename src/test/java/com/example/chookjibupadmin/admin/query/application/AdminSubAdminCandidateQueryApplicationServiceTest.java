@@ -203,6 +203,8 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
                 "candidate@mapo.go.kr",
                 "김후보",
                 "마포구청 소속",
+                "관광정책과",
+                "주무관",
                 AdminStatus.ACTIVE
         );
     }

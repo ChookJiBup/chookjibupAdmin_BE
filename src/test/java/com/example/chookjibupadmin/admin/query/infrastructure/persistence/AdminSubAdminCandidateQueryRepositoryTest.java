@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminSubAdminCandidateView;
 import com.example.chookjibupadmin.admin.query.repository.AdminSubAdminCandidateQueryRepository;
 import com.example.chookjibupadmin.global.config.QuerydslConfig;
@@ -85,6 +87,25 @@ class AdminSubAdminCandidateQueryRepositoryTest {
         }
 
         @Test
+        @DisplayName("부서 또는 직급 검색어로 후보를 필터링한다")
+        void success_SearchCandidates_ByDepartmentAndRank() {
+            // given
+            Long festivalId = 1L;
+            persist(admin("candidate@mapo.go.kr", "김후보", "마포구청 소속"));
+
+            // when
+            var byDepartment = queryRepository.searchCandidates(
+                    festivalId,
+                    "관광정책"
+            );
+            var byRank = queryRepository.searchCandidates(festivalId, "주무관");
+
+            // then
+            assertThat(byDepartment).hasSize(1);
+            assertThat(byRank).hasSize(1);
+        }
+
+        @Test
         @DisplayName("후보자가 없으면 빈 목록을 반환한다")
         void success_SearchCandidates_EmptyBoundary() {
             // given
@@ -108,6 +129,8 @@ class AdminSubAdminCandidateQueryRepositoryTest {
                 AdminEmail.of(email),
                 AdminName.of(name),
                 AdminOrganization.of(organization),
+                AdminDepartment.of("관광정책과"),
+                AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );
     }

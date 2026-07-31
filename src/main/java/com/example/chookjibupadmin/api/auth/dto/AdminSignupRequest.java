@@ -25,6 +25,16 @@ public record AdminSignupRequest(
         @Size(min = 2, max = 255)
         String organization,
 
+        @Schema(description = "소속 부서", example = "관광정책과")
+        @NotBlank
+        @Size(min = 2, max = 100)
+        String department,
+
+        @Schema(description = "직급", example = "주무관")
+        @NotBlank
+        @Size(max = 50)
+        String rank,
+
         @Schema(description = "비밀번호", example = "Password!123")
         @NotBlank
         @Size(min = 8, max = 100)
@@ -35,4 +45,3 @@ public record AdminSignupRequest(
         String passwordConfirm
 ) {
 }
-

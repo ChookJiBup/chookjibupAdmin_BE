@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +55,8 @@ class AdminAccountTest {
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
+                AdminDepartment.of("관광정책과"),
+                AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );
     }
@@ -71,6 +75,8 @@ class AdminAccountTest {
 
             // then
             assertThat(adminAccount.getPublicId()).isNotNull();
+            assertThat(adminAccount.getDepartmentValue()).isEqualTo("관광정책과");
+            assertThat(adminAccount.getRankValue()).isEqualTo("주무관");
         }
 
         @Test
@@ -84,6 +90,44 @@ class AdminAccountTest {
             // then
             assertThat(adminAccount.getStatus()).isEqualTo(AdminStatus.ACTIVE);
             assertThat(adminAccount.isActive()).isTrue();
+        }
+
+        @Test
+        @DisplayName("부서가 null이면 관리자 계정을 생성할 수 없다")
+        void fail_CreateAdmin_NullDepartment_CustomException() {
+            // given
+            AdminDepartment department = null;
+
+            // when & then
+            assertThatThrownBy(() -> AdminAccount.createAdmin(
+                    AdminEmail.of("owner@mapo.go.kr"),
+                    AdminName.of("홍길동"),
+                    AdminOrganization.of("마포구청 소속"),
+                    department,
+                    AdminRank.of("주무관"),
+                    AdminPasswordHash.of("encoded-password")
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+        }
+
+        @Test
+        @DisplayName("직급이 null이면 관리자 계정을 생성할 수 없다")
+        void fail_CreateAdmin_NullRank_CustomException() {
+            // given
+            AdminRank rank = null;
+
+            // when & then
+            assertThatThrownBy(() -> AdminAccount.createAdmin(
+                    AdminEmail.of("owner@mapo.go.kr"),
+                    AdminName.of("홍길동"),
+                    AdminOrganization.of("마포구청 소속"),
+                    AdminDepartment.of("관광정책과"),
+                    rank,
+                    AdminPasswordHash.of("encoded-password")
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
         }
     }
 }

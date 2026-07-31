@@ -22,6 +22,12 @@ public record AdminSubAdminCandidateResponse(
         @Schema(description = "소속 조직", example = "마포구청 소속")
         String organization,
 
+        @Schema(description = "소속 부서", example = "관광정책과")
+        String department,
+
+        @Schema(description = "직급", example = "주무관")
+        String rank,
+
         @Schema(description = "계정 상태", example = "ACTIVE")
         AdminStatus status
 ) {
@@ -37,6 +43,8 @@ public record AdminSubAdminCandidateResponse(
                 view.email(),
                 view.name(),
                 view.organization(),
+                view.department(),
+                view.rank(),
                 view.status()
         );
     }
