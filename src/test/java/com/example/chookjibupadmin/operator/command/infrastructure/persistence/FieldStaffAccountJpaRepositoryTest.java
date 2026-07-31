@@ -8,6 +8,7 @@ import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPhoneNumber;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,28 @@ class FieldStaffAccountJpaRepositoryTest {
             // then
             assertThat(result).isPresent();
             assertThat(result.get().getLoginIdValue()).isEqualTo("staff01");
+        }
+    }
+
+    @Nested
+    @DisplayName("findAllByPublicIdIn")
+    class FindAllByPublicIdIn {
+
+        @Test
+        @DisplayName("외부 UUID 목록으로 현장 스태프 계정을 모두 조회한다")
+        void success_FindAllByPublicIdIn() {
+            // given
+            FieldStaffAccount first = jpaRepository.save(fieldStaffAccount("staff01"));
+            FieldStaffAccount second = jpaRepository.save(fieldStaffAccount("staff02"));
+
+            // when
+            var result = jpaRepository.findAllByPublicIdIn(List.of(
+                    first.getPublicId(),
+                    second.getPublicId()
+            ));
+
+            // then
+            assertThat(result).containsExactlyInAnyOrder(first, second);
         }
     }
 

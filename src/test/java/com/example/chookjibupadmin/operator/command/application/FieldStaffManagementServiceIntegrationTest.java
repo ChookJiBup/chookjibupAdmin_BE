@@ -106,9 +106,54 @@ class FieldStaffManagementServiceIntegrationTest {
         }
     }
 
+    @Nested
+    @DisplayName("deleteAll")
+    class DeleteAll {
+
+        @Test
+        @DisplayName("여러 현장 스태프 계정을 한 트랜잭션에서 삭제 상태로 저장한다")
+        void success_DeleteAll_Persisted() {
+            // given
+            Festival festival = festivalService.save(festival());
+            AdminAccount adminAccount = adminAccountService.save(festivalOwner(festival.getId()));
+            CreateFieldStaffResult first = managementService.create(
+                    festival.getPublicId(),
+                    createCommand("staff01"),
+                    principal(adminAccount)
+            );
+            CreateFieldStaffResult second = managementService.create(
+                    festival.getPublicId(),
+                    createCommand("staff02"),
+                    principal(adminAccount)
+            );
+
+            // when
+            managementService.deleteAll(
+                    festival.getPublicId(),
+                    java.util.List.of(
+                            first.fieldStaffAccount().getPublicId(),
+                            second.fieldStaffAccount().getPublicId()
+                    ),
+                    principal(adminAccount)
+            );
+
+            // then
+            assertThat(fieldStaffAccountService.getById(
+                    first.fieldStaffAccount().getId()).getStatus())
+                    .isEqualTo(FieldStaffStatus.DELETED);
+            assertThat(fieldStaffAccountService.getById(
+                    second.fieldStaffAccount().getId()).getStatus())
+                    .isEqualTo(FieldStaffStatus.DELETED);
+        }
+    }
+
     private CreateFieldStaffCommand createCommand() {
+        return createCommand("staff01");
+    }
+
+    private CreateFieldStaffCommand createCommand(String loginId) {
         return new CreateFieldStaffCommand(
-                "staff01",
+                loginId,
                 "김스태프",
                 "010-1234-5678"
         );

@@ -5,6 +5,8 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccountRepository;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,20 @@ public class FieldStaffAccountService {
     public FieldStaffAccount getByPublicId(UUID publicId) {
         return fieldStaffAccountRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FIELD_STAFF_NOT_FOUND));
+    }
+
+    /**
+     * 외부 UUID 목록에 해당하는 모든 현장 스태프 계정을 조회한다.
+     */
+    public List<FieldStaffAccount> getAllByPublicIds(
+            Collection<UUID> publicIds
+    ) {
+        List<FieldStaffAccount> accounts =
+                fieldStaffAccountRepository.findAllByPublicIdIn(publicIds);
+        if (accounts.size() != publicIds.size()) {
+            throw new CustomException(ErrorCode.FIELD_STAFF_NOT_FOUND);
+        }
+        return accounts;
     }
 
     /**

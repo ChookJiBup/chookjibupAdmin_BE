@@ -19,6 +19,10 @@ import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPhoneNum
 import com.example.chookjibupadmin.operator.command.infrastructure.FieldStaffPasswordGenerator;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FieldStaffManagementService {
 
     private static final int PRE_OPEN_VALID_DAYS = 7;
+    private static final int MAX_BULK_DELETE_SIZE = 100;
 
     private final FieldStaffAccountService fieldStaffAccountService;
     private final FestivalService festivalService;
@@ -97,6 +102,49 @@ public class FieldStaffManagementService {
         }
 
         fieldStaffAccount.delete();
+    }
+
+    /**
+     * 1관리자 또는 2관리자가 담당 축제의 현장 스태프 계정을 일괄 삭제한다.
+     *
+     * 요청 계정 중 하나라도 없거나 다른 축제 소속이면 전체 삭제를 거부한다.
+     */
+    public void deleteAll(
+            UUID festivalId,
+            List<UUID> fieldStaffIds,
+            AdminPrincipal principal
+    ) {
+        AdminAccount adminAccount = findAuthenticatedAdmin(principal);
+        Festival festival = findFestival(festivalId);
+        validateManagePermission(adminAccount, festival);
+        Set<UUID> uniqueIds = validateBulkDeleteIds(fieldStaffIds);
+
+        List<FieldStaffAccount> accounts =
+                fieldStaffAccountService.getAllByPublicIds(uniqueIds);
+        if (accounts.stream().anyMatch(account ->
+                !festival.getId().equals(account.getFestivalId()))) {
+            throw new CustomException(ErrorCode.FIELD_STAFF_NOT_FOUND);
+        }
+        if (accounts.stream().anyMatch(FieldStaffAccount::isDeleted)) {
+            throw new CustomException(ErrorCode.FIELD_STAFF_NOT_ACTIVE);
+        }
+
+        accounts.forEach(FieldStaffAccount::delete);
+    }
+
+    private Set<UUID> validateBulkDeleteIds(List<UUID> fieldStaffIds) {
+        if (fieldStaffIds == null
+                || fieldStaffIds.isEmpty()
+                || fieldStaffIds.size() > MAX_BULK_DELETE_SIZE
+                || fieldStaffIds.stream().anyMatch(Objects::isNull)) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        Set<UUID> uniqueIds = new LinkedHashSet<>(fieldStaffIds);
+        if (uniqueIds.size() != fieldStaffIds.size()) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        return uniqueIds;
     }
 
     private AdminAccount findAuthenticatedAdmin(AdminPrincipal principal) {

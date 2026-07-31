@@ -3,6 +3,8 @@ package com.example.chookjibupadmin.operator.command.infrastructure.persistence;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccountRepository;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,13 @@ public class FieldStaffAccountRepositoryImpl implements FieldStaffAccountReposit
     @Override
     public Optional<FieldStaffAccount> findByPublicId(UUID publicId) {
         return jpaRepository.findByPublicId(publicId);
+    }
+
+    @Override
+    public List<FieldStaffAccount> findAllByPublicIdIn(
+            Collection<UUID> publicIds
+    ) {
+        return jpaRepository.findAllByPublicIdIn(publicIds);
     }
 
     @Override

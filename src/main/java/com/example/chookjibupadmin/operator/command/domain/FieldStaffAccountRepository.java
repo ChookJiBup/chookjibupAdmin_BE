@@ -1,6 +1,8 @@
 package com.example.chookjibupadmin.operator.command.domain;
 
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,6 +25,11 @@ public interface FieldStaffAccountRepository {
      * 외부 노출용 UUID로 현장 스태프 계정을 조회한다.
      */
     Optional<FieldStaffAccount> findByPublicId(UUID publicId);
+
+    /**
+     * 외부 노출용 UUID 목록에 해당하는 현장 스태프 계정을 조회한다.
+     */
+    List<FieldStaffAccount> findAllByPublicIdIn(Collection<UUID> publicIds);
 
     /**
      * 축제와 로그인 아이디로 현장 스태프 계정을 조회한다.

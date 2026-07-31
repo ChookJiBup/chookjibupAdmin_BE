@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.api.fieldstaff;
 
 import com.example.chookjibupadmin.api.fieldstaff.dto.CreateFieldStaffRequest;
 import com.example.chookjibupadmin.api.fieldstaff.dto.CreateFieldStaffResponse;
+import com.example.chookjibupadmin.api.fieldstaff.dto.DeleteFieldStaffRequest;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
@@ -55,6 +56,26 @@ public class FieldStaffCommandController {
                         )
                 )
         );
+    }
+
+    /**
+     * 1관리자 또는 2관리자 권한으로 여러 현장 스태프 계정을 일괄 삭제한다.
+     */
+    @Operation(summary = "현장 스태프 계정 일괄 삭제")
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping
+    public ApiResponse<Void> deleteAll(
+            @PathVariable UUID festivalId,
+            @Valid @RequestBody DeleteFieldStaffRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        fieldStaffManagementService.deleteAll(
+                festivalId,
+                request.staffIds(),
+                principal
+        );
+
+        return ApiResponse.success(SuccessCode.FIELD_STAFF_BULK_DELETE_SUCCESS);
     }
 
     /**

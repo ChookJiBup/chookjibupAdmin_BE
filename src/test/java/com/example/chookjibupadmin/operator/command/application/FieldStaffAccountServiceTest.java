@@ -13,6 +13,7 @@ import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPhoneNumber;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -68,10 +69,53 @@ class FieldStaffAccountServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getAllByPublicIds")
+    class GetAllByPublicIds {
+
+        @Test
+        @DisplayName("외부 UUID 목록에 해당하는 현장 스태프 계정을 모두 조회한다")
+        void success_GetAllByPublicIds() {
+            // given
+            FieldStaffAccount first = fieldStaffAccount("staff01");
+            FieldStaffAccount second = fieldStaffAccount("staff02");
+            List<UUID> publicIds = List.of(first.getPublicId(), second.getPublicId());
+            given(fieldStaffAccountRepository.findAllByPublicIdIn(publicIds))
+                    .willReturn(List.of(first, second));
+
+            // when
+            List<FieldStaffAccount> found =
+                    fieldStaffAccountService.getAllByPublicIds(publicIds);
+
+            // then
+            assertThat(found).containsExactly(first, second);
+        }
+
+        @Test
+        @DisplayName("요청한 계정이 하나라도 없으면 예외를 던진다")
+        void fail_GetAllByPublicIds_CustomException() {
+            // given
+            FieldStaffAccount account = fieldStaffAccount("staff01");
+            List<UUID> publicIds = List.of(account.getPublicId(), UUID.randomUUID());
+            given(fieldStaffAccountRepository.findAllByPublicIdIn(publicIds))
+                    .willReturn(List.of(account));
+
+            // when & then
+            assertThatThrownBy(() ->
+                    fieldStaffAccountService.getAllByPublicIds(publicIds))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FIELD_STAFF_NOT_FOUND.getMessage());
+        }
+    }
+
     private FieldStaffAccount fieldStaffAccount() {
+        return fieldStaffAccount("staff01");
+    }
+
+    private FieldStaffAccount fieldStaffAccount(String loginId) {
         return FieldStaffAccount.create(
                 1L,
-                FieldStaffLoginId.of("staff01"),
+                FieldStaffLoginId.of(loginId),
                 FieldStaffName.of("김스태프"),
                 FieldStaffPhoneNumber.of("010-1234-5678"),
                 FieldStaffPasswordHash.of("encoded-password"),

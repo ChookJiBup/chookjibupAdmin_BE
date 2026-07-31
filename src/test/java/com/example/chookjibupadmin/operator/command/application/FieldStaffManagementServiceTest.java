@@ -31,6 +31,7 @@ import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.infrastructure.FieldStaffPasswordGenerator;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -234,6 +235,121 @@ class FieldStaffManagementServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("deleteAll")
+    class DeleteAll {
+
+        @Test
+        @DisplayName("담당 축제의 현장 스태프 계정을 여러 개 삭제한다")
+        void success_DeleteAll() {
+            // given
+            Festival festival = festival(1L);
+            FieldStaffAccount first = fieldStaffAccount(1L, "staff01");
+            FieldStaffAccount second = fieldStaffAccount(1L, "staff02");
+            List<UUID> publicIds = List.of(first.getPublicId(), second.getPublicId());
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getAllByPublicIds(any()))
+                    .willReturn(List.of(first, second));
+
+            // when
+            service.deleteAll(
+                    festival.getPublicId(),
+                    publicIds,
+                    principal(AdminRole.FESTIVAL_OWNER)
+            );
+
+            // then
+            assertThat(first.getStatus()).isEqualTo(FieldStaffStatus.DELETED);
+            assertThat(second.getStatus()).isEqualTo(FieldStaffStatus.DELETED);
+        }
+
+        @Test
+        @DisplayName("삭제 대상이 비어 있으면 요청을 거절한다")
+        void fail_DeleteAll_InvalidRequest_CustomException() {
+            // given
+            Festival festival = festival(1L);
+            givenManagePermission(festival);
+
+            // when & then
+            assertThatThrownBy(() -> service.deleteAll(
+                    festival.getPublicId(),
+                    List.of(),
+                    principal(AdminRole.FESTIVAL_OWNER)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+        }
+
+        @Test
+        @DisplayName("삭제 대상 UUID가 중복되면 요청을 거절한다")
+        void fail_DeleteAll_DuplicatedId_CustomException() {
+            // given
+            Festival festival = festival(1L);
+            UUID publicId = UUID.randomUUID();
+            givenManagePermission(festival);
+
+            // when & then
+            assertThatThrownBy(() -> service.deleteAll(
+                    festival.getPublicId(),
+                    List.of(publicId, publicId),
+                    principal(AdminRole.FESTIVAL_OWNER)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+        }
+
+        @Test
+        @DisplayName("다른 축제 계정이 섞이면 어떤 계정도 삭제하지 않는다")
+        void fail_DeleteAll_DifferentFestival_CustomException() {
+            // given
+            Festival festival = festival(1L);
+            FieldStaffAccount sameFestival = fieldStaffAccount(1L, "staff01");
+            FieldStaffAccount otherFestival = fieldStaffAccount(2L, "staff02");
+            List<UUID> publicIds = List.of(
+                    sameFestival.getPublicId(),
+                    otherFestival.getPublicId()
+            );
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getAllByPublicIds(any()))
+                    .willReturn(List.of(sameFestival, otherFestival));
+
+            // when & then
+            assertThatThrownBy(() -> service.deleteAll(
+                    festival.getPublicId(),
+                    publicIds,
+                    principal(AdminRole.FESTIVAL_OWNER)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FIELD_STAFF_NOT_FOUND.getMessage());
+            assertThat(sameFestival.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
+            assertThat(otherFestival.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("이미 삭제된 계정이 섞이면 어떤 계정도 변경하지 않는다")
+        void fail_DeleteAll_DeletedAccount_CustomException() {
+            // given
+            Festival festival = festival(1L);
+            FieldStaffAccount active = fieldStaffAccount(1L, "staff01");
+            FieldStaffAccount deleted = fieldStaffAccount(1L, "staff02");
+            deleted.delete();
+            List<UUID> publicIds = List.of(active.getPublicId(), deleted.getPublicId());
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getAllByPublicIds(any()))
+                    .willReturn(List.of(active, deleted));
+
+            // when & then
+            assertThatThrownBy(() -> service.deleteAll(
+                    festival.getPublicId(),
+                    publicIds,
+                    principal(AdminRole.FESTIVAL_OWNER)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FIELD_STAFF_NOT_ACTIVE.getMessage());
+            assertThat(active.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
+        }
+    }
+
     private CreateFieldStaffCommand createCommand() {
         return new CreateFieldStaffCommand(
                 "staff01",
@@ -244,6 +360,11 @@ class FieldStaffManagementServiceTest {
 
     private AdminPrincipal principal(AdminRole role) {
         return new AdminPrincipal(1L, 1L, "owner@mapo.go.kr", role);
+    }
+
+    private void givenManagePermission(Festival festival) {
+        given(adminAccountService.getById(1L)).willReturn(festivalOwner(1L));
+        given(festivalService.getByPublicId(festival.getPublicId())).willReturn(festival);
     }
 
     private AdminAccount festivalOwner(Long festivalId) {
@@ -289,9 +410,13 @@ class FieldStaffManagementServiceTest {
     }
 
     private FieldStaffAccount fieldStaffAccount(Long festivalId) {
+        return fieldStaffAccount(festivalId, "staff01");
+    }
+
+    private FieldStaffAccount fieldStaffAccount(Long festivalId, String loginId) {
         FieldStaffAccount account = FieldStaffAccount.create(
                 festivalId,
-                FieldStaffLoginId.of("staff01"),
+                FieldStaffLoginId.of(loginId),
                 com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName.of("김스태프"),
                 com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPhoneNumber.of("010-1234-5678"),
                 com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash.of("encoded-password"),
