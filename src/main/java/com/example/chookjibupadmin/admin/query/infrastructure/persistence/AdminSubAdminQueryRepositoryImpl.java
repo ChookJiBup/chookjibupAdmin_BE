@@ -7,7 +7,6 @@ import com.example.chookjibupadmin.admin.command.domain.QAdminFestivalRole;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminSubAdminView;
 import com.example.chookjibupadmin.admin.query.repository.AdminSubAdminQueryRepository;
 import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.List;
 import java.util.Optional;
@@ -23,10 +22,9 @@ public class AdminSubAdminQueryRepositoryImpl
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<AdminSubAdminView> searchInvitedSubAdmins(
+    public List<AdminSubAdminView> findInvitedSubAdmins(
             Long festivalId,
-            Long invitedByAdminId,
-            String keyword
+            Long invitedByAdminId
     ) {
         QAdminAccount adminAccount = QAdminAccount.adminAccount;
         QAdminFestivalRole adminFestivalRole = QAdminFestivalRole.adminFestivalRole;
@@ -48,8 +46,7 @@ public class AdminSubAdminQueryRepositoryImpl
                         adminFestivalRole.festivalId.eq(festivalId),
                         adminFestivalRole.invitedByAdminId.eq(invitedByAdminId),
                         adminFestivalRole.role.eq(AdminRole.SUB_ADMIN),
-                        adminAccount.status.eq(AdminStatus.ACTIVE),
-                        keywordContains(adminAccount, keyword)
+                        adminAccount.status.eq(AdminStatus.ACTIVE)
                 )
                 .orderBy(adminAccount.id.asc())
                 .fetch();
@@ -89,18 +86,4 @@ public class AdminSubAdminQueryRepositoryImpl
         return Optional.ofNullable(result);
     }
 
-    private BooleanExpression keywordContains(
-            QAdminAccount adminAccount,
-            String keyword
-    ) {
-        if (keyword == null) {
-            return null;
-        }
-
-        return adminAccount.email.value.containsIgnoreCase(keyword)
-                .or(adminAccount.name.value.containsIgnoreCase(keyword))
-                .or(adminAccount.organization.value.containsIgnoreCase(keyword))
-                .or(adminAccount.department.value.containsIgnoreCase(keyword))
-                .or(adminAccount.rank.value.containsIgnoreCase(keyword));
-    }
 }

@@ -9,10 +9,7 @@ import java.util.List;
 public interface AdminSubAdminCandidateQueryRepository {
 
     /**
-     * 해당 축제에 아직 배정되지 않은 활성 관리자 계정을 검색한다.
+     * 해당 축제에 아직 배정되지 않은 활성 관리자 계정을 조회한다.
      */
-    List<AdminSubAdminCandidateView> searchCandidates(
-            Long festivalId,
-            String keyword
-    );
+    List<AdminSubAdminCandidateView> findCandidates(Long festivalId);
 }

@@ -6,6 +6,7 @@ import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -37,6 +38,7 @@ public class AdminSubAdminQueryController {
     @GetMapping
     public ApiResponse<List<AdminSubAdminResponse>> getSubAdmins(
             @PathVariable UUID festivalId,
+            @Parameter(description = "관리자 이름 또는 이메일 검색어", example = "김관리")
             @RequestParam(required = false) String keyword,
             @AuthenticationPrincipal AdminPrincipal principal
     ) {

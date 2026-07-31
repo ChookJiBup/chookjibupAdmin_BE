@@ -18,20 +18,9 @@ public class AdminSubAdminCandidateQueryService {
     private final AdminSubAdminCandidateQueryRepository queryRepository;
 
     /**
-     * 초대 가능한 활성 관리자 계정을 검색한다.
+     * 초대 가능한 활성 관리자 계정을 조회한다.
      */
-    public List<AdminSubAdminCandidateView> searchCandidates(
-            Long festivalId,
-            String keyword
-    ) {
-        return queryRepository.searchCandidates(festivalId, normalizeKeyword(keyword));
-    }
-
-    private String normalizeKeyword(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return null;
-        }
-
-        return keyword.trim().toLowerCase();
+    public List<AdminSubAdminCandidateView> findCandidates(Long festivalId) {
+        return queryRepository.findCandidates(festivalId);
     }
 }

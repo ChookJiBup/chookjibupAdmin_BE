@@ -55,6 +55,9 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
     @Mock
     private AdminSubAdminCandidateQueryService candidateQueryService;
 
+    @Mock
+    private AdminNameEmailSearchMatcher searchMatcher;
+
     @Nested
     @DisplayName("searchCandidates")
     class SearchCandidates {
@@ -79,7 +82,9 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
                             owner.getId(),
                             festival.getId()
                     ));
-            given(candidateQueryService.searchCandidates(festival.getId(), "마포"))
+            given(candidateQueryService.findCandidates(festival.getId()))
+                    .willReturn(List.of(view));
+            given(searchMatcher.search(List.of(view), "마포"))
                     .willReturn(List.of(view));
 
             // when

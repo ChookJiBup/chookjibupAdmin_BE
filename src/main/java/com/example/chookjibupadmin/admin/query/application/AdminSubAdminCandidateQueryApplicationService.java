@@ -28,6 +28,7 @@ public class AdminSubAdminCandidateQueryApplicationService {
     private final AdminFestivalRoleService adminFestivalRoleService;
     private final FestivalService festivalService;
     private final AdminSubAdminCandidateQueryService candidateQueryService;
+    private final AdminNameEmailSearchMatcher searchMatcher;
 
     /**
      * 제1 관리자가 초대 가능한 가입 관리자 후보를 검색한다.
@@ -41,7 +42,10 @@ public class AdminSubAdminCandidateQueryApplicationService {
         Festival festival = festivalService.getByPublicId(festivalId);
         validateOwnerAccess(adminAccount.getId(), festival);
 
-        return candidateQueryService.searchCandidates(festival.getId(), keyword);
+        return searchMatcher.search(
+                candidateQueryService.findCandidates(festival.getId()),
+                keyword
+        );
     }
 
     private AdminAccount findAuthenticatedAdmin(AdminPrincipal principal) {

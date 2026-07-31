@@ -13,10 +13,9 @@ public interface AdminSubAdminQueryRepository {
     /**
      * 지정한 축제에서 특정 제1 관리자가 초대한 활성 서브관리자 목록을 조회한다.
      */
-    List<AdminSubAdminView> searchInvitedSubAdmins(
+    List<AdminSubAdminView> findInvitedSubAdmins(
             Long festivalId,
-            Long invitedByAdminId,
-            String keyword
+            Long invitedByAdminId
     );
 
     /**

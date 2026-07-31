@@ -50,6 +50,9 @@ class AdminSubAdminQueryApplicationServiceTest {
     @Mock
     private AdminSubAdminQueryService subAdminQueryService;
 
+    @Mock
+    private AdminNameEmailSearchMatcher searchMatcher;
+
     @Nested
     @DisplayName("getSubAdmins")
     class GetSubAdmins {
@@ -64,11 +67,12 @@ class AdminSubAdminQueryApplicationServiceTest {
             AdminSubAdminView view = subAdminView();
             given(adminAccountService.getById(principal.adminId())).willReturn(owner);
             given(festivalService.getByPublicId(festival.getPublicId())).willReturn(festival);
-            given(subAdminQueryService.searchInvitedSubAdmins(
+            given(subAdminQueryService.findInvitedSubAdmins(
                     festival.getId(),
-                    owner.getId(),
-                    "김"
+                    owner.getId()
             ))
+                    .willReturn(List.of(view));
+            given(searchMatcher.search(List.of(view), "김"))
                     .willReturn(List.of(view));
 
             // when

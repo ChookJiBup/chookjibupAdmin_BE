@@ -28,6 +28,7 @@ public class AdminSubAdminQueryApplicationService {
     private final AdminFestivalRoleService adminFestivalRoleService;
     private final FestivalService festivalService;
     private final AdminSubAdminQueryService subAdminQueryService;
+    private final AdminNameEmailSearchMatcher searchMatcher;
 
     /**
      * 제1 관리자가 담당 축제의 서브관리자 목록을 조회한다.
@@ -41,9 +42,11 @@ public class AdminSubAdminQueryApplicationService {
         Festival festival = festivalService.getByPublicId(festivalId);
         validateOwnerAccess(adminAccount, festival);
 
-        return subAdminQueryService.searchInvitedSubAdmins(
-                festival.getId(),
-                adminAccount.getId(),
+        return searchMatcher.search(
+                subAdminQueryService.findInvitedSubAdmins(
+                        festival.getId(),
+                        adminAccount.getId()
+                ),
                 keyword
         );
     }

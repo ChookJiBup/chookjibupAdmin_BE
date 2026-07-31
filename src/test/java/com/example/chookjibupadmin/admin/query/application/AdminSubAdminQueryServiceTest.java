@@ -30,29 +30,27 @@ class AdminSubAdminQueryServiceTest {
     private AdminSubAdminQueryRepository queryRepository;
 
     @Nested
-    @DisplayName("searchInvitedSubAdmins")
-    class SearchInvitedSubAdmins {
+    @DisplayName("findInvitedSubAdmins")
+    class FindInvitedSubAdmins {
 
         @Test
-        @DisplayName("축제 ID와 초대한 관리자 ID로 서브관리자 목록을 검색한다")
-        void success_SearchInvitedSubAdmins() {
+        @DisplayName("축제 ID와 초대한 관리자 ID로 서브관리자 목록을 조회한다")
+        void success_FindInvitedSubAdmins() {
             // given
             Long festivalId = 1L;
             Long invitedByAdminId = 2L;
             AdminSubAdminView view = subAdminView();
-            given(queryRepository.searchInvitedSubAdmins(
+            given(queryRepository.findInvitedSubAdmins(
                     festivalId,
-                    invitedByAdminId,
-                    "sub"
+                    invitedByAdminId
             ))
                     .willReturn(List.of(view));
 
             // when
             List<AdminSubAdminView> result =
-                    queryService.searchInvitedSubAdmins(
+                    queryService.findInvitedSubAdmins(
                             festivalId,
-                            invitedByAdminId,
-                            " sub "
+                            invitedByAdminId
                     );
 
             // then
@@ -61,23 +59,21 @@ class AdminSubAdminQueryServiceTest {
 
         @Test
         @DisplayName("서브관리자가 없으면 빈 목록을 반환한다")
-        void success_SearchInvitedSubAdmins_EmptyBoundary() {
+        void success_FindInvitedSubAdmins_EmptyBoundary() {
             // given
             Long festivalId = 1L;
             Long invitedByAdminId = 2L;
-            given(queryRepository.searchInvitedSubAdmins(
+            given(queryRepository.findInvitedSubAdmins(
                     festivalId,
-                    invitedByAdminId,
-                    null
+                    invitedByAdminId
             ))
                     .willReturn(List.of());
 
             // when
             List<AdminSubAdminView> result =
-                    queryService.searchInvitedSubAdmins(
+                    queryService.findInvitedSubAdmins(
                             festivalId,
-                            invitedByAdminId,
-                            " "
+                            invitedByAdminId
                     );
 
             // then

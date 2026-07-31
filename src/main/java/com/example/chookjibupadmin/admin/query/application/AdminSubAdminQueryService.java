@@ -21,17 +21,15 @@ public class AdminSubAdminQueryService {
     private final AdminSubAdminQueryRepository queryRepository;
 
     /**
-     * 지정한 축제에서 특정 제1 관리자가 초대한 활성 서브관리자 목록을 검색한다.
+     * 지정한 축제에서 특정 제1 관리자가 초대한 활성 서브관리자 목록을 조회한다.
      */
-    public List<AdminSubAdminView> searchInvitedSubAdmins(
+    public List<AdminSubAdminView> findInvitedSubAdmins(
             Long festivalId,
-            Long invitedByAdminId,
-            String keyword
+            Long invitedByAdminId
     ) {
-        return queryRepository.searchInvitedSubAdmins(
+        return queryRepository.findInvitedSubAdmins(
                 festivalId,
-                invitedByAdminId,
-                normalizeKeyword(keyword)
+                invitedByAdminId
         );
     }
 
@@ -49,13 +47,5 @@ public class AdminSubAdminQueryService {
                         publicId
                 )
                 .orElseThrow(() -> new CustomException(ErrorCode.ADMIN_SUB_ADMIN_NOT_FOUND));
-    }
-
-    private String normalizeKeyword(String keyword) {
-        if (keyword == null || keyword.isBlank()) {
-            return null;
-        }
-
-        return keyword.trim().toLowerCase();
     }
 }

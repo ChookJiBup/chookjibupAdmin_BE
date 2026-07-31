@@ -26,41 +26,40 @@ class AdminSubAdminCandidateQueryServiceTest {
     private AdminSubAdminCandidateQueryRepository queryRepository;
 
     @Nested
-    @DisplayName("searchCandidates")
-    class SearchCandidates {
+    @DisplayName("findCandidates")
+    class FindCandidates {
 
         @Test
-        @DisplayName("검색어를 정리해서 후보자를 검색한다")
-        void success_SearchCandidates() {
+        @DisplayName("축제에 초대 가능한 후보자를 조회한다")
+        void success_FindCandidates() {
             // given
             Long festivalId = 1L;
             AdminSubAdminCandidateView view = candidateView();
-            given(queryRepository.searchCandidates(festivalId, "mapo"))
+            given(queryRepository.findCandidates(festivalId))
                     .willReturn(List.of(view));
 
             // when
             List<AdminSubAdminCandidateView> result =
-                    queryService.searchCandidates(festivalId, " MAPO ");
+                    queryService.findCandidates(festivalId);
 
             // then
             assertThat(result).containsExactly(view);
         }
 
         @Test
-        @DisplayName("빈 검색어는 전체 조회로 처리한다")
-        void success_SearchCandidates_BlankKeywordBoundary() {
+        @DisplayName("후보자가 없으면 빈 목록을 반환한다")
+        void success_FindCandidates_EmptyBoundary() {
             // given
             Long festivalId = 1L;
-            AdminSubAdminCandidateView view = candidateView();
-            given(queryRepository.searchCandidates(festivalId, null))
-                    .willReturn(List.of(view));
+            given(queryRepository.findCandidates(festivalId))
+                    .willReturn(List.of());
 
             // when
             List<AdminSubAdminCandidateView> result =
-                    queryService.searchCandidates(festivalId, " ");
+                    queryService.findCandidates(festivalId);
 
             // then
-            assertThat(result).containsExactly(view);
+            assertThat(result).isEmpty();
         }
     }
 

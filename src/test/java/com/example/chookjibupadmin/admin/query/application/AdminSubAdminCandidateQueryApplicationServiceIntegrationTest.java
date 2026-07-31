@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminSubAdminCandidateView;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
@@ -66,14 +68,51 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
             List<AdminSubAdminCandidateView> result =
                     applicationService.searchCandidates(
                             festival.getPublicId(),
-                            "마포",
+                            "김후",
                             principal(owner)
                     );
 
             // then
-            assertThat(result)
-                    .extracting(AdminSubAdminCandidateView::email)
-                    .containsExactly("candidate1@mapo.go.kr");
+            assertThat(result).singleElement().satisfies(candidate -> {
+                assertThat(candidate.name()).isEqualTo("김후보");
+                assertThat(candidate.email()).isEqualTo("candidate1@mapo.go.kr");
+                assertThat(candidate.department()).isEqualTo("관광정책과");
+                assertThat(candidate.rank()).isEqualTo("주무관");
+            });
+        }
+
+        @Test
+        @DisplayName("제1 관리자가 이메일 오타로 초대 후보를 검색한다")
+        void success_SearchCandidates_EmailTypo() {
+            // given
+            Festival festival = festivalService.save(festival());
+            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
+            adminAccountService.save(admin(
+                    "dlgkrwns213@korea.kr",
+                    "이학준",
+                    "서울시 소속"
+            ));
+            adminAccountService.save(admin(
+                    "other@korea.kr",
+                    "김다른",
+                    "서울시 소속"
+            ));
+
+            // when
+            List<AdminSubAdminCandidateView> result =
+                    applicationService.searchCandidates(
+                            festival.getPublicId(),
+                            "dkkkr",
+                            principal(owner)
+                    );
+
+            // then
+            assertThat(result).singleElement().satisfies(candidate -> {
+                assertThat(candidate.name()).isEqualTo("이학준");
+                assertThat(candidate.email()).isEqualTo("dlgkrwns213@korea.kr");
+                assertThat(candidate.department()).isEqualTo("관광정책과");
+                assertThat(candidate.rank()).isEqualTo("주무관");
+            });
         }
     }
 
@@ -105,6 +144,8 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
                 AdminEmail.of(email),
                 AdminName.of(name),
                 AdminOrganization.of(organization),
+                AdminDepartment.of("관광정책과"),
+                AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );
     }

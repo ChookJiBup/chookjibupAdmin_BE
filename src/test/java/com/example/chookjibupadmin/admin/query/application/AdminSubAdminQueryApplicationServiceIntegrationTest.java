@@ -70,9 +70,75 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
             );
 
             // then
-            assertThat(result)
-                    .extracting(AdminSubAdminView::email)
-                    .containsExactly("sub1@mapo.go.kr", "sub2@mapo.go.kr");
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).name()).isEqualTo("김관리");
+            assertThat(result.get(0).email()).isEqualTo("sub1@mapo.go.kr");
+            assertThat(result.get(1).name()).isEqualTo("김관리");
+            assertThat(result.get(1).email()).isEqualTo("sub2@mapo.go.kr");
+        }
+
+        @Test
+        @DisplayName("제1 관리자가 이메일 오타로 등록된 운영자를 검색한다")
+        void success_GetSubAdmins_EmailTypo() {
+            // given
+            Festival festival = festivalService.save(festival());
+            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
+            adminAccountService.save(subAdmin(
+                    "dlgkrwns213@korea.kr",
+                    festival.getId(),
+                    owner.getId()
+            ));
+            adminAccountService.save(subAdmin(
+                    "other@korea.kr",
+                    festival.getId(),
+                    owner.getId()
+            ));
+
+            // when
+            List<AdminSubAdminView> result = applicationService.getSubAdmins(
+                    festival.getPublicId(),
+                    "dkkkr",
+                    principal(owner)
+            );
+
+            // then
+            assertThat(result).singleElement().satisfies(subAdmin -> {
+                assertThat(subAdmin.name()).isEqualTo("김관리");
+                assertThat(subAdmin.email()).isEqualTo("dlgkrwns213@korea.kr");
+            });
+        }
+
+        @Test
+        @DisplayName("제1 관리자가 이름으로 등록된 운영자를 검색한다")
+        void success_GetSubAdmins_Name() {
+            // given
+            Festival festival = festivalService.save(festival());
+            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
+            adminAccountService.save(subAdmin(
+                    "first@korea.kr",
+                    "김검색",
+                    festival.getId(),
+                    owner.getId()
+            ));
+            adminAccountService.save(subAdmin(
+                    "second@korea.kr",
+                    "이관리",
+                    festival.getId(),
+                    owner.getId()
+            ));
+
+            // when
+            List<AdminSubAdminView> result = applicationService.getSubAdmins(
+                    festival.getPublicId(),
+                    "김검색",
+                    principal(owner)
+            );
+
+            // then
+            assertThat(result).singleElement().satisfies(subAdmin -> {
+                assertThat(subAdmin.name()).isEqualTo("김검색");
+                assertThat(subAdmin.email()).isEqualTo("first@korea.kr");
+            });
         }
     }
 
@@ -129,9 +195,18 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
             Long festivalId,
             Long invitedByAdminId
     ) {
+        return subAdmin(email, "김관리", festivalId, invitedByAdminId);
+    }
+
+    private AdminAccount subAdmin(
+            String email,
+            String name,
+            Long festivalId,
+            Long invitedByAdminId
+    ) {
         return AdminAccount.createSubAdmin(
                 AdminEmail.of(email),
-                AdminName.of("김관리"),
+                AdminName.of(name),
                 AdminOrganization.of("마포구청 소속"),
                 festivalId,
                 AdminPasswordHash.of("encoded-password"),

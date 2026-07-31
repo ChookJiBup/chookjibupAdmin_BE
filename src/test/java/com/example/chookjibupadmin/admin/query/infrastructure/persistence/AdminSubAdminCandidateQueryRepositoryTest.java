@@ -32,12 +32,12 @@ class AdminSubAdminCandidateQueryRepositoryTest {
     private EntityManager entityManager;
 
     @Nested
-    @DisplayName("searchCandidates")
-    class SearchCandidates {
+    @DisplayName("findCandidates")
+    class FindCandidates {
 
         @Test
         @DisplayName("아직 축제에 배정되지 않은 활성 관리자만 조회한다")
-        void success_SearchCandidates_ActiveUnassignedAdmins() {
+        void success_FindCandidates_ActiveUnassignedAdmins() {
             // given
             Long festivalId = 1L;
             persist(admin("candidate1@mapo.go.kr", "김후보", "마포구청 소속"));
@@ -58,7 +58,7 @@ class AdminSubAdminCandidateQueryRepositoryTest {
             persist(deleted);
 
             // when
-            var result = queryRepository.searchCandidates(festivalId, null);
+            var result = queryRepository.findCandidates(festivalId);
 
             // then
             assertThat(result)
@@ -70,50 +70,32 @@ class AdminSubAdminCandidateQueryRepositoryTest {
         }
 
         @Test
-        @DisplayName("검색어가 있으면 이메일, 이름, 조직으로 필터링한다")
-        void success_SearchCandidates_ByKeyword() {
+        @DisplayName("후보자의 이름, 이메일, 부서, 직급을 반환한다")
+        void success_FindCandidates_EmployeeInformation() {
             // given
             Long festivalId = 1L;
-            persist(admin("candidate1@mapo.go.kr", "김후보", "마포구청 소속"));
             persist(admin("candidate2@seoul.go.kr", "이검색", "서울시 소속"));
 
             // when
-            var result = queryRepository.searchCandidates(festivalId, "검색");
+            var result = queryRepository.findCandidates(festivalId);
 
             // then
-            assertThat(result)
-                    .extracting(AdminSubAdminCandidateView::email)
-                    .containsExactly("candidate2@seoul.go.kr");
-        }
-
-        @Test
-        @DisplayName("부서 또는 직급 검색어로 후보를 필터링한다")
-        void success_SearchCandidates_ByDepartmentAndRank() {
-            // given
-            Long festivalId = 1L;
-            persist(admin("candidate@mapo.go.kr", "김후보", "마포구청 소속"));
-
-            // when
-            var byDepartment = queryRepository.searchCandidates(
-                    festivalId,
-                    "관광정책"
-            );
-            var byRank = queryRepository.searchCandidates(festivalId, "주무관");
-
-            // then
-            assertThat(byDepartment).hasSize(1);
-            assertThat(byRank).hasSize(1);
+            assertThat(result).singleElement().satisfies(candidate -> {
+                assertThat(candidate.name()).isEqualTo("이검색");
+                assertThat(candidate.email()).isEqualTo("candidate2@seoul.go.kr");
+                assertThat(candidate.department()).isEqualTo("관광정책과");
+                assertThat(candidate.rank()).isEqualTo("주무관");
+            });
         }
 
         @Test
         @DisplayName("후보자가 없으면 빈 목록을 반환한다")
-        void success_SearchCandidates_EmptyBoundary() {
+        void success_FindCandidates_EmptyBoundary() {
             // given
             Long festivalId = 1L;
-            String keyword = "없음";
 
             // when
-            var result = queryRepository.searchCandidates(festivalId, keyword);
+            var result = queryRepository.findCandidates(festivalId);
 
             // then
             assertThat(result).isEmpty();

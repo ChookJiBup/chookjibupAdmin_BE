@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminSubAdminView;
 import com.example.chookjibupadmin.admin.query.repository.AdminSubAdminQueryRepository;
 import com.example.chookjibupadmin.global.config.QuerydslConfig;
@@ -31,12 +33,12 @@ class AdminSubAdminQueryRepositoryTest {
     private EntityManager entityManager;
 
     @Nested
-    @DisplayName("searchInvitedSubAdmins")
-    class SearchInvitedSubAdmins {
+    @DisplayName("findInvitedSubAdmins")
+    class FindInvitedSubAdmins {
 
         @Test
         @DisplayName("같은 축제에서 해당 제1 관리자가 초대한 활성 서브관리자만 조회한다")
-        void success_SearchInvitedSubAdmins_ActiveSubAdmins() {
+        void success_FindInvitedSubAdmins_ActiveSubAdmins() {
             // given
             Long invitedByAdminId = 1L;
             AdminAccount first = subAdmin("sub1@mapo.go.kr", 1L, invitedByAdminId);
@@ -54,10 +56,9 @@ class AdminSubAdminQueryRepositoryTest {
             persist(deleted);
 
             // when
-            var result = queryRepository.searchInvitedSubAdmins(
+            var result = queryRepository.findInvitedSubAdmins(
                     1L,
-                    invitedByAdminId,
-                    null
+                    invitedByAdminId
             );
 
             // then
@@ -67,50 +68,43 @@ class AdminSubAdminQueryRepositoryTest {
         }
 
         @Test
-        @DisplayName("검색어가 있으면 이메일, 이름, 조직으로 필터링한다")
-        void success_SearchInvitedSubAdmins_ByKeyword() {
+        @DisplayName("서브관리자의 이름, 이메일, 부서, 직급을 반환한다")
+        void success_FindInvitedSubAdmins_EmployeeInformation() {
             // given
             Long invitedByAdminId = 1L;
-            persist(subAdmin(
+            persistSubAdminWithEmployeeInfo(
                     "sub1@mapo.go.kr",
                     "김검색",
                     "마포구청 소속",
                     1L,
                     invitedByAdminId
-            ));
-            persist(subAdmin(
-                    "sub2@mapo.go.kr",
-                    "이관리",
-                    "서울시 소속",
+            );
+            // when
+            var result = queryRepository.findInvitedSubAdmins(
                     1L,
                     invitedByAdminId
-            ));
-
-            // when
-            var result = queryRepository.searchInvitedSubAdmins(
-                    1L,
-                    invitedByAdminId,
-                    "검색"
             );
 
             // then
-            assertThat(result)
-                    .extracting(AdminSubAdminView::email)
-                    .containsExactly("sub1@mapo.go.kr");
+            assertThat(result).singleElement().satisfies(subAdmin -> {
+                assertThat(subAdmin.name()).isEqualTo("김검색");
+                assertThat(subAdmin.email()).isEqualTo("sub1@mapo.go.kr");
+                assertThat(subAdmin.department()).isEqualTo("관광정책과");
+                assertThat(subAdmin.rank()).isEqualTo("주무관");
+            });
         }
 
         @Test
         @DisplayName("서브관리자가 없으면 빈 목록을 반환한다")
-        void success_SearchInvitedSubAdmins_EmptyBoundary() {
+        void success_FindInvitedSubAdmins_EmptyBoundary() {
             // given
             Long festivalId = 1L;
             Long invitedByAdminId = 1L;
 
             // when
-            var result = queryRepository.searchInvitedSubAdmins(
+            var result = queryRepository.findInvitedSubAdmins(
                     festivalId,
-                    invitedByAdminId,
-                    null
+                    invitedByAdminId
             );
 
             // then
@@ -230,6 +224,32 @@ class AdminSubAdminQueryRepositoryTest {
                 AdminPasswordHash.of("encoded-password"),
                 invitedByAdminId
         );
+    }
+
+    private AdminAccount persistSubAdminWithEmployeeInfo(
+            String email,
+            String name,
+            String organization,
+            Long festivalId,
+            Long invitedByAdminId
+    ) {
+        AdminAccount adminAccount = AdminAccount.createAdmin(
+                AdminEmail.of(email),
+                AdminName.of(name),
+                AdminOrganization.of(organization),
+                AdminDepartment.of("관광정책과"),
+                AdminRank.of("주무관"),
+                AdminPasswordHash.of("encoded-password")
+        );
+        entityManager.persist(adminAccount);
+        entityManager.flush();
+        entityManager.persist(AdminFestivalRole.createSubAdmin(
+                adminAccount.getId(),
+                festivalId,
+                invitedByAdminId
+        ));
+        entityManager.flush();
+        return adminAccount;
     }
 
     private AdminAccount persist(AdminAccount adminAccount) {
