@@ -1,3 +1,5 @@
+name: chookjibup-admin
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -19,3 +21,4 @@ services:
 
 volumes:
   chookjibup-admin-postgres-data:
+    name: chookjibup-admin-postgres-data
