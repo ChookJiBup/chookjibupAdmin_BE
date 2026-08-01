@@ -23,7 +23,7 @@ public class SmtpAdminEmailVerificationSender
 
     private final JavaMailSender javaMailSender;
 
-    @Value("${app.email.verification.from}")
+    @Value("${spring.mail.username}")
     private String from;
 
     @Override

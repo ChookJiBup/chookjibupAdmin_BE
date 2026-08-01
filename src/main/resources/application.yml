@@ -3,6 +3,17 @@ spring:
     name: chookjibupAdmin_BE
   config:
     import: optional:application-secret.yml
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/chookjibup_admin}
     driver-class-name: org.postgresql.Driver
@@ -25,6 +36,9 @@ spring:
       timeout: 2s
 
 app:
+  email:
+    verification:
+      sender: ${APP_EMAIL_VERIFICATION_SENDER:log}
   jwt:
     secret: ${APP_JWT_SECRET}
     access-token-expiration-seconds: 1800
