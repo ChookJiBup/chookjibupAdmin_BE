@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.global.config;
 
 import java.time.Clock;
+import java.time.ZoneId;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -10,11 +11,13 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class TimeConfig {
 
+    private static final ZoneId SERVICE_ZONE_ID = ZoneId.of("Asia/Seoul");
+
     /**
      * 애플리케이션 기본 시간 기준을 반환한다.
      */
     @Bean
     public Clock clock() {
-        return Clock.systemDefaultZone();
+        return Clock.system(SERVICE_ZONE_ID);
     }
 }
