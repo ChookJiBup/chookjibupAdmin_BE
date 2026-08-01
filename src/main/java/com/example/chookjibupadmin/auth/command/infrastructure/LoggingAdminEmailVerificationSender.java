@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.auth.command.infrastructure;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.auth.command.application.port.AdminEmailVerificationSender;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,6 +11,11 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(
+        name = "app.email.verification.sender",
+        havingValue = "log",
+        matchIfMissing = true
+)
 public class LoggingAdminEmailVerificationSender
         implements AdminEmailVerificationSender {
 
