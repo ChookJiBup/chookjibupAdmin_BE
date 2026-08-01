@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalProgressStatus;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSearchCondition;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSummaryProjection;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.Clock;
@@ -43,7 +43,7 @@ class InternalFestivalQueryApplicationServiceTest {
             InternalFestivalQueryApplicationService service = service();
             InternalFestivalSearchCondition condition =
                     new InternalFestivalSearchCondition(
-                            InternalFestivalProgressStatus.ONGOING,
+                            FestivalProgressStatus.ONGOING,
                             "새우젓",
                             LocalDate.of(2026, 10, 10)
                     );
@@ -53,7 +53,7 @@ class InternalFestivalQueryApplicationServiceTest {
 
             // when
             var result = service.searchFestivals(
-                    InternalFestivalProgressStatus.ONGOING,
+                    FestivalProgressStatus.ONGOING,
                     " 새우젓 ",
                     null,
                     null
@@ -62,7 +62,7 @@ class InternalFestivalQueryApplicationServiceTest {
             // then
             assertThat(result.getContent())
                     .extracting("progressStatus")
-                    .containsExactly(InternalFestivalProgressStatus.ONGOING);
+                    .containsExactly(FestivalProgressStatus.ONGOING);
             then(queryService).should().searchFestivals(condition, pageable);
         }
 

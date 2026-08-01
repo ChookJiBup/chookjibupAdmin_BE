@@ -8,8 +8,8 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescriptio
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
-import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalProgressStatus;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSummaryView;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import jakarta.persistence.EntityManager;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -50,7 +50,7 @@ class InternalFestivalQueryApplicationServiceIntegrationTest {
 
             // when
             var result = queryService.searchFestivals(
-                    InternalFestivalProgressStatus.ONGOING,
+                    FestivalProgressStatus.ONGOING,
                     null,
                     null,
                     null
@@ -62,7 +62,7 @@ class InternalFestivalQueryApplicationServiceIntegrationTest {
                     .containsExactly("진행 중 축제");
             assertThat(result.getContent())
                     .extracting(InternalFestivalSummaryView::progressStatus)
-                    .containsExactly(InternalFestivalProgressStatus.ONGOING);
+                    .containsExactly(FestivalProgressStatus.ONGOING);
         }
 
         @Test
@@ -75,7 +75,7 @@ class InternalFestivalQueryApplicationServiceIntegrationTest {
 
             // when
             var result = queryService.searchFestivals(
-                    InternalFestivalProgressStatus.UPCOMING,
+                    FestivalProgressStatus.UPCOMING,
                     "새우젓",
                     0,
                     1

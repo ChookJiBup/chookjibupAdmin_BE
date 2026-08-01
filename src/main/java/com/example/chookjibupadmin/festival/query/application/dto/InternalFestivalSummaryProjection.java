@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.festival.query.application.dto;
 
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -34,7 +35,7 @@ public record InternalFestivalSummaryProjection(
                 endDate,
                 operationStartTime,
                 operationEndTime,
-                InternalFestivalProgressStatus.from(today, startDate, endDate)
+                FestivalProgressStatus.from(today, startDate, endDate)
         );
     }
 }

@@ -1,8 +1,8 @@
 package com.example.chookjibupadmin.festival.query.application;
 
-import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalProgressStatus;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSearchCondition;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSummaryView;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.Clock;
@@ -33,7 +33,7 @@ public class InternalFestivalQueryApplicationService {
      * 진행 상태와 검색 조건에 맞는 사용자 서버용 축제 목록을 조회한다.
      */
     public Page<InternalFestivalSummaryView> searchFestivals(
-            InternalFestivalProgressStatus progressStatus,
+            FestivalProgressStatus progressStatus,
             String keyword,
             Integer page,
             Integer size

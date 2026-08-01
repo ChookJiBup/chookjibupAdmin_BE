@@ -9,10 +9,10 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddr
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
-import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalProgressStatus;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSearchCondition;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSummaryProjection;
 import com.example.chookjibupadmin.festival.query.repository.InternalFestivalQueryRepository;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.config.QuerydslConfig;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
@@ -52,7 +52,7 @@ class InternalFestivalQueryRepositoryTest {
             // when
             var result = queryRepository.searchFestivals(
                     new InternalFestivalSearchCondition(
-                            InternalFestivalProgressStatus.UPCOMING,
+                            FestivalProgressStatus.UPCOMING,
                             null,
                             today
                     ),
@@ -79,7 +79,7 @@ class InternalFestivalQueryRepositoryTest {
             // when
             var result = queryRepository.searchFestivals(
                     new InternalFestivalSearchCondition(
-                            InternalFestivalProgressStatus.ONGOING,
+                            FestivalProgressStatus.ONGOING,
                             null,
                             today
                     ),
@@ -103,7 +103,7 @@ class InternalFestivalQueryRepositoryTest {
             // when
             var result = queryRepository.searchFestivals(
                     new InternalFestivalSearchCondition(
-                            InternalFestivalProgressStatus.COMPLETED,
+                            FestivalProgressStatus.COMPLETED,
                             null,
                             today
                     ),
@@ -176,7 +176,7 @@ class InternalFestivalQueryRepositoryTest {
             // when
             var result = queryRepository.searchFestivals(
                     new InternalFestivalSearchCondition(
-                            InternalFestivalProgressStatus.UPCOMING,
+                            FestivalProgressStatus.UPCOMING,
                             null,
                             today
                     ),

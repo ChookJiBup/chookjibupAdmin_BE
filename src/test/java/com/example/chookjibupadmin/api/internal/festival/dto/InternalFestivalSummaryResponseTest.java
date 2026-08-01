@@ -2,8 +2,8 @@ package com.example.chookjibupadmin.api.internal.festival.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalProgressStatus;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSummaryView;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -28,7 +28,7 @@ class InternalFestivalSummaryResponseTest {
                 LocalDate.of(2026, 11, 15),
                 LocalTime.of(10, 0),
                 LocalTime.of(18, 0),
-                InternalFestivalProgressStatus.UPCOMING
+                FestivalProgressStatus.UPCOMING
         );
 
         // when

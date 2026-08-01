@@ -1,19 +1,19 @@
-package com.example.chookjibupadmin.festival.query.application.dto;
+package com.example.chookjibupadmin.festival.support;
 
 import java.time.LocalDate;
 
 /**
- * 사용자 서버에 노출할 날짜 기준 축제 진행 상태이다.
+ * 기준일과 축제 기간으로 구분하는 축제 진행 상태이다.
  */
-public enum InternalFestivalProgressStatus {
+public enum FestivalProgressStatus {
     UPCOMING,
     ONGOING,
     COMPLETED;
 
     /**
-     * 기준일과 축제 기간으로 진행 상태를 계산한다.
+     * 시작일과 종료일을 포함하는 날짜 경계로 진행 상태를 계산한다.
      */
-    public static InternalFestivalProgressStatus from(
+    public static FestivalProgressStatus from(
             LocalDate today,
             LocalDate startDate,
             LocalDate endDate

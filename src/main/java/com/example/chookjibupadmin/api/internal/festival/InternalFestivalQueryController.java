@@ -2,7 +2,7 @@ package com.example.chookjibupadmin.api.internal.festival;
 
 import com.example.chookjibupadmin.api.internal.festival.dto.InternalFestivalPageResponse;
 import com.example.chookjibupadmin.festival.query.application.InternalFestivalQueryApplicationService;
-import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalProgressStatus;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,7 +31,7 @@ public class InternalFestivalQueryController {
     @GetMapping
     public ApiResponse<InternalFestivalPageResponse> getFestivals(
             @RequestParam(required = false)
-            InternalFestivalProgressStatus status,
+            FestivalProgressStatus status,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size

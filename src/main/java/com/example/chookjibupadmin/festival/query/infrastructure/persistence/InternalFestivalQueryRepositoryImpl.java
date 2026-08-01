@@ -1,10 +1,10 @@
 package com.example.chookjibupadmin.festival.query.infrastructure.persistence;
 
 import com.example.chookjibupadmin.festival.command.domain.QFestival;
-import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalProgressStatus;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSearchCondition;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSummaryProjection;
 import com.example.chookjibupadmin.festival.query.repository.InternalFestivalQueryRepository;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -76,15 +76,15 @@ public class InternalFestivalQueryRepositoryImpl
             QFestival festival,
             InternalFestivalSearchCondition condition
     ) {
-        InternalFestivalProgressStatus status = condition.progressStatus();
+        FestivalProgressStatus status = condition.progressStatus();
         if (status == null) {
             return null;
         }
 
-        if (status == InternalFestivalProgressStatus.UPCOMING) {
+        if (status == FestivalProgressStatus.UPCOMING) {
             return festival.period.startDate.gt(condition.today());
         }
-        if (status == InternalFestivalProgressStatus.ONGOING) {
+        if (status == FestivalProgressStatus.ONGOING) {
             return festival.period.startDate.loe(condition.today())
                     .and(festival.period.endDate.goe(condition.today()));
         }
