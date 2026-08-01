@@ -34,6 +34,10 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2s
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 22MB
 
 app:
   email:
@@ -54,3 +58,18 @@ app:
     confirmation-key: ${APP_ROAD_ADDRESS_CONFIRMATION_KEY:}
     connect-timeout: ${APP_ROAD_ADDRESS_CONNECT_TIMEOUT:3s}
     read-timeout: ${APP_ROAD_ADDRESS_READ_TIMEOUT:5s}
+  map:
+    image:
+      max-file-size: ${APP_MAP_IMAGE_MAX_FILE_SIZE:20MB}
+      min-width: ${APP_MAP_IMAGE_MIN_WIDTH:800}
+      min-height: ${APP_MAP_IMAGE_MIN_HEIGHT:600}
+      max-side: ${APP_MAP_IMAGE_MAX_SIDE:12000}
+      max-pixels: ${APP_MAP_IMAGE_MAX_PIXELS:50000000}
+    storage:
+      provider: ${APP_MAP_STORAGE_PROVIDER:disabled}
+      bucket: ${APP_MAP_STORAGE_BUCKET:}
+      region: ${APP_MAP_STORAGE_REGION:ap-northeast-2}
+      endpoint: ${APP_MAP_STORAGE_ENDPOINT:}
+      path-style-access-enabled: ${APP_MAP_STORAGE_PATH_STYLE_ACCESS_ENABLED:false}
+      connect-timeout: ${APP_MAP_STORAGE_CONNECT_TIMEOUT:3s}
+      api-call-timeout: ${APP_MAP_STORAGE_API_CALL_TIMEOUT:30s}

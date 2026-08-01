@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
@@ -44,6 +45,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ErrorCode.INVALID_REQUEST.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.INVALID_REQUEST));
+    }
+
+    /**
+     * Spring multipart 제한을 넘은 파일을 표준 파일 크기 오류로 변환한다.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeException() {
+        return ResponseEntity
+                .status(ErrorCode.FESTIVAL_MAP_FILE_TOO_LARGE.getHttpStatus())
+                .body(ApiResponse.error(ErrorCode.FESTIVAL_MAP_FILE_TOO_LARGE));
     }
 
     /**

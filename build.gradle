@@ -10,6 +10,7 @@ version = '0.0.1-SNAPSHOT'
 def externalBuildRoot = rootDir.parentFile?.parentFile ?: rootDir
 layout.buildDirectory = file("${externalBuildRoot}/.gradle-build/${rootProject.name}")
 def querydslVersion = '5.1.0'
+def awsSdkVersion = '2.46.8'
 
 java {
 	toolchain {
@@ -30,6 +31,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 	implementation "com.querydsl:querydsl-jpa:${querydslVersion}:jakarta"
+	implementation platform("software.amazon.awssdk:bom:${awsSdkVersion}")
+	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:url-connection-client'
+	implementation 'com.drewnoakes:metadata-extractor:2.21.0'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
