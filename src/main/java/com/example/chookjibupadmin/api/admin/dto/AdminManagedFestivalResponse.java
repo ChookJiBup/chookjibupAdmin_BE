@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.api.admin.dto;
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalView;
 import com.example.chookjibupadmin.festival.command.domain.FestivalStatus;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -26,6 +27,9 @@ public record AdminManagedFestivalResponse(
 
         @Schema(description = "축제 상태", example = "DRAFT")
         FestivalStatus festivalStatus,
+
+        @Schema(description = "날짜 기준 축제 진행 상태", example = "ONGOING")
+        FestivalProgressStatus progressStatus,
 
         @Schema(description = "축제 주소", example = "서울특별시 마포구 월드컵로 243")
         String address,
@@ -52,6 +56,7 @@ public record AdminManagedFestivalResponse(
                 view.festivalYear(),
                 view.role(),
                 view.festivalStatus(),
+                view.progressStatus(),
                 view.address(),
                 view.detailAddress(),
                 view.startDate(),

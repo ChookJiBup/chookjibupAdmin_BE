@@ -9,6 +9,7 @@ import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFesti
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalView;
 import com.example.chookjibupadmin.admin.query.repository.AdminManagedFestivalQueryRepository;
 import com.example.chookjibupadmin.festival.command.domain.FestivalStatus;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.LocalDate;
@@ -25,6 +26,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AdminManagedFestivalQueryServiceTest {
+
+    private static final LocalDate TODAY = LocalDate.of(2026, 8, 1);
 
     @InjectMocks
     private AdminManagedFestivalQueryService queryService;
@@ -56,14 +59,16 @@ class AdminManagedFestivalQueryServiceTest {
             AdminManagedFestivalView view = managedFestivalView();
             given(queryRepository.searchCurrentManagedFestivals(
                     adminAccountId,
-                    normalized
+                    normalized,
+                    TODAY
             )).willReturn(List.of(view));
 
             // when
             List<AdminManagedFestivalView> result =
                     queryService.searchCurrentManagedFestivals(
                             adminAccountId,
-                            condition
+                            condition,
+                            TODAY
                     );
 
             // then
@@ -84,14 +89,16 @@ class AdminManagedFestivalQueryServiceTest {
             AdminManagedFestivalView view = managedFestivalView(festivalId);
             given(queryRepository.findCurrentManagedFestival(
                     adminAccountId,
-                    festivalId
+                    festivalId,
+                    TODAY
             )).willReturn(Optional.of(view));
 
             // when
             AdminManagedFestivalView result =
                     queryService.getCurrentManagedFestival(
                             adminAccountId,
-                            festivalId
+                            festivalId,
+                            TODAY
                     );
 
             // then
@@ -106,14 +113,16 @@ class AdminManagedFestivalQueryServiceTest {
             UUID festivalId = UUID.randomUUID();
             given(queryRepository.findCurrentManagedFestival(
                     adminAccountId,
-                    festivalId
+                    festivalId,
+                    TODAY
             )).willReturn(Optional.empty());
 
             // when & then
             assertThatThrownBy(() ->
                     queryService.getCurrentManagedFestival(
                             adminAccountId,
-                            festivalId
+                            festivalId,
+                            TODAY
                     )
             )
                     .isInstanceOf(CustomException.class)
@@ -132,6 +141,7 @@ class AdminManagedFestivalQueryServiceTest {
                 2026,
                 AdminRole.FESTIVAL_OWNER,
                 FestivalStatus.DRAFT,
+                FestivalProgressStatus.UPCOMING,
                 "서울특별시 마포구 월드컵로 243",
                 "월드컵공원",
                 LocalDate.of(2026, 10, 16),

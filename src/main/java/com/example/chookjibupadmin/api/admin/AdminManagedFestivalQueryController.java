@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.api.admin.dto.AdminManagedFestivalResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +42,7 @@ public class AdminManagedFestivalQueryController {
             @RequestParam(required = false) AdminRole role,
             @RequestParam(required = false) Integer year,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) FestivalProgressStatus progressStatus,
             @AuthenticationPrincipal AdminPrincipal principal
     ) {
         return ApiResponse.success(
@@ -49,7 +51,8 @@ public class AdminManagedFestivalQueryController {
                                 new AdminManagedFestivalCondition(
                                         role,
                                         year,
-                                        keyword
+                                        keyword,
+                                        progressStatus
                                 ),
                                 principal
                         )

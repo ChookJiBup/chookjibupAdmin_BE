@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.admin.query.repository;
 
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalCondition;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalView;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,7 +17,8 @@ public interface AdminManagedFestivalQueryRepository {
      */
     List<AdminManagedFestivalView> searchCurrentManagedFestivals(
             Long adminAccountId,
-            AdminManagedFestivalCondition condition
+            AdminManagedFestivalCondition condition,
+            LocalDate today
     );
 
     /**
@@ -24,6 +26,7 @@ public interface AdminManagedFestivalQueryRepository {
      */
     Optional<AdminManagedFestivalView> findCurrentManagedFestival(
             Long adminAccountId,
-            UUID festivalId
+            UUID festivalId,
+            LocalDate today
     );
 }

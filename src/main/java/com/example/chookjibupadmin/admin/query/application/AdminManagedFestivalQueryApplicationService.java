@@ -7,6 +7,8 @@ import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFesti
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class AdminManagedFestivalQueryApplicationService {
 
     private final AdminAccountService adminAccountService;
     private final AdminManagedFestivalQueryService managedFestivalQueryService;
+    private final Clock clock;
 
     /**
      * 인증 관리자가 현재 관리 중인 축제 목록을 조회한다.
@@ -36,7 +39,8 @@ public class AdminManagedFestivalQueryApplicationService {
         AdminAccount adminAccount = findAuthenticatedAdmin(principal);
         return managedFestivalQueryService.searchCurrentManagedFestivals(
                 adminAccount.getId(),
-                condition
+                condition,
+                LocalDate.now(clock)
         );
     }
 
@@ -52,7 +56,8 @@ public class AdminManagedFestivalQueryApplicationService {
         AdminAccount adminAccount = findAuthenticatedAdmin(principal);
         return managedFestivalQueryService.getCurrentManagedFestival(
                 adminAccount.getId(),
-                festivalId
+                festivalId,
+                LocalDate.now(clock)
         );
     }
 
@@ -61,6 +66,10 @@ public class AdminManagedFestivalQueryApplicationService {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
-        return adminAccountService.getById(principal.adminId());
+        AdminAccount adminAccount = adminAccountService.getById(principal.adminId());
+        if (!adminAccount.isActive()) {
+            throw new CustomException(ErrorCode.AUTH_ADMIN_INACTIVE);
+        }
+        return adminAccount;
     }
 }

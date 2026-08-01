@@ -5,6 +5,7 @@ import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFesti
 import com.example.chookjibupadmin.admin.query.repository.AdminManagedFestivalQueryRepository;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -26,11 +27,13 @@ public class AdminManagedFestivalQueryService {
      */
     public List<AdminManagedFestivalView> searchCurrentManagedFestivals(
             Long adminAccountId,
-            AdminManagedFestivalCondition condition
+            AdminManagedFestivalCondition condition,
+            LocalDate today
     ) {
         return queryRepository.searchCurrentManagedFestivals(
                 adminAccountId,
-                condition.normalize()
+                condition.normalize(),
+                today
         );
     }
 
@@ -39,11 +42,13 @@ public class AdminManagedFestivalQueryService {
      */
     public AdminManagedFestivalView getCurrentManagedFestival(
             Long adminAccountId,
-            UUID festivalId
+            UUID festivalId,
+            LocalDate today
     ) {
         return queryRepository.findCurrentManagedFestival(
                         adminAccountId,
-                        festivalId
+                        festivalId,
+                        today
                 )
                 .orElseThrow(() -> new CustomException(ErrorCode.FESTIVAL_NOT_FOUND));
     }
