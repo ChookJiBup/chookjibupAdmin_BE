@@ -2,10 +2,13 @@ package com.example.chookjibupadmin.api.festival;
 
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalResponse;
+import com.example.chookjibupadmin.api.festival.dto.CreateFestivalWithMapResponse;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
+import com.example.chookjibupadmin.map.command.application.FestivalMapRegistrationApplicationService;
+import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +18,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 축제 기본 정보 쓰기 API를 제공한다.
@@ -34,6 +40,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class FestivalCommandController {
 
     private final FestivalApplicationService festivalApplicationService;
+    private final FestivalMapRegistrationApplicationService
+            festivalMapRegistrationApplicationService;
 
     /**
      * 임시 기준의 축제 기본 정보를 저장한다.
@@ -41,7 +49,7 @@ public class FestivalCommandController {
     @Operation(summary = "축제 기본 정보 생성")
     @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<CreateFestivalResponse> create(
             @Valid @RequestBody CreateFestivalRequest request,
             @AuthenticationPrincipal AdminPrincipal principal
@@ -51,6 +59,35 @@ public class FestivalCommandController {
                 CreateFestivalResponse.from(
                         festivalApplicationService.create(
                                 request.toCommand(),
+                                principal
+                        )
+                )
+        );
+    }
+
+    /**
+     * 축제 기본 정보와 최초 배치도 이미지를 함께 등록한다.
+     */
+    @Operation(summary = "배치도 이미지를 포함한 축제 기본 정보 생성")
+    @SecurityRequirement(name = "bearerAuth")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<CreateFestivalWithMapResponse> createWithMap(
+            @Valid @RequestPart("festival") CreateFestivalRequest request,
+            @RequestPart("image") MultipartFile image,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_CREATE_SUCCESS,
+                CreateFestivalWithMapResponse.from(
+                        festivalMapRegistrationApplicationService.create(
+                                request.toCommand(),
+                                new MapImageUploadCommand(
+                                        image.getOriginalFilename(),
+                                        image.getContentType(),
+                                        image.getSize(),
+                                        image::getInputStream
+                                ),
                                 principal
                         )
                 )

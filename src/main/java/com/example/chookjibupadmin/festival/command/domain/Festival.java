@@ -182,6 +182,39 @@ public class Festival extends BaseTimeEntity {
     }
 
     /**
+     * 외부 저장소 Object Key와 동일한 축제 UUID로 기본 정보를 생성한다.
+     */
+    public static Festival create(
+            UUID publicId,
+            Long seriesId,
+            UUID seriesPublicId,
+            FestivalName name,
+            FestivalDescription description,
+            FestivalAddress address,
+            FestivalDetailAddress detailAddress,
+            FestivalPeriod period,
+            FestivalOperationTime operationTime
+    ) {
+        if (publicId == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        validateSeriesId(seriesId);
+        validateSeriesPublicId(seriesPublicId);
+        return new Festival(
+                publicId,
+                seriesId,
+                seriesPublicId,
+                period.getStartDate().getYear(),
+                name,
+                description,
+                address,
+                detailAddress,
+                period,
+                operationTime
+        );
+    }
+
+    /**
      * 상세주소 없이 축제 기본 정보를 생성한다.
      */
     public static Festival create(

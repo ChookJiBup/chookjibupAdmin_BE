@@ -6,6 +6,7 @@ import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleSe
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalCommand;
+import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalWithMapResult;
 import com.example.chookjibupadmin.festival.command.application.dto.UpdateFestivalCommand;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalSeries;
@@ -17,6 +18,9 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationT
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.map.command.application.FestivalMapService;
+import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
+import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,6 +38,7 @@ public class FestivalApplicationService {
     private final FestivalSeriesService festivalSeriesService;
     private final AdminAccountService adminAccountService;
     private final AdminFestivalRoleService adminFestivalRoleService;
+    private final FestivalMapService festivalMapService;
 
     /**
      * 축제 묶음을 연결한 뒤 연도별 축제 기본 정보를 저장하고 생성자를 1관리자로 배정한다.
@@ -42,7 +47,44 @@ public class FestivalApplicationService {
             CreateFestivalCommand command,
             AdminPrincipal principal
     ) {
+        return createFestival(
+                command,
+                principal,
+                UUID.randomUUID(),
+                null
+        ).festival();
+    }
+
+    /**
+     * S3 저장이 완료된 최초 배치도와 축제 기본 정보를 한 트랜잭션으로 저장한다.
+     */
+    public CreateFestivalWithMapResult createWithMap(
+            CreateFestivalCommand command,
+            AdminPrincipal principal,
+            UUID festivalPublicId,
+            UploadedFestivalMap uploadedMap
+    ) {
+        if (uploadedMap == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        return createFestival(
+                command,
+                principal,
+                festivalPublicId,
+                uploadedMap
+        );
+    }
+
+    private CreateFestivalWithMapResult createFestival(
+            CreateFestivalCommand command,
+            AdminPrincipal principal,
+            UUID festivalPublicId,
+            UploadedFestivalMap uploadedMap
+    ) {
         AdminAccount creator = findAuthenticatedAdmin(principal);
+        if (uploadedMap != null && !creator.isActive()) {
+            throw new CustomException(ErrorCode.AUTH_ADMIN_INACTIVE);
+        }
         FestivalName name = FestivalName.of(command.name());
         FestivalPeriod period = FestivalPeriod.of(
                 command.startDate(),
@@ -53,6 +95,7 @@ public class FestivalApplicationService {
         validateUniqueFestivalYear(series.getId(), period.getStartDate().getYear());
 
         Festival festival = Festival.create(
+                festivalPublicId,
                 series.getId(),
                 series.getPublicId(),
                 name,
@@ -76,7 +119,28 @@ public class FestivalApplicationService {
             );
         }
 
-        return savedFestival;
+        FestivalMap festivalMap = null;
+        if (uploadedMap != null) {
+            festivalMap = festivalMapService.save(FestivalMap.uploaded(
+                    uploadedMap.publicId(),
+                    savedFestival.getId(),
+                    uploadedMap.mapName(),
+                    uploadedMap.originalFileName(),
+                    uploadedMap.sourceImageKey(),
+                    uploadedMap.displayImageKey(),
+                    uploadedMap.sourceContentType(),
+                    uploadedMap.displayContentType(),
+                    uploadedMap.sourceFileSize(),
+                    uploadedMap.displayFileSize(),
+                    uploadedMap.imageWidth(),
+                    uploadedMap.imageHeight(),
+                    uploadedMap.sourceChecksumSha256(),
+                    uploadedMap.displayChecksumSha256(),
+                    creator.getId()
+            ));
+        }
+
+        return new CreateFestivalWithMapResult(savedFestival, festivalMap);
     }
 
     private void validateSeriesName(
