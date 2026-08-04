@@ -19,7 +19,17 @@ public class FestivalMapRepositoryImpl implements FestivalMapRepository {
     }
 
     @Override
+    public Optional<FestivalMap> findById(Long id) {
+        return jpaRepository.findById(id);
+    }
+
+    @Override
     public Optional<FestivalMap> findByPublicId(UUID publicId) {
         return jpaRepository.findByPublicId(publicId);
+    }
+
+    @Override
+    public Optional<FestivalMap> findByPublicIdForUpdate(UUID publicId) {
+        return jpaRepository.findByPublicIdForUpdate(publicId);
     }
 }

@@ -15,7 +15,8 @@ public record MapStorageProperties(
         URI endpoint,
         boolean pathStyleAccessEnabled,
         Duration connectTimeout,
-        Duration apiCallTimeout
+        Duration apiCallTimeout,
+        Duration readUrlTtl
 ) {
 
     public boolean isS3() {

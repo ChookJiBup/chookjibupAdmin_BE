@@ -66,7 +66,7 @@ class FestivalMapRegistrationApplicationServiceTest {
     }
 
     @Test
-    @DisplayName("source와 display를 저장한 뒤 축제와 배치도를 DB에 저장한다")
+    @DisplayName("original, display, analysis를 저장한 뒤 축제와 도면을 DB에 저장한다")
     void success_Create() throws Exception {
         PreparedMapImage prepared = prepared();
         given(mapImagePreparationPort.prepare(any())).willReturn(prepared);
@@ -86,17 +86,18 @@ class FestivalMapRegistrationApplicationServiceTest {
         assertThat(result).isSameAs(expected);
         ArgumentCaptor<StoredMapImageFile> captor =
                 ArgumentCaptor.forClass(StoredMapImageFile.class);
-        then(mapImageStoragePort).should(times(2)).upload(captor.capture());
-        assertThat(captor.getAllValues().get(0).objectKey()).contains("/source/");
+        then(mapImageStoragePort).should(times(3)).upload(captor.capture());
+        assertThat(captor.getAllValues().get(0).objectKey()).contains("/original/");
         assertThat(captor.getAllValues().get(1).objectKey()).contains("/display/");
+        assertThat(captor.getAllValues().get(2).objectKey()).contains("/analysis/");
         then(festivalApplicationService).should().createWithMap(
                 any(), any(), any(), any()
         );
     }
 
     @Test
-    @DisplayName("display 업로드 실패 시 결과가 불명확한 display와 source를 보상 삭제한다")
-    void fail_Create_DisplayUpload_CompensateSource() throws Exception {
+    @DisplayName("display 업로드 실패 시 결과가 불명확한 display와 original을 보상 삭제한다")
+    void fail_Create_DisplayUpload_CompensateOriginal() throws Exception {
         given(mapImagePreparationPort.prepare(any())).willReturn(prepared());
         doNothing()
                 .doThrow(new CustomException(ErrorCode.FESTIVAL_MAP_UPLOAD_FAILED))
@@ -112,7 +113,7 @@ class FestivalMapRegistrationApplicationServiceTest {
     }
 
     @Test
-    @DisplayName("DB 저장 실패 시 source와 display를 모두 보상 삭제한다")
+    @DisplayName("DB 저장 실패 시 original, display, analysis를 모두 보상 삭제한다")
     void fail_Create_Database_CompensateAllImages() throws Exception {
         given(mapImagePreparationPort.prepare(any())).willReturn(prepared());
         given(festivalApplicationService.createWithMap(
@@ -123,28 +124,37 @@ class FestivalMapRegistrationApplicationServiceTest {
                 command(), imageCommand(), principal
         )).isInstanceOf(CustomException.class);
 
-        then(mapImageStoragePort).should(times(2)).delete(any());
+        then(mapImageStoragePort).should(times(3)).delete(any());
     }
 
     private PreparedMapImage prepared() throws Exception {
-        Path source = Files.createTempFile("source-test-", ".png");
+        Path original = Files.createTempFile("original-test-", ".png");
         Path display = Files.createTempFile("display-test-", ".png");
-        Files.write(source, new byte[]{1, 2, 3});
+        Path analysis = Files.createTempFile("analysis-test-", ".jpg");
+        Files.write(original, new byte[]{1, 2, 3});
         Files.write(display, new byte[]{4, 5, 6});
+        Files.write(analysis, new byte[]{7, 8});
         return new PreparedMapImage(
                 "map.png",
-                source,
+                original,
                 display,
+                analysis,
                 "image/png",
                 "image/png",
+                "image/jpeg",
                 "png",
                 "png",
+                "jpg",
                 3,
                 3,
+                2,
+                800,
+                600,
                 800,
                 600,
                 "a".repeat(64),
-                "b".repeat(64)
+                "b".repeat(64),
+                "c".repeat(64)
         );
     }
 

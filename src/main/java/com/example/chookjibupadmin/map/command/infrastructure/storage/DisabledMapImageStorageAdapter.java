@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.map.command.infrastructure.storage;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.application.dto.StoredMapImageFile;
+import com.example.chookjibupadmin.map.command.application.dto.MapImageReadUrl;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,16 @@ public class DisabledMapImageStorageAdapter implements MapImageStoragePort {
 
     @Override
     public void delete(String objectKey) {
+        throw new CustomException(ErrorCode.FESTIVAL_MAP_STORAGE_NOT_CONFIGURED);
+    }
+
+    @Override
+    public MapImageReadUrl createReadUrl(String objectKey) {
+        throw new CustomException(ErrorCode.FESTIVAL_MAP_STORAGE_NOT_CONFIGURED);
+    }
+
+    @Override
+    public byte[] read(String objectKey, long maxBytes) {
         throw new CustomException(ErrorCode.FESTIVAL_MAP_STORAGE_NOT_CONFIGURED);
     }
 }

@@ -18,6 +18,8 @@ public interface FestivalRepository {
      */
     Optional<Festival> findById(Long festivalId);
 
+    Optional<Festival> findByIdForUpdate(Long festivalId);
+
     /**
      * 외부 노출용 축제 UUID로 축제 기본 정보를 조회한다.
      */

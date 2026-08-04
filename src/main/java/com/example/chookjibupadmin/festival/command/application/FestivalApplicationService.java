@@ -19,6 +19,8 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.application.FestivalMapService;
+import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueApplicationService;
+import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import java.util.UUID;
@@ -39,6 +41,7 @@ public class FestivalApplicationService {
     private final AdminAccountService adminAccountService;
     private final AdminFestivalRoleService adminFestivalRoleService;
     private final FestivalMapService festivalMapService;
+    private final MapAnalysisQueueApplicationService mapAnalysisQueueService;
 
     /**
      * 축제 묶음을 연결한 뒤 연도별 축제 기본 정보를 저장하고 생성자를 1관리자로 배정한다.
@@ -120,27 +123,33 @@ public class FestivalApplicationService {
         }
 
         FestivalMap festivalMap = null;
+        MapAnalysisJob analysisJob = null;
         if (uploadedMap != null) {
             festivalMap = festivalMapService.save(FestivalMap.uploaded(
                     uploadedMap.publicId(),
                     savedFestival.getId(),
                     uploadedMap.mapName(),
                     uploadedMap.originalFileName(),
-                    uploadedMap.sourceImageKey(),
+                    uploadedMap.originalImageKey(),
                     uploadedMap.displayImageKey(),
-                    uploadedMap.sourceContentType(),
+                    uploadedMap.analysisImageKey(),
+                    uploadedMap.originalContentType(),
                     uploadedMap.displayContentType(),
-                    uploadedMap.sourceFileSize(),
+                    uploadedMap.analysisContentType(),
+                    uploadedMap.originalFileSize(),
                     uploadedMap.displayFileSize(),
-                    uploadedMap.imageWidth(),
-                    uploadedMap.imageHeight(),
-                    uploadedMap.sourceChecksumSha256(),
+                    uploadedMap.analysisFileSize(),
+                    uploadedMap.displayImageDimensions(),
+                    uploadedMap.analysisImageDimensions(),
+                    uploadedMap.originalChecksumSha256(),
                     uploadedMap.displayChecksumSha256(),
+                    uploadedMap.analysisChecksumSha256(),
                     creator.getId()
             ));
+            analysisJob = mapAnalysisQueueService.enqueueInitial(festivalMap);
         }
 
-        return new CreateFestivalWithMapResult(savedFestival, festivalMap);
+        return new CreateFestivalWithMapResult(savedFestival, festivalMap, analysisJob);
     }
 
     private void validateSeriesName(

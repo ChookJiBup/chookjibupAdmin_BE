@@ -36,8 +36,8 @@ spring:
       timeout: 2s
   servlet:
     multipart:
-      max-file-size: 20MB
-      max-request-size: 22MB
+      max-file-size: 50MB
+      max-request-size: 55MB
 
 app:
   email:
@@ -59,12 +59,24 @@ app:
     connect-timeout: ${APP_ROAD_ADDRESS_CONNECT_TIMEOUT:3s}
     read-timeout: ${APP_ROAD_ADDRESS_READ_TIMEOUT:5s}
   map:
+    analysis:
+      provider: ${APP_MAP_ANALYSIS_PROVIDER:disabled}
+      base-url: ${APP_OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${APP_OPENAI_API_KEY:}
+      model: ${APP_OPENAI_MAP_MODEL:gpt-5.6}
+      connect-timeout: ${APP_OPENAI_CONNECT_TIMEOUT:5s}
+      read-timeout: ${APP_OPENAI_READ_TIMEOUT:90s}
+      max-attempts: ${APP_MAP_ANALYSIS_MAX_ATTEMPTS:3}
+      poll-delay-millis: ${APP_MAP_ANALYSIS_POLL_DELAY_MILLIS:3000}
+      max-input-bytes: ${APP_MAP_ANALYSIS_MAX_INPUT_BYTES:26214400}
     image:
-      max-file-size: ${APP_MAP_IMAGE_MAX_FILE_SIZE:20MB}
+      max-file-size: ${APP_MAP_IMAGE_MAX_FILE_SIZE:50MB}
       min-width: ${APP_MAP_IMAGE_MIN_WIDTH:800}
       min-height: ${APP_MAP_IMAGE_MIN_HEIGHT:600}
-      max-side: ${APP_MAP_IMAGE_MAX_SIDE:12000}
-      max-pixels: ${APP_MAP_IMAGE_MAX_PIXELS:50000000}
+      max-original-side: ${APP_MAP_IMAGE_MAX_ORIGINAL_SIDE:16000}
+      max-original-pixels: ${APP_MAP_IMAGE_MAX_ORIGINAL_PIXELS:80000000}
+      analysis-max-side: ${APP_MAP_IMAGE_ANALYSIS_MAX_SIDE:4096}
+      analysis-jpeg-quality: ${APP_MAP_IMAGE_ANALYSIS_JPEG_QUALITY:0.95}
     storage:
       provider: ${APP_MAP_STORAGE_PROVIDER:disabled}
       bucket: ${APP_MAP_STORAGE_BUCKET:}
@@ -73,3 +85,4 @@ app:
       path-style-access-enabled: ${APP_MAP_STORAGE_PATH_STYLE_ACCESS_ENABLED:false}
       connect-timeout: ${APP_MAP_STORAGE_CONNECT_TIMEOUT:3s}
       api-call-timeout: ${APP_MAP_STORAGE_API_CALL_TIMEOUT:30s}
+      read-url-ttl: ${APP_MAP_STORAGE_READ_URL_TTL:10m}

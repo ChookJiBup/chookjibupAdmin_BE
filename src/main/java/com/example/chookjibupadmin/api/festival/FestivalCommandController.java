@@ -66,15 +66,15 @@ public class FestivalCommandController {
     }
 
     /**
-     * 축제 기본 정보와 최초 배치도 이미지를 함께 등록한다.
+     * 축제 기본 정보와 AI 분석 대상 원본 도면을 함께 등록한다.
      */
-    @Operation(summary = "배치도 이미지를 포함한 축제 기본 정보 생성")
+    @Operation(summary = "AI 분석용 원본 도면을 포함한 축제 기본 정보 생성")
     @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<CreateFestivalWithMapResponse> createWithMap(
             @Valid @RequestPart("festival") CreateFestivalRequest request,
-            @RequestPart("image") MultipartFile image,
+            @RequestPart("image") MultipartFile blueprintImage,
             @AuthenticationPrincipal AdminPrincipal principal
     ) {
         return ApiResponse.success(
@@ -83,10 +83,10 @@ public class FestivalCommandController {
                         festivalMapRegistrationApplicationService.create(
                                 request.toCommand(),
                                 new MapImageUploadCommand(
-                                        image.getOriginalFilename(),
-                                        image.getContentType(),
-                                        image.getSize(),
-                                        image::getInputStream
+                                        blueprintImage.getOriginalFilename(),
+                                        blueprintImage.getContentType(),
+                                        blueprintImage.getSize(),
+                                        blueprintImage::getInputStream
                                 ),
                                 principal
                         )

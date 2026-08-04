@@ -25,11 +25,13 @@ class MapImagePreparationServiceTest {
                     800,
                     600,
                     12000,
-                    50_000_000
+                    50_000_000,
+                    4096,
+                    0.95
             ));
 
     @Test
-    @DisplayName("정상 PNG를 검증하고 source와 display 파일을 준비한다")
+    @DisplayName("정상 PNG를 검증하고 original, display, analysis 파일을 준비한다")
     void success_Prepare_Png() throws Exception {
         byte[] bytes = image("png", 800, 600);
 
@@ -38,14 +40,40 @@ class MapImagePreparationServiceTest {
                 "image/png",
                 bytes
         ))) {
-            assertThat(prepared.sourceContentType()).isEqualTo("image/png");
+            assertThat(prepared.originalContentType()).isEqualTo("image/png");
             assertThat(prepared.displayContentType()).isEqualTo("image/png");
-            assertThat(prepared.imageWidth()).isEqualTo(800);
-            assertThat(prepared.imageHeight()).isEqualTo(600);
-            assertThat(prepared.sourceChecksumSha256()).hasSize(64);
+            assertThat(prepared.analysisContentType()).isEqualTo("image/jpeg");
+            assertThat(prepared.displayImageWidth()).isEqualTo(800);
+            assertThat(prepared.displayImageHeight()).isEqualTo(600);
+            assertThat(prepared.analysisImageWidth()).isEqualTo(800);
+            assertThat(prepared.analysisImageHeight()).isEqualTo(600);
+            assertThat(prepared.originalChecksumSha256()).hasSize(64);
             assertThat(prepared.displayChecksumSha256()).hasSize(64);
-            assertThat(prepared.sourcePath()).exists();
+            assertThat(prepared.analysisChecksumSha256()).hasSize(64);
+            assertThat(prepared.originalPath()).exists();
             assertThat(prepared.displayPath()).exists();
+            assertThat(prepared.analysisPath()).exists();
+        }
+    }
+
+    @Test
+    @DisplayName("큰 원본 도면은 유지하고 AI 분석본만 최대 변 길이에 맞춰 축소한다")
+    void success_Prepare_LargeBlueprintForAnalysis() throws Exception {
+        byte[] bytes = image("png", 5000, 1000);
+
+        try (PreparedMapImage prepared = service.prepare(command(
+                "large-festival-blueprint.png",
+                "image/png",
+                bytes
+        ))) {
+            BufferedImage original = ImageIO.read(prepared.originalPath().toFile());
+            BufferedImage display = ImageIO.read(prepared.displayPath().toFile());
+            BufferedImage analysis = ImageIO.read(prepared.analysisPath().toFile());
+
+            assertThat(original.getWidth()).isEqualTo(5000);
+            assertThat(display.getWidth()).isEqualTo(5000);
+            assertThat(analysis.getWidth()).isEqualTo(4096);
+            assertThat(analysis.getHeight()).isEqualTo(819);
         }
     }
 
@@ -150,7 +178,9 @@ class MapImagePreparationServiceTest {
                         1,
                         1,
                         10,
-                        100
+                        100,
+                        10,
+                        0.95
                 ));
         MapImageUploadCommand oversized = new MapImageUploadCommand(
                 "map.png",

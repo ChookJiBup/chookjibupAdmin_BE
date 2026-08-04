@@ -14,7 +14,7 @@ public record CreateFestivalWithMapResponse(
     ) {
         return new CreateFestivalWithMapResponse(
                 CreateFestivalResponse.from(result.festival()),
-                CreateFestivalMapResponse.from(result.festivalMap())
+                CreateFestivalMapResponse.from(result.festivalMap(), result.analysisJob())
         );
     }
 }

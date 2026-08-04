@@ -68,6 +68,34 @@ class FestivalServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("getByIdForUpdate")
+    class GetByIdForUpdate {
+
+        @Test
+        @DisplayName("축제 교체 작업용 비관적 잠금 조회를 수행한다")
+        void success_GetByIdForUpdate() {
+            Festival festival = festival();
+            given(festivalRepository.findByIdForUpdate(1L))
+                    .willReturn(Optional.of(festival));
+
+            Festival found = festivalService.getByIdForUpdate(1L);
+
+            assertThat(found).isSameAs(festival);
+        }
+
+        @Test
+        @DisplayName("잠금 조회할 축제가 없으면 예외를 던진다")
+        void fail_GetByIdForUpdate_CustomException() {
+            given(festivalRepository.findByIdForUpdate(1L))
+                    .willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> festivalService.getByIdForUpdate(1L))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_NOT_FOUND.getMessage());
+        }
+    }
+
     private Festival festival() {
         return Festival.create(
                 1L,

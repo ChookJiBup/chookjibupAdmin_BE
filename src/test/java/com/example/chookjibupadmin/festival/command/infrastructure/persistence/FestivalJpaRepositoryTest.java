@@ -95,6 +95,26 @@ class FestivalJpaRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findByIdForUpdate")
+    class FindByIdForUpdate {
+
+        @Test
+        @DisplayName("축제 ID로 교체 직렬화용 잠금 조회를 수행한다")
+        void success_FindByIdForUpdate() {
+            Festival saved = festivalJpaRepository.saveAndFlush(festival());
+            entityManager.clear();
+
+            var found = festivalJpaRepository.findByIdForUpdate(saved.getId());
+
+            assertThat(found)
+                    .isPresent()
+                    .get()
+                    .extracting(Festival::getPublicId)
+                    .isEqualTo(saved.getPublicId());
+        }
+    }
+
+    @Nested
     @DisplayName("existsBySeriesIdAndYear")
     class ExistsBySeriesIdAndYear {
 

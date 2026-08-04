@@ -14,13 +14,20 @@ import com.example.chookjibupadmin.map.command.application.dto.StoredMapImageFil
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
 import com.example.chookjibupadmin.map.command.application.port.MapImagePreparationPort;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
+import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
+import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
- * 축제 등록 이미지 저장과 DB 등록 순서를 조정한다.
+ * 축제 등록 도면의 원본·표시본·AI 분석본 저장과 DB 등록 순서를 조정한다.
  */
 @Slf4j
 @Service
@@ -42,18 +49,19 @@ public class FestivalMapRegistrationApplicationService {
         validateCreator(principal);
         UUID festivalPublicId = UUID.randomUUID();
         UUID mapPublicId = UUID.randomUUID();
-        UUID sourceAssetId = UUID.randomUUID();
+        UUID originalAssetId = UUID.randomUUID();
         UUID displayAssetId = UUID.randomUUID();
+        UUID analysisAssetId = UUID.randomUUID();
 
         try (PreparedMapImage prepared = mapImagePreparationPort.prepare(
                 imageCommand
         )) {
-            String sourceKey = objectKey(
+            String originalKey = objectKey(
                     festivalPublicId,
                     mapPublicId,
-                    "source",
-                    sourceAssetId,
-                    prepared.sourceExtension()
+                    "original",
+                    originalAssetId,
+                    prepared.originalExtension()
             );
             String displayKey = objectKey(
                     festivalPublicId,
@@ -62,16 +70,24 @@ public class FestivalMapRegistrationApplicationService {
                     displayAssetId,
                     prepared.displayExtension()
             );
-            boolean sourceAttempted = false;
+            String analysisKey = objectKey(
+                    festivalPublicId,
+                    mapPublicId,
+                    "analysis",
+                    analysisAssetId,
+                    prepared.analysisExtension()
+            );
+            boolean originalAttempted = false;
             boolean displayAttempted = false;
+            boolean analysisAttempted = false;
             try {
-                sourceAttempted = true;
+                originalAttempted = true;
                 mapImageStoragePort.upload(new StoredMapImageFile(
-                        sourceKey,
-                        prepared.sourcePath(),
-                        prepared.sourceFileSize(),
-                        prepared.sourceContentType(),
-                        prepared.sourceChecksumSha256()
+                        originalKey,
+                        prepared.originalPath(),
+                        prepared.originalFileSize(),
+                        prepared.originalContentType(),
+                        prepared.originalChecksumSha256()
                 ));
                 displayAttempted = true;
                 mapImageStoragePort.upload(new StoredMapImageFile(
@@ -81,29 +97,70 @@ public class FestivalMapRegistrationApplicationService {
                         prepared.displayContentType(),
                         prepared.displayChecksumSha256()
                 ));
+                analysisAttempted = true;
+                mapImageStoragePort.upload(new StoredMapImageFile(
+                        analysisKey,
+                        prepared.analysisPath(),
+                        prepared.analysisFileSize(),
+                        prepared.analysisContentType(),
+                        prepared.analysisChecksumSha256()
+                ));
                 return festivalApplicationService.createWithMap(
                         command,
                         principal,
                         festivalPublicId,
                         new UploadedFestivalMap(
                                 mapPublicId,
-                                command.name().trim() + " 배치도",
-                                prepared.originalFileName(),
-                                sourceKey,
-                                displayKey,
-                                prepared.sourceContentType(),
-                                prepared.displayContentType(),
-                                prepared.sourceFileSize(),
-                                prepared.displayFileSize(),
-                                prepared.imageWidth(),
-                                prepared.imageHeight(),
-                                prepared.sourceChecksumSha256(),
-                                prepared.displayChecksumSha256()
+                                FestivalMapName.of(
+                                        command.name().trim() + " 배치도"
+                                ),
+                                MapImageFileName.of(
+                                        prepared.originalFileName()
+                                ),
+                                MapImageObjectKey.of(originalKey),
+                                MapImageObjectKey.of(displayKey),
+                                MapImageObjectKey.of(analysisKey),
+                                MapImageContentType.of(
+                                        prepared.originalContentType()
+                                ),
+                                MapImageContentType.of(
+                                        prepared.displayContentType()
+                                ),
+                                MapImageContentType.of(
+                                        prepared.analysisContentType()
+                                ),
+                                MapImageFileSize.of(
+                                        prepared.originalFileSize()
+                                ),
+                                MapImageFileSize.of(
+                                        prepared.displayFileSize()
+                                ),
+                                MapImageFileSize.of(
+                                        prepared.analysisFileSize()
+                                ),
+                                MapImageDimensions.of(
+                                        prepared.displayImageWidth(),
+                                        prepared.displayImageHeight()
+                                ),
+                                MapImageDimensions.of(
+                                        prepared.analysisImageWidth(),
+                                        prepared.analysisImageHeight()
+                                ),
+                                Sha256Checksum.of(
+                                        prepared.originalChecksumSha256()
+                                ),
+                                Sha256Checksum.of(
+                                        prepared.displayChecksumSha256()
+                                ),
+                                Sha256Checksum.of(
+                                        prepared.analysisChecksumSha256()
+                                )
                         )
                 );
             } catch (RuntimeException exception) {
+                compensate(analysisKey, analysisAttempted);
                 compensate(displayKey, displayAttempted);
-                compensate(sourceKey, sourceAttempted);
+                compensate(originalKey, originalAttempted);
                 throw exception;
             }
         }

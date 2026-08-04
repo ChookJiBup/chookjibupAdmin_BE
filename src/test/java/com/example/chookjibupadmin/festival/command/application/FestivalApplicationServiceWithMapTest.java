@@ -19,8 +19,16 @@ import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalSeries;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.map.command.application.FestivalMapService;
+import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
+import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
+import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Optional;
@@ -54,6 +62,9 @@ class FestivalApplicationServiceWithMapTest {
     @Mock
     private FestivalMapService festivalMapService;
 
+    @Mock
+    private MapAnalysisQueueApplicationService mapAnalysisQueueService;
+
     @Test
     @DisplayName("축제와 S3 저장 완료 배치도 메타데이터를 함께 저장한다")
     void success_CreateWithMap() {
@@ -72,7 +83,11 @@ class FestivalApplicationServiceWithMapTest {
             return festival;
         });
         given(festivalMapService.save(any(FestivalMap.class)))
-                .willAnswer(invocation -> invocation.getArgument(0));
+                .willAnswer(invocation -> {
+                    FestivalMap map = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(map, "id", 30L);
+                    return map;
+                });
         UUID festivalPublicId = UUID.randomUUID();
         UploadedFestivalMap uploadedMap = uploadedMap();
 
@@ -89,6 +104,7 @@ class FestivalApplicationServiceWithMapTest {
                 .isEqualTo(uploadedMap.publicId());
         then(adminFestivalRoleService).should().assignFestivalOwner(1L, 20L);
         then(festivalMapService).should().save(any(FestivalMap.class));
+        then(mapAnalysisQueueService).should().enqueueInitial(result.festivalMap());
     }
 
     private CreateFestivalCommand command() {
@@ -108,18 +124,22 @@ class FestivalApplicationServiceWithMapTest {
     private UploadedFestivalMap uploadedMap() {
         return new UploadedFestivalMap(
                 UUID.randomUUID(),
-                "테스트 축제 배치도",
-                "map.png",
-                "source-key",
-                "display-key",
-                "image/png",
-                "image/png",
-                100,
-                90,
-                800,
-                600,
-                "a".repeat(64),
-                "b".repeat(64)
+                FestivalMapName.of("테스트 축제 배치도"),
+                MapImageFileName.of("map.png"),
+                MapImageObjectKey.of("original-key"),
+                MapImageObjectKey.of("display-key"),
+                MapImageObjectKey.of("analysis-key"),
+                MapImageContentType.of("image/png"),
+                MapImageContentType.of("image/png"),
+                MapImageContentType.of("image/jpeg"),
+                MapImageFileSize.of(100),
+                MapImageFileSize.of(90),
+                MapImageFileSize.of(80),
+                MapImageDimensions.of(800, 600),
+                MapImageDimensions.of(800, 600),
+                Sha256Checksum.of("a".repeat(64)),
+                Sha256Checksum.of("b".repeat(64)),
+                Sha256Checksum.of("c".repeat(64))
         );
     }
 

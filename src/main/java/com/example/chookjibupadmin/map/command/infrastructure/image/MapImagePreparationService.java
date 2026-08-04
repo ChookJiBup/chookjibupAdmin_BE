@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 업로드 이미지를 검증하고 화면 좌표 기준이 되는 이미지를 생성한다.
+ * 업로드한 축제 도면을 검증하고 화면 표시용·AI 분석용 이미지를 생성한다.
  */
 @Component
 @RequiredArgsConstructor
@@ -48,45 +48,67 @@ public class MapImagePreparationService implements MapImagePreparationPort {
     @Override
     public PreparedMapImage prepare(MapImageUploadCommand command) {
         validateUpload(command);
-        Path sourcePath = null;
+        Path originalPath = null;
         Path displayPath = null;
+        Path analysisPath = null;
         try {
-            sourcePath = Files.createTempFile("festival-map-source-", ".upload");
-            copySource(command, sourcePath);
-            ImageFormat format = detectFormat(sourcePath);
-            BufferedImage sourceImage = readValidatedImage(sourcePath);
-            int orientation = readOrientation(sourcePath, format);
-            BufferedImage displayImage = applyOrientation(sourceImage, orientation);
+            originalPath = Files.createTempFile(
+                    "festival-blueprint-original-",
+                    ".upload"
+            );
+            copyOriginal(command, originalPath);
+            ImageFormat format = detectFormat(originalPath);
+            BufferedImage originalImage = readValidatedImage(originalPath);
+            int orientation = readOrientation(originalPath, format);
+            BufferedImage displayImage = applyOrientation(
+                    originalImage,
+                    orientation
+            );
             validateDimensions(displayImage.getWidth(), displayImage.getHeight());
+            BufferedImage analysisImage = createAnalysisImage(displayImage);
 
             displayPath = Files.createTempFile(
-                    "festival-map-display-",
+                    "festival-blueprint-display-",
                     "." + format.extension
             );
             writeDisplayImage(displayImage, displayPath, format);
+            analysisPath = Files.createTempFile(
+                    "festival-blueprint-analysis-",
+                    ".jpg"
+            );
+            writeAnalysisImage(analysisImage, analysisPath);
 
             return new PreparedMapImage(
                     sanitizeFileName(command.originalFileName(), format.extension),
-                    sourcePath,
+                    originalPath,
                     displayPath,
+                    analysisPath,
                     format.contentType,
                     format.contentType,
+                    ImageFormat.JPEG.contentType,
                     format.extension,
                     format.extension,
-                    Files.size(sourcePath),
+                    ImageFormat.JPEG.extension,
+                    Files.size(originalPath),
                     Files.size(displayPath),
+                    Files.size(analysisPath),
                     displayImage.getWidth(),
                     displayImage.getHeight(),
-                    checksum(sourcePath),
-                    checksum(displayPath)
+                    analysisImage.getWidth(),
+                    analysisImage.getHeight(),
+                    checksum(originalPath),
+                    checksum(displayPath),
+                    checksum(analysisPath)
             );
         } catch (CustomException exception) {
-            deleteQuietly(sourcePath);
+            deleteQuietly(originalPath);
             deleteQuietly(displayPath);
+            deleteQuietly(analysisPath);
             throw exception;
         } catch (Exception exception) {
-            deleteQuietly(sourcePath);
+            deleteQuietly(originalPath);
             deleteQuietly(displayPath);
+            deleteQuietly(analysisPath);
             throw new CustomException(
                     ErrorCode.FESTIVAL_MAP_IMAGE_INVALID,
                     exception
@@ -105,12 +127,12 @@ public class MapImagePreparationService implements MapImagePreparationPort {
         }
     }
 
-    private void copySource(MapImageUploadCommand command, Path sourcePath)
+    private void copyOriginal(MapImageUploadCommand command, Path originalPath)
             throws IOException {
         long maxFileSize = properties.maxFileSize().toBytes();
         long actualSize = 0;
         try (InputStream inputStream = command.inputStreamSupplier().open();
-             OutputStream outputStream = Files.newOutputStream(sourcePath)) {
+             OutputStream outputStream = Files.newOutputStream(originalPath)) {
             byte[] buffer = new byte[8192];
             int read;
             while ((read = inputStream.read(buffer)) >= 0) {
@@ -185,10 +207,56 @@ public class MapImagePreparationService implements MapImagePreparationPort {
     private void validateDecodedImageBounds(int width, int height) {
         long pixels = (long) width * height;
         if (width <= 0 || height <= 0
-                || width > properties.maxSide() || height > properties.maxSide()
-                || pixels > properties.maxPixels()) {
+                || width > properties.maxOriginalSide()
+                || height > properties.maxOriginalSide()
+                || pixels > properties.maxOriginalPixels()) {
             throw new CustomException(ErrorCode.FESTIVAL_MAP_IMAGE_DIMENSION_INVALID);
         }
+    }
+
+    private BufferedImage createAnalysisImage(BufferedImage displayImage) {
+        int maxSide = properties.analysisMaxSide();
+        if (maxSide <= 0) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_IMAGE_INVALID);
+        }
+        int width = displayImage.getWidth();
+        int height = displayImage.getHeight();
+        int longestSide = Math.max(width, height);
+        if (longestSide <= maxSide) {
+            return displayImage;
+        }
+        double scale = (double) maxSide / longestSide;
+        int targetWidth = Math.max(1, (int) Math.round(width * scale));
+        int targetHeight = Math.max(1, (int) Math.round(height * scale));
+        BufferedImage resized = new BufferedImage(
+                targetWidth,
+                targetHeight,
+                BufferedImage.TYPE_INT_RGB
+        );
+        Graphics2D graphics = resized.createGraphics();
+        try {
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, targetWidth, targetHeight);
+            graphics.setRenderingHint(
+                    java.awt.RenderingHints.KEY_INTERPOLATION,
+                    java.awt.RenderingHints.VALUE_INTERPOLATION_BICUBIC
+            );
+            graphics.setRenderingHint(
+                    java.awt.RenderingHints.KEY_RENDERING,
+                    java.awt.RenderingHints.VALUE_RENDER_QUALITY
+            );
+            graphics.drawImage(
+                    displayImage,
+                    0,
+                    0,
+                    targetWidth,
+                    targetHeight,
+                    null
+            );
+        } finally {
+            graphics.dispose();
+        }
+        return resized;
     }
 
     private int readOrientation(Path path, ImageFormat format) {
@@ -307,7 +375,7 @@ public class MapImagePreparationService implements MapImagePreparationPort {
             }
         }
         if (format == ImageFormat.JPEG) {
-            writeJpeg(output, path);
+            writeJpeg(output, path, 0.92F);
             return;
         }
         if (!ImageIO.write(output, format.imageIoFormat, path.toFile())) {
@@ -315,7 +383,45 @@ public class MapImagePreparationService implements MapImagePreparationPort {
         }
     }
 
-    private void writeJpeg(BufferedImage image, Path path) throws IOException {
+    private void writeAnalysisImage(BufferedImage image, Path path)
+            throws IOException {
+        double configuredQuality = properties.analysisJpegQuality();
+        if (configuredQuality <= 0 || configuredQuality > 1) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_IMAGE_INVALID);
+        }
+        writeJpeg(
+                toOpaqueRgb(image),
+                path,
+                (float) configuredQuality
+        );
+    }
+
+    private BufferedImage toOpaqueRgb(BufferedImage image) {
+        if (image.getType() == BufferedImage.TYPE_INT_RGB
+                && image.getTransparency() == Transparency.OPAQUE) {
+            return image;
+        }
+        BufferedImage output = new BufferedImage(
+                image.getWidth(),
+                image.getHeight(),
+                BufferedImage.TYPE_INT_RGB
+        );
+        Graphics2D graphics = output.createGraphics();
+        try {
+            graphics.setColor(Color.WHITE);
+            graphics.fillRect(0, 0, output.getWidth(), output.getHeight());
+            graphics.drawImage(image, 0, 0, null);
+        } finally {
+            graphics.dispose();
+        }
+        return output;
+    }
+
+    private void writeJpeg(
+            BufferedImage image,
+            Path path,
+            float quality
+    ) throws IOException {
         Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
         if (!writers.hasNext()) {
             throw new CustomException(ErrorCode.FESTIVAL_MAP_IMAGE_INVALID);
@@ -328,7 +434,7 @@ public class MapImagePreparationService implements MapImagePreparationPort {
             ImageWriteParam parameter = writer.getDefaultWriteParam();
             if (parameter.canWriteCompressed()) {
                 parameter.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-                parameter.setCompressionQuality(0.92F);
+                parameter.setCompressionQuality(quality);
             }
             writer.setOutput(output);
             writer.write(null, new IIOImage(image, null, null), parameter);
@@ -363,7 +469,7 @@ public class MapImagePreparationService implements MapImagePreparationPort {
             normalized = normalized.substring(separator + 1);
         }
         if (normalized.isBlank()) {
-            normalized = "festival-map." + extension;
+            normalized = "festival-blueprint." + extension;
         }
         return normalized.length() <= 255
                 ? normalized

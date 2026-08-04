@@ -30,4 +30,16 @@ public class FestivalMapService {
                         ErrorCode.FESTIVAL_MAP_NOT_FOUND
                 ));
     }
+
+    public FestivalMap getById(Long id) {
+        return festivalMapRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.FESTIVAL_MAP_NOT_FOUND));
+    }
+
+    public FestivalMap getByPublicIdForUpdate(UUID publicId) {
+        return festivalMapRepository.findByPublicIdForUpdate(publicId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.FESTIVAL_MAP_NOT_FOUND
+                ));
+    }
 }

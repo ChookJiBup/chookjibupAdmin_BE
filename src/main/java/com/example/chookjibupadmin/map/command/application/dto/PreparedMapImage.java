@@ -5,28 +5,36 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * 검증된 업로드 원본과 화면 표시용 정규화 이미지이다.
+ * 검증된 축제 도면 원본과 화면 표시용·AI 분석용 파생 이미지이다.
  */
 public record PreparedMapImage(
         String originalFileName,
-        Path sourcePath,
+        Path originalPath,
         Path displayPath,
-        String sourceContentType,
+        Path analysisPath,
+        String originalContentType,
         String displayContentType,
-        String sourceExtension,
+        String analysisContentType,
+        String originalExtension,
         String displayExtension,
-        long sourceFileSize,
+        String analysisExtension,
+        long originalFileSize,
         long displayFileSize,
-        int imageWidth,
-        int imageHeight,
-        String sourceChecksumSha256,
-        String displayChecksumSha256
+        long analysisFileSize,
+        int displayImageWidth,
+        int displayImageHeight,
+        int analysisImageWidth,
+        int analysisImageHeight,
+        String originalChecksumSha256,
+        String displayChecksumSha256,
+        String analysisChecksumSha256
 ) implements AutoCloseable {
 
     @Override
     public void close() {
-        deleteIfExists(sourcePath);
+        deleteIfExists(originalPath);
         deleteIfExists(displayPath);
+        deleteIfExists(analysisPath);
     }
 
     private static void deleteIfExists(Path path) {

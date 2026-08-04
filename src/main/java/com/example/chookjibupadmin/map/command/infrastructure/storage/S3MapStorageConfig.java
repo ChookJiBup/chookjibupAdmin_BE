@@ -9,6 +9,7 @@ import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 /**
  * 배치도 저장용 AWS S3 Client를 구성한다.
@@ -40,6 +41,21 @@ public class S3MapStorageConfig {
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
                         .apiCallTimeout(apiCallTimeout)
                         .build())
+                .serviceConfiguration(S3Configuration.builder()
+                        .pathStyleAccessEnabled(
+                                properties.pathStyleAccessEnabled()
+                        )
+                        .build());
+        if (properties.endpoint() != null) {
+            builder.endpointOverride(properties.endpoint());
+        }
+        return builder.build();
+    }
+
+    @Bean
+    public S3Presigner mapS3Presigner(MapStorageProperties properties) {
+        var builder = S3Presigner.builder()
+                .region(Region.of(properties.region()))
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(
                                 properties.pathStyleAccessEnabled()

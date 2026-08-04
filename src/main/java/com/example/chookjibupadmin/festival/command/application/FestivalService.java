@@ -35,6 +35,13 @@ public class FestivalService {
                 .orElseThrow(() -> new CustomException(ErrorCode.FESTIVAL_NOT_FOUND));
     }
 
+    public Festival getByIdForUpdate(Long festivalId) {
+        return festivalRepository.findByIdForUpdate(festivalId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.FESTIVAL_NOT_FOUND
+                ));
+    }
+
     /**
      * 외부 UUID로 축제를 조회한다.
      */

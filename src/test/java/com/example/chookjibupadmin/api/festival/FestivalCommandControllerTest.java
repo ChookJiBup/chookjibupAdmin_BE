@@ -20,6 +20,13 @@ import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.map.command.application.FestivalMapRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
+import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
+import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -110,18 +117,22 @@ class FestivalCommandControllerTest {
         FestivalMap festivalMap = FestivalMap.uploaded(
                 UUID.randomUUID(),
                 1L,
-                "테스트 축제 배치도",
-                "festival-map.png",
-                "source-key",
-                "display-key",
-                "image/png",
-                "image/png",
-                3,
-                3,
-                800,
-                600,
-                "a".repeat(64),
-                "b".repeat(64),
+                FestivalMapName.of("테스트 축제 배치도"),
+                MapImageFileName.of("festival-map.png"),
+                MapImageObjectKey.of("original-key"),
+                MapImageObjectKey.of("display-key"),
+                MapImageObjectKey.of("analysis-key"),
+                MapImageContentType.of("image/png"),
+                MapImageContentType.of("image/png"),
+                MapImageContentType.of("image/jpeg"),
+                MapImageFileSize.of(3),
+                MapImageFileSize.of(3),
+                MapImageFileSize.of(2),
+                MapImageDimensions.of(800, 600),
+                MapImageDimensions.of(800, 600),
+                Sha256Checksum.of("a".repeat(64)),
+                Sha256Checksum.of("b".repeat(64)),
+                Sha256Checksum.of("c".repeat(64)),
                 1L
         );
         return new CreateFestivalWithMapResult(festival, festivalMap);

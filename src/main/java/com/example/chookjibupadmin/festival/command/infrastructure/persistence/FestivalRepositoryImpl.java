@@ -24,6 +24,11 @@ public class FestivalRepositoryImpl implements FestivalRepository {
     }
 
     @Override
+    public Optional<Festival> findByIdForUpdate(Long festivalId) {
+        return jpaRepository.findByIdForUpdate(festivalId);
+    }
+
+    @Override
     public Optional<Festival> findByPublicId(UUID publicId) {
         return jpaRepository.findByPublicId(publicId);
     }

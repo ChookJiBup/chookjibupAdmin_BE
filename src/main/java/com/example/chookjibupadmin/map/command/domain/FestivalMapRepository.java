@@ -10,5 +10,9 @@ public interface FestivalMapRepository {
 
     FestivalMap save(FestivalMap festivalMap);
 
+    Optional<FestivalMap> findById(Long id);
+
     Optional<FestivalMap> findByPublicId(UUID publicId);
+
+    Optional<FestivalMap> findByPublicIdForUpdate(UUID publicId);
 }
