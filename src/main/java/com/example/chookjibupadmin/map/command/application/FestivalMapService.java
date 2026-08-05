@@ -42,4 +42,8 @@ public class FestivalMapService {
                         ErrorCode.FESTIVAL_MAP_NOT_FOUND
                 ));
     }
+
+    public boolean existsByLocationId(Long locationId) {
+        return festivalMapRepository.existsByLocationId(locationId);
+    }
 }

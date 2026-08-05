@@ -13,6 +13,8 @@ interface FestivalMapJpaRepository extends JpaRepository<FestivalMap, Long> {
 
     Optional<FestivalMap> findByPublicId(UUID publicId);
 
+    boolean existsByLocationId(Long locationId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select fm from FestivalMap fm where fm.publicId = :publicId")
     Optional<FestivalMap> findByPublicIdForUpdate(

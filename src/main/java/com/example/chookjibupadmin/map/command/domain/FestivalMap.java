@@ -68,6 +68,9 @@ public class FestivalMap extends BaseTimeEntity {
     @Column(name = "festival_id", nullable = false, updatable = false)
     private Long festivalId;
 
+    @Column(name = "location_id")
+    private Long locationId;
+
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -370,6 +373,13 @@ public class FestivalMap extends BaseTimeEntity {
 
     public boolean belongsTo(Long festivalId) {
         return this.festivalId.equals(festivalId);
+    }
+
+    public void assignLocation(Long locationId) {
+        if (locationId == null || this.locationId != null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        this.locationId = locationId;
     }
 
     /**

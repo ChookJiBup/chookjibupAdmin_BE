@@ -32,4 +32,9 @@ public class FestivalMapRepositoryImpl implements FestivalMapRepository {
     public Optional<FestivalMap> findByPublicIdForUpdate(UUID publicId) {
         return jpaRepository.findByPublicIdForUpdate(publicId);
     }
+
+    @Override
+    public boolean existsByLocationId(Long locationId) {
+        return jpaRepository.existsByLocationId(locationId);
+    }
 }

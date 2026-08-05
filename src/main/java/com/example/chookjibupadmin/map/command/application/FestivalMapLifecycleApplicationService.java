@@ -32,6 +32,9 @@ public class FestivalMapLifecycleApplicationService {
         festivalService.getByIdForUpdate(festivalId);
         FestivalMap current = ownedMapForUpdate(currentMapId, festivalId);
         current.replaceWith(replacement, LocalDateTime.now());
+        if (current.getLocationId() != null) {
+            replacement.assignLocation(current.getLocationId());
+        }
         FestivalMap saved = festivalMapService.save(replacement);
         mapAnalysisQueueService.enqueueReplacement(current, saved);
         return saved;

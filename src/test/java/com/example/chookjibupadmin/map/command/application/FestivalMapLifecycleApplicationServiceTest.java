@@ -31,9 +31,12 @@ class FestivalMapLifecycleApplicationServiceTest {
     @InjectMocks
     private FestivalMapLifecycleApplicationService service;
 
-    @Mock private FestivalMapService festivalMapService;
-    @Mock private FestivalService festivalService;
-    @Mock private MapAnalysisQueueApplicationService mapAnalysisQueueService;
+    @Mock
+    private FestivalMapService festivalMapService;
+    @Mock
+    private FestivalService festivalService;
+    @Mock
+    private MapAnalysisQueueApplicationService mapAnalysisQueueService;
 
     @Test
     @DisplayName("축제 행을 잠근 뒤 현재 배치도를 새 배치도로 교체한다")
@@ -44,6 +47,7 @@ class FestivalMapLifecycleApplicationServiceTest {
                 UUID.randomUUID(), "new-original", "new-display"
         );
         ReflectionTestUtils.setField(current, "id", 10L);
+        current.assignLocation(30L);
         given(festivalMapService.getByPublicIdForUpdate(currentMapId))
                 .willReturn(current);
         given(festivalMapService.save(replacement)).willAnswer(invocation -> {
@@ -57,6 +61,7 @@ class FestivalMapLifecycleApplicationServiceTest {
         assertThat(current.getStorageStatus())
                 .isEqualTo(FestivalMapStorageStatus.REPLACED);
         assertThat(replacement.getReplacesMapId()).isEqualTo(10L);
+        assertThat(replacement.getLocationId()).isEqualTo(30L);
         InOrder order = inOrder(festivalService, festivalMapService);
         order.verify(festivalService).getByIdForUpdate(20L);
         order.verify(festivalMapService).getByPublicIdForUpdate(currentMapId);
