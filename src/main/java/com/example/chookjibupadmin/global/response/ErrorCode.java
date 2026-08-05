@@ -49,6 +49,7 @@ public enum ErrorCode {
     FESTIVAL_MAP_READ_FAILED(50204, HttpStatus.BAD_GATEWAY, "축제 배치도 분석 이미지 조회에 실패했습니다."),
     MAP_ANALYSIS_JOB_NOT_FOUND(40406, HttpStatus.NOT_FOUND, "도면 분석 작업을 찾을 수 없습니다."),
     FESTIVAL_ROADMAP_NOT_FOUND(40407, HttpStatus.NOT_FOUND, "축제 지도 편집 데이터를 찾을 수 없습니다."),
+    FESTIVAL_LOCATION_IN_USE(40909, HttpStatus.CONFLICT, "배치도에서 사용 중인 축제 장소는 삭제할 수 없습니다."),
     FIELD_STAFF_LOGIN_ID_DUPLICATED(40906, HttpStatus.CONFLICT, "이미 사용 중인 현장 스태프 아이디입니다."),
     FIELD_STAFF_INVALID_CREDENTIALS(40105, HttpStatus.UNAUTHORIZED, "현장 스태프 아이디 또는 비밀번호가 올바르지 않습니다."),
     FIELD_STAFF_NOT_ACTIVE(40302, HttpStatus.FORBIDDEN, "사용할 수 없는 현장 스태프 계정입니다."),

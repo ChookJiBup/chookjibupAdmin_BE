@@ -34,6 +34,11 @@ public class FestivalRepositoryImpl implements FestivalRepository {
     }
 
     @Override
+    public Optional<Festival> findByPublicIdForUpdate(UUID publicId) {
+        return jpaRepository.findByPublicIdForUpdate(publicId);
+    }
+
+    @Override
     public boolean existsBySeriesIdAndYear(Long seriesId, int year) {
         return jpaRepository.existsBySeriesIdAndYear(seriesId, year);
     }

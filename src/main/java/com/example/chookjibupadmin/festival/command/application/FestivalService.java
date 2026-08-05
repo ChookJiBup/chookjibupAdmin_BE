@@ -51,6 +51,15 @@ public class FestivalService {
     }
 
     /**
+     * 외부 UUID로 축제를 잠금 조회한다.
+     */
+    public Festival getByPublicIdForUpdate(UUID publicId) {
+        return festivalRepository
+                .findByPublicIdForUpdate(publicId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FESTIVAL_NOT_FOUND));
+    }
+
+    /**
      * 지정한 축제 묶음의 개최 연도 중복 여부를 확인한다.
      */
     public boolean existsBySeriesIdAndYear(

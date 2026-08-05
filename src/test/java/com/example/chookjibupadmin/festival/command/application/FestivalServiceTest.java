@@ -69,6 +69,35 @@ class FestivalServiceTest {
     }
 
     @Nested
+    @DisplayName("getByPublicIdForUpdate")
+    class GetByPublicIdForUpdate {
+
+        @Test
+        @DisplayName("외부 UUID로 축제를 비관적 잠금 조회한다")
+        void success_GetByPublicIdForUpdate() {
+            Festival festival = festival();
+            given(festivalRepository.findByPublicIdForUpdate(festival.getPublicId()))
+                    .willReturn(Optional.of(festival));
+
+            Festival found = festivalService.getByPublicIdForUpdate(festival.getPublicId());
+
+            assertThat(found).isSameAs(festival);
+        }
+
+        @Test
+        @DisplayName("잠금 조회할 축제가 없으면 예외를 던진다")
+        void fail_GetByPublicIdForUpdate_CustomException() {
+            UUID publicId = UUID.randomUUID();
+            given(festivalRepository.findByPublicIdForUpdate(publicId))
+                    .willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> festivalService.getByPublicIdForUpdate(publicId))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_NOT_FOUND.getMessage());
+        }
+    }
+
+    @Nested
     @DisplayName("getByIdForUpdate")
     class GetByIdForUpdate {
 

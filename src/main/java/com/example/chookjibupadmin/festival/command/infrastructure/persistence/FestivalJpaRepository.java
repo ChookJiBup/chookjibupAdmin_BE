@@ -14,6 +14,10 @@ interface FestivalJpaRepository extends JpaRepository<Festival, Long> {
     Optional<Festival> findByPublicId(UUID publicId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select f from Festival f where f.publicId = :publicId")
+    Optional<Festival> findByPublicIdForUpdate(@Param("publicId") UUID publicId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select f from Festival f where f.id = :festivalId")
     Optional<Festival> findByIdForUpdate(@Param("festivalId") Long festivalId);
 

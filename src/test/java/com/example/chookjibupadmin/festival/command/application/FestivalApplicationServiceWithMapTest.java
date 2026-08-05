@@ -18,6 +18,8 @@ import com.example.chookjibupadmin.festival.command.application.dto.CreateFestiv
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalSeries;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
+import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
 import com.example.chookjibupadmin.map.command.application.FestivalMapService;
 import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
@@ -65,6 +67,9 @@ class FestivalApplicationServiceWithMapTest {
     @Mock
     private MapAnalysisQueueApplicationService mapAnalysisQueueService;
 
+    @Mock
+    private FestivalLocationService festivalLocationService;
+
     @Test
     @DisplayName("축제와 S3 저장 완료 배치도 메타데이터를 함께 저장한다")
     void success_CreateWithMap() {
@@ -88,6 +93,13 @@ class FestivalApplicationServiceWithMapTest {
                     ReflectionTestUtils.setField(map, "id", 30L);
                     return map;
                 });
+        given(festivalLocationService.saveAll(any()))
+                .willAnswer(
+                        invocation -> {
+                            java.util.List<FestivalLocation> locations = invocation.getArgument(0);
+                            ReflectionTestUtils.setField(locations.getFirst(), "id", 40L);
+                            return locations;
+                        });
         UUID festivalPublicId = UUID.randomUUID();
         UploadedFestivalMap uploadedMap = uploadedMap();
 
@@ -102,6 +114,7 @@ class FestivalApplicationServiceWithMapTest {
         assertThat(result.festivalMap().getFestivalId()).isEqualTo(20L);
         assertThat(result.festivalMap().getPublicId())
                 .isEqualTo(uploadedMap.publicId());
+        assertThat(result.festivalMap().getLocationId()).isEqualTo(40L);
         then(adminFestivalRoleService).should().assignFestivalOwner(1L, 20L);
         then(festivalMapService).should().save(any(FestivalMap.class));
         then(mapAnalysisQueueService).should().enqueueInitial(result.festivalMap());

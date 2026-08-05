@@ -23,6 +23,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescriptio
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
+import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.LocalDate;
@@ -52,6 +53,9 @@ class FestivalApplicationServiceTest {
 
     @Mock
     private AdminAccountService adminAccountService;
+
+    @Mock
+    private FestivalLocationService festivalLocationService;
 
     @Nested
     @DisplayName("create")
@@ -228,7 +232,7 @@ class FestivalApplicationServiceTest {
             );
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(festivalOwner(festivalId));
-            given(festivalService.getByPublicId(publicId))
+            given(festivalService.getByPublicIdForUpdate(publicId))
                     .willReturn(festival);
 
             // when
@@ -243,7 +247,7 @@ class FestivalApplicationServiceTest {
             assertThat(updated.getAddressValue()).isEqualTo(command.address());
             assertThat(updated.getDetailAddressValue())
                     .isEqualTo(command.detailAddress());
-            then(festivalService).should().getByPublicId(publicId);
+            then(festivalService).should().getByPublicIdForUpdate(publicId);
         }
 
         @Test
@@ -255,7 +259,7 @@ class FestivalApplicationServiceTest {
             AdminPrincipal principal = principal(1L, AdminRole.SUB_ADMIN);
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(subAdmin(1L));
-            given(festivalService.getByPublicId(festivalId))
+            given(festivalService.getByPublicIdForUpdate(festivalId))
                     .willReturn(festival(1L));
 
             // when & then
@@ -277,7 +281,7 @@ class FestivalApplicationServiceTest {
             AdminPrincipal principal = principal(2L, AdminRole.FESTIVAL_OWNER);
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(festivalOwner(2L));
-            given(festivalService.getByPublicId(festivalId))
+            given(festivalService.getByPublicIdForUpdate(festivalId))
                     .willReturn(festival(1L));
 
             // when & then
@@ -303,7 +307,7 @@ class FestivalApplicationServiceTest {
             );
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(festivalOwner(festivalId));
-            given(festivalService.getByPublicId(publicId))
+            given(festivalService.getByPublicIdForUpdate(publicId))
                     .willThrow(new CustomException(ErrorCode.FESTIVAL_NOT_FOUND));
 
             // when & then
@@ -339,7 +343,7 @@ class FestivalApplicationServiceTest {
             );
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(festivalOwner(festivalId));
-            given(festivalService.getByPublicId(publicId))
+            given(festivalService.getByPublicIdForUpdate(publicId))
                     .willReturn(festival);
 
             // when & then
@@ -431,12 +435,14 @@ class FestivalApplicationServiceTest {
     }
 
     private AdminAccount unassignedAdmin() {
-        return AdminAccount.createAdmin(
+        AdminAccount admin = AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
                 AdminPasswordHash.of("encoded-password")
         );
+        ReflectionTestUtils.setField(admin, "id", 1L);
+        return admin;
     }
 
     private AdminAccount festivalOwner(Long festivalId) {

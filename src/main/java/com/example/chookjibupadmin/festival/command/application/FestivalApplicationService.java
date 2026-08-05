@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalCommand;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalWithMapResult;
+import com.example.chookjibupadmin.festival.command.application.dto.FestivalLocationCommand;
 import com.example.chookjibupadmin.festival.command.application.dto.UpdateFestivalCommand;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalSeries;
@@ -16,6 +17,8 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddr
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
+import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.application.FestivalMapService;
@@ -23,7 +26,12 @@ import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueAppl
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +50,7 @@ public class FestivalApplicationService {
     private final AdminFestivalRoleService adminFestivalRoleService;
     private final FestivalMapService festivalMapService;
     private final MapAnalysisQueueApplicationService mapAnalysisQueueService;
+    private final FestivalLocationService festivalLocationService;
 
     /**
      * 축제 묶음을 연결한 뒤 연도별 축제 기본 정보를 저장하고 생성자를 1관리자로 배정한다.
@@ -96,6 +105,7 @@ public class FestivalApplicationService {
         FestivalSeries series = findOrCreateSeries(command.seriesId(), name);
         validateSeriesName(series, name);
         validateUniqueFestivalYear(series.getId(), period.getStartDate().getYear());
+        FestivalLocationCommand primaryLocation = validateLocations(command.locations());
 
         Festival festival = Festival.create(
                 festivalPublicId,
@@ -103,8 +113,8 @@ public class FestivalApplicationService {
                 series.getPublicId(),
                 name,
                 FestivalDescription.of(command.description()),
-                FestivalAddress.of(command.address()),
-                FestivalDetailAddress.of(command.detailAddress()),
+                FestivalAddress.of(representativeAddress(primaryLocation)),
+                FestivalDetailAddress.of(primaryLocation.detailAddress()),
                 period,
                 FestivalOperationTime.of(
                         command.operationStartTime(),
@@ -113,6 +123,9 @@ public class FestivalApplicationService {
         );
 
         Festival savedFestival = festivalService.save(festival);
+        List<FestivalLocation> savedLocations = festivalLocationService.saveAll(
+                toLocations(savedFestival, command.locations(), creator.getId())
+        );
         if (adminFestivalRoleService == null) {
             creator.assignFestivalOwner(savedFestival.getId());
         } else {
@@ -125,7 +138,7 @@ public class FestivalApplicationService {
         FestivalMap festivalMap = null;
         MapAnalysisJob analysisJob = null;
         if (uploadedMap != null) {
-            festivalMap = festivalMapService.save(FestivalMap.uploaded(
+            FestivalMap uploadedFestivalMap = FestivalMap.uploaded(
                     uploadedMap.publicId(),
                     savedFestival.getId(),
                     uploadedMap.mapName(),
@@ -145,7 +158,13 @@ public class FestivalApplicationService {
                     uploadedMap.displayChecksumSha256(),
                     uploadedMap.analysisChecksumSha256(),
                     creator.getId()
-            ));
+            );
+            FestivalLocation primary = savedLocations.stream()
+                    .filter(FestivalLocation::isPrimary)
+                    .findFirst()
+                    .orElseThrow();
+            uploadedFestivalMap.assignLocation(primary.getId());
+            festivalMap = festivalMapService.save(uploadedFestivalMap);
             analysisJob = mapAnalysisQueueService.enqueueInitial(festivalMap);
         }
 
@@ -194,21 +213,162 @@ public class FestivalApplicationService {
             AdminPrincipal principal
     ) {
         AdminAccount adminAccount = findAuthenticatedAdmin(principal);
-        Festival festival = festivalService.getByPublicId(festivalId);
+        Festival festival = festivalService.getByPublicIdForUpdate(festivalId);
         validateFestivalOwner(festival, adminAccount);
+        FestivalLocationCommand primaryLocation = validateLocations(command.locations());
         festival.updateBasicInfo(
                 FestivalName.of(command.name()),
                 FestivalDescription.of(command.description()),
-                FestivalAddress.of(command.address()),
-                FestivalDetailAddress.of(command.detailAddress()),
+                FestivalAddress.of(representativeAddress(primaryLocation)),
+                FestivalDetailAddress.of(primaryLocation.detailAddress()),
                 FestivalPeriod.of(command.startDate(), command.endDate()),
                 FestivalOperationTime.of(
                         command.operationStartTime(),
                         command.operationEndTime()
                 )
         );
+        synchronizeLocations(festival, command.locations(), adminAccount.getId());
 
         return festival;
+    }
+
+    private FestivalLocationCommand validateLocations(List<FestivalLocationCommand> locations) {
+        if (locations == null
+                || locations.isEmpty()
+                || locations.size() > 100
+                || locations.stream().filter(FestivalLocationCommand::primary).count() != 1) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        HashSet<String> keys = new HashSet<>();
+        HashSet<UUID> locationIds = new HashSet<>();
+        for (FestivalLocationCommand location : locations) {
+            if (location == null) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+            if (location.locationId() != null
+                    && !locationIds.add(location.locationId())) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+            String key = String.join(
+                    "|",
+                    normalize(location.buildingManagementNumber()),
+                    normalize(location.roadAddress()),
+                    normalize(location.jibunAddress()),
+                    normalize(location.detailAddress()),
+                    normalize(location.locationName())
+            );
+            if (!keys.add(key)) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+        }
+        return locations.stream()
+                .filter(FestivalLocationCommand::primary)
+                .findFirst()
+                .orElseThrow();
+    }
+
+    private List<FestivalLocation> toLocations(
+            Festival festival,
+            List<FestivalLocationCommand> commands,
+            Long adminId
+    ) {
+        return commands.stream()
+                .map(location -> FestivalLocation.create(
+                        festival,
+                        location.locationType(),
+                        location.locationName(),
+                        location.roadAddress(),
+                        location.jibunAddress(),
+                        location.detailAddress(),
+                        location.postalCode(),
+                        location.buildingManagementNumber(),
+                        location.latitude(),
+                        location.longitude(),
+                        location.boundaryGeometry(),
+                        location.primary(),
+                        location.sortOrder(),
+                        adminId
+                ))
+                .toList();
+    }
+
+    private void synchronizeLocations(
+            Festival festival,
+            List<FestivalLocationCommand> commands,
+            Long adminId
+    ) {
+        List<FestivalLocation> existing = festivalLocationService.findAllByFestivalId(
+                festival.getId()
+        );
+        Map<UUID, FestivalLocation> byPublicId = existing.stream()
+                .collect(Collectors.toMap(
+                        FestivalLocation::getPublicId,
+                        Function.identity()
+                ));
+        List<FestivalLocation> synchronizedLocations = commands.stream()
+                .map(command -> {
+                    if (command.locationId() == null) {
+                        return FestivalLocation.create(
+                                festival,
+                                command.locationType(),
+                                command.locationName(),
+                                command.roadAddress(),
+                                command.jibunAddress(),
+                                command.detailAddress(),
+                                command.postalCode(),
+                                command.buildingManagementNumber(),
+                                command.latitude(),
+                                command.longitude(),
+                                command.boundaryGeometry(),
+                                command.primary(),
+                                command.sortOrder(),
+                                adminId
+                        );
+                    }
+                    FestivalLocation location = byPublicId.remove(command.locationId());
+                    if (location == null) {
+                        throw new CustomException(ErrorCode.INVALID_REQUEST);
+                    }
+                    location.update(
+                            command.locationType(),
+                            command.locationName(),
+                            command.roadAddress(),
+                            command.jibunAddress(),
+                            command.detailAddress(),
+                            command.postalCode(),
+                            command.buildingManagementNumber(),
+                            command.latitude(),
+                            command.longitude(),
+                            command.boundaryGeometry(),
+                            command.primary(),
+                            command.sortOrder(),
+                            adminId
+                    );
+                    return location;
+                })
+                .toList();
+        List<FestivalLocation> removals = List.copyOf(byPublicId.values());
+        if (removals.stream()
+                .anyMatch(location -> festivalMapService.existsByLocationId(location.getId()))) {
+            throw new CustomException(ErrorCode.FESTIVAL_LOCATION_IN_USE);
+        }
+        festivalLocationService.deleteAll(removals);
+        festivalLocationService.saveAll(synchronizedLocations);
+    }
+
+    private String representativeAddress(FestivalLocationCommand location) {
+        String address = location.roadAddress();
+        if (address == null || address.isBlank()) {
+            address = location.jibunAddress();
+        }
+        if (address == null || address.isBlank()) {
+            address = location.locationName();
+        }
+        return address;
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().replaceAll("\\s+", "").toLowerCase();
     }
 
     private void validateFestivalOwner(
