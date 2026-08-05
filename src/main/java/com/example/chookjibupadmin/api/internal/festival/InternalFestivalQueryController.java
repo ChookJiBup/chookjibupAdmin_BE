@@ -1,14 +1,19 @@
 package com.example.chookjibupadmin.api.internal.festival;
 
+import com.example.chookjibupadmin.api.festival.dto.FestivalLocationResponse;
 import com.example.chookjibupadmin.api.internal.festival.dto.InternalFestivalPageResponse;
+import com.example.chookjibupadmin.festival.location.application.InternalFestivalLocationQueryApplicationService;
 import com.example.chookjibupadmin.festival.query.application.InternalFestivalQueryApplicationService;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,6 +28,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class InternalFestivalQueryController {
 
     private final InternalFestivalQueryApplicationService queryService;
+    private final InternalFestivalLocationQueryApplicationService locationQueryService;
+
+    @Operation(summary = "사용자 서버용 축제 전체 장소 조회")
+    @GetMapping("/{festivalId}/locations")
+    public ApiResponse<List<FestivalLocationResponse>> getLocations(@PathVariable UUID festivalId) {
+        return ApiResponse.success(
+                SuccessCode.INTERNAL_FESTIVAL_LOCATION_READ_SUCCESS,
+                locationQueryService.getLocations(festivalId).stream()
+                        .map(FestivalLocationResponse::from)
+                        .toList()
+        );
+    }
 
     /**
      * 사용자 서버에서 사용할 축제 목록을 진행 상태별로 조회한다.

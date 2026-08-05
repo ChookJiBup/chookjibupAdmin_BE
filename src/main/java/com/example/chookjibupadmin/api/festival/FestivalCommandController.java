@@ -7,6 +7,9 @@ import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
+import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalWithMapResult;
+import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.location.application.FestivalLocationQueryApplicationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.example.chookjibupadmin.global.response.ApiResponse;
@@ -42,6 +45,7 @@ public class FestivalCommandController {
     private final FestivalApplicationService festivalApplicationService;
     private final FestivalMapRegistrationApplicationService
             festivalMapRegistrationApplicationService;
+    private final FestivalLocationQueryApplicationService locationQueryService;
 
     /**
      * 임시 기준의 축제 기본 정보를 저장한다.
@@ -54,11 +58,13 @@ public class FestivalCommandController {
             @Valid @RequestBody CreateFestivalRequest request,
             @AuthenticationPrincipal AdminPrincipal principal
     ) {
+        Festival festival = festivalApplicationService.create(request.toCommand(), principal);
         return ApiResponse.success(
                 SuccessCode.FESTIVAL_CREATE_SUCCESS,
                 CreateFestivalResponse.from(
-                        festivalApplicationService.create(
-                                request.toCommand(),
+                        festival,
+                        locationQueryService.getLocations(
+                                festival.getPublicId(),
                                 principal
                         )
                 )
@@ -77,17 +83,22 @@ public class FestivalCommandController {
             @RequestPart("image") MultipartFile blueprintImage,
             @AuthenticationPrincipal AdminPrincipal principal
     ) {
+        CreateFestivalWithMapResult result = festivalMapRegistrationApplicationService.create(
+                request.toCommand(),
+                new MapImageUploadCommand(
+                        blueprintImage.getOriginalFilename(),
+                        blueprintImage.getContentType(),
+                        blueprintImage.getSize(),
+                        blueprintImage::getInputStream
+                ),
+                principal
+        );
         return ApiResponse.success(
                 SuccessCode.FESTIVAL_CREATE_SUCCESS,
                 CreateFestivalWithMapResponse.from(
-                        festivalMapRegistrationApplicationService.create(
-                                request.toCommand(),
-                                new MapImageUploadCommand(
-                                        blueprintImage.getOriginalFilename(),
-                                        blueprintImage.getContentType(),
-                                        blueprintImage.getSize(),
-                                        blueprintImage::getInputStream
-                                ),
+                        result,
+                        locationQueryService.getLocations(
+                                result.festival().getPublicId(),
                                 principal
                         )
                 )
@@ -105,12 +116,17 @@ public class FestivalCommandController {
             @Valid @RequestBody UpdateFestivalRequest request,
             @AuthenticationPrincipal AdminPrincipal principal
     ) {
+        Festival festival = festivalApplicationService.update(
+                festivalId,
+                request.toCommand(),
+                principal
+        );
         return ApiResponse.success(
                 SuccessCode.FESTIVAL_UPDATE_SUCCESS,
                 UpdateFestivalResponse.from(
-                        festivalApplicationService.update(
+                        festival,
+                        locationQueryService.getLocations(
                                 festivalId,
-                                request.toCommand(),
                                 principal
                         )
                 )

@@ -16,6 +16,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescriptio
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
+import com.example.chookjibupadmin.festival.location.application.FestivalLocationQueryApplicationService;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.map.command.application.FestivalMapRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
@@ -50,6 +51,9 @@ class FestivalCommandControllerTest {
 
     @Mock
     private FestivalMapRegistrationApplicationService registrationService;
+
+    @Mock
+    private FestivalLocationQueryApplicationService locationQueryService;
 
     @Test
     @DisplayName("multipart 축제 등록 요청의 이미지 파트를 프레임워크 독립 Command로 변환한다")

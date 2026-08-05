@@ -1,9 +1,11 @@
 package com.example.chookjibupadmin.api.festival.dto;
 
 import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.location.application.dto.FestivalLocationDetail;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Schema(description = "축제 기본 정보 생성 응답")
@@ -25,7 +27,8 @@ public record CreateFestivalResponse(
         @Schema(description = "운영 시작 시간", example = "10:00:00")
         LocalTime operationStartTime,
         @Schema(description = "운영 종료 시간", example = "21:00:00")
-        LocalTime operationEndTime
+        LocalTime operationEndTime,
+        @Schema(description = "축제 장소 목록") List<FestivalLocationResponse> locations
 ) {
 
     /**
@@ -41,7 +44,27 @@ public record CreateFestivalResponse(
                 festival.getEndDate(),
                 festival.getStatus().name(),
                 festival.getOperationStartTime(),
-                festival.getOperationEndTime()
+                festival.getOperationEndTime(),
+                List.of()
+        );
+    }
+
+    public static CreateFestivalResponse from(
+            Festival festival,
+            List<FestivalLocationDetail> locations
+    ) {
+        CreateFestivalResponse base = from(festival);
+        return new CreateFestivalResponse(
+                base.festivalId(),
+                base.seriesId(),
+                base.year(),
+                base.name(),
+                base.startDate(),
+                base.endDate(),
+                base.status(),
+                base.operationStartTime(),
+                base.operationEndTime(),
+                locations.stream().map(FestivalLocationResponse::from).toList()
         );
     }
 }
