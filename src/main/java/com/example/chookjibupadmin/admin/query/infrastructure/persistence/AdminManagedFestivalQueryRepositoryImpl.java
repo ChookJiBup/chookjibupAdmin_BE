@@ -8,6 +8,7 @@ import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFesti
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalView;
 import com.example.chookjibupadmin.admin.query.repository.AdminManagedFestivalQueryRepository;
 import com.example.chookjibupadmin.festival.command.domain.QFestival;
+import com.example.chookjibupadmin.festival.location.domain.QFestivalLocation;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
@@ -15,6 +16,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.DateExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
 import java.util.List;
@@ -141,7 +143,22 @@ public class AdminManagedFestivalQueryRepositoryImpl
 
         return festival.name.value.containsIgnoreCase(condition.keyword())
                 .or(festival.address.value.containsIgnoreCase(condition.keyword()))
-                .or(festival.detailAddress.value.containsIgnoreCase(condition.keyword()));
+                .or(festival.detailAddress.value.containsIgnoreCase(condition.keyword()))
+                .or(locationContains(festival, condition.keyword()));
+    }
+
+    private BooleanExpression locationContains(QFestival festival, String keyword) {
+        QFestivalLocation location = new QFestivalLocation("managedFestivalLocation");
+        BooleanExpression locationMatches = location.locationName
+                .containsIgnoreCase(keyword)
+                .or(location.roadAddress.containsIgnoreCase(keyword))
+                .or(location.jibunAddress.containsIgnoreCase(keyword))
+                .or(location.detailAddress.containsIgnoreCase(keyword));
+
+        return JPAExpressions.selectOne()
+                .from(location)
+                .where(location.festival.id.eq(festival.id).and(locationMatches))
+                .exists();
     }
 
     private BooleanExpression progressStatusEq(
@@ -186,7 +203,7 @@ public class AdminManagedFestivalQueryRepositoryImpl
                 .when(completed).then(festival.period.endDate)
                 .otherwise((LocalDate) null);
 
-        return new OrderSpecifier<?>[] {
+        return new OrderSpecifier<?>[]{
                 statusOrder.asc(),
                 upcomingStartOrder.asc().nullsLast(),
                 ongoingEndOrder.asc().nullsLast(),

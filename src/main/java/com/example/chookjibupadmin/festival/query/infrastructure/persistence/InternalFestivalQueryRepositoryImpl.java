@@ -1,12 +1,14 @@
 package com.example.chookjibupadmin.festival.query.infrastructure.persistence;
 
 import com.example.chookjibupadmin.festival.command.domain.QFestival;
+import com.example.chookjibupadmin.festival.location.domain.QFestivalLocation;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSearchCondition;
 import com.example.chookjibupadmin.festival.query.application.dto.InternalFestivalSummaryProjection;
 import com.example.chookjibupadmin.festival.query.repository.InternalFestivalQueryRepository;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -102,6 +104,21 @@ public class InternalFestivalQueryRepositoryImpl
 
         return festival.name.value.containsIgnoreCase(condition.keyword())
                 .or(festival.address.value.containsIgnoreCase(condition.keyword()))
-                .or(festival.detailAddress.value.containsIgnoreCase(condition.keyword()));
+                .or(festival.detailAddress.value.containsIgnoreCase(condition.keyword()))
+                .or(locationContains(festival, condition.keyword()));
+    }
+
+    private BooleanExpression locationContains(QFestival festival, String keyword) {
+        QFestivalLocation location = new QFestivalLocation("internalFestivalLocation");
+        BooleanExpression locationMatches = location.locationName
+                .containsIgnoreCase(keyword)
+                .or(location.roadAddress.containsIgnoreCase(keyword))
+                .or(location.jibunAddress.containsIgnoreCase(keyword))
+                .or(location.detailAddress.containsIgnoreCase(keyword));
+
+        return JPAExpressions.selectOne()
+                .from(location)
+                .where(location.festival.id.eq(festival.id).and(locationMatches))
+                .exists();
     }
 }

@@ -19,6 +19,8 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddr
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocationType;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.config.QuerydslConfig;
 import jakarta.persistence.EntityManager;
@@ -96,6 +98,38 @@ class AdminManagedFestivalQueryRepositoryTest {
             assertThat(result)
                     .extracting(AdminManagedFestivalView::festivalYear)
                     .containsExactly(2026);
+        }
+
+        @Test
+        @DisplayName("보조 장소 주소 검색어로도 축제를 중복 없이 조회한다")
+        void success_SearchCurrentManagedFestivals_BySecondaryLocation() {
+            Festival festival = persist(festival("다중 장소 축제", 2026));
+            AdminAccount owner = persistOwner("multi@mapo.go.kr", festival);
+            persist(
+                    FestivalLocation.create(
+                            festival,
+                            FestivalLocationType.PARKING,
+                            "임시 주차장",
+                            "서울특별시 은평구 통일로 1",
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            false,
+                            1,
+                            owner.getId()
+                    ));
+            var result =
+                    queryRepository.searchCurrentManagedFestivals(
+                            owner.getId(),
+                            new AdminManagedFestivalCondition(null, null, "은평구"),
+                            TODAY
+                    );
+            assertThat(result)
+                    .extracting(AdminManagedFestivalView::festivalName)
+                    .containsExactly("다중 장소 축제");
         }
 
         @Test
