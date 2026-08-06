@@ -1,2 +1,7 @@
 package com.example.chookjibupadmin.map.roadmap.domain;
-public enum NodeReviewStatus { REVIEW_REQUIRED, CONFIRMED }
+
+public enum NodeReviewStatus {
+
+    REVIEW_REQUIRED,
+    CONFIRMED
+}

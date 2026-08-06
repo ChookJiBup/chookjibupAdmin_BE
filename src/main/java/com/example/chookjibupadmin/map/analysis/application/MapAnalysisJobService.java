@@ -14,16 +14,37 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MapAnalysisJobService {
+
     private final MapAnalysisJobRepository repository;
-    @Transactional public MapAnalysisJob save(MapAnalysisJob job) { return repository.save(job); }
-    @Transactional public Optional<MapAnalysisJob> claimPending() {
+
+    @Transactional
+    public MapAnalysisJob save(MapAnalysisJob job) {
+        return repository.save(job);
+    }
+
+    @Transactional
+    public Optional<MapAnalysisJob> claimPending() {
         Optional<MapAnalysisJob> job = repository.findFirstPending();
         job.ifPresent(MapAnalysisJob::start);
         return job;
     }
-    public MapAnalysisJob getByPublicId(UUID id) { return repository.findByPublicId(id)
-            .orElseThrow(() -> new CustomException(ErrorCode.MAP_ANALYSIS_JOB_NOT_FOUND)); }
-    public MapAnalysisJob getLatestByMapId(Long mapId) { return repository.findLatestByMapId(mapId)
-            .orElseThrow(() -> new CustomException(ErrorCode.MAP_ANALYSIS_JOB_NOT_FOUND)); }
-    @Transactional public void cancelActive(Long mapId) { repository.cancelActiveByMapId(mapId); }
+
+    public MapAnalysisJob getByPublicId(UUID id) {
+        return repository.findByPublicId(id)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.MAP_ANALYSIS_JOB_NOT_FOUND
+                ));
+    }
+
+    public MapAnalysisJob getLatestByMapId(Long mapId) {
+        return repository.findLatestByMapId(mapId)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.MAP_ANALYSIS_JOB_NOT_FOUND
+                ));
+    }
+
+    @Transactional
+    public void cancelActive(Long mapId) {
+        repository.cancelActiveByMapId(mapId);
+    }
 }

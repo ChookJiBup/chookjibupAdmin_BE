@@ -13,29 +13,48 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class MapAnalysisQueueApplicationService {
+
     private final MapAnalysisJobService jobService;
     private final FestivalRoadmapService roadmapService;
     private final MapAnalysisProperties properties;
 
     public MapAnalysisJob enqueueInitial(FestivalMap map) {
         roadmapService.save(FestivalRoadmap.create(
-                map.getFestivalId(),map.getId(),map.getCreatedByAdminId()));
+                map.getFestivalId(),
+                map.getId(),
+                map.getCreatedByAdminId()
+        ));
+
         return createJob(map);
     }
 
-    public MapAnalysisJob enqueueReplacement(FestivalMap previous,FestivalMap replacement) {
+    public MapAnalysisJob enqueueReplacement(
+            FestivalMap previous,
+            FestivalMap replacement
+    ) {
         jobService.cancelActive(previous.getId());
-        FestivalRoadmap roadmap=roadmapService.getByFestivalId(replacement.getFestivalId());
+
+        FestivalRoadmap roadmap = roadmapService.getByFestivalId(
+                replacement.getFestivalId()
+        );
         roadmap.replaceMap(replacement.getId());
+
         return createJob(replacement);
     }
 
-    public void cancel(FestivalMap map){jobService.cancelActive(map.getId());}
+    public void cancel(FestivalMap map) {
+        jobService.cancelActive(map.getId());
+    }
 
     private MapAnalysisJob createJob(FestivalMap map) {
-        return jobService.save(MapAnalysisJob.pending(map.getId(),properties.providerOrDefault(),
-                properties.modelOrDefault(),map.getAnalysisImageKey().getValue(),
+        return jobService.save(MapAnalysisJob.pending(
+                map.getId(),
+                properties.providerOrDefault(),
+                properties.modelOrDefault(),
+                map.getAnalysisImageKey().getValue(),
                 map.getAnalysisChecksumSha256().getValue(),
-                map.getAnalysisImageDimensions().getWidth(),map.getAnalysisImageDimensions().getHeight()));
+                map.getAnalysisImageDimensions().getWidth(),
+                map.getAnalysisImageDimensions().getHeight()
+        ));
     }
 }

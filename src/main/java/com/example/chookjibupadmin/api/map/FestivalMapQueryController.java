@@ -31,19 +31,41 @@ public class FestivalMapQueryController {
     @Operation(summary = "축제 도면 OpenAI 분석 상태 조회")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{mapId}/analysis")
-    public ApiResponse<MapAnalysisStatusResponse> analysisStatus(@PathVariable UUID festivalId,
-            @PathVariable UUID mapId,@AuthenticationPrincipal AdminPrincipal principal){
-        return ApiResponse.success(SuccessCode.FESTIVAL_MAP_ANALYSIS_READ_SUCCESS,
-                MapAnalysisStatusResponse.from(analysisQueryService.status(festivalId,mapId,principal)));
+    public ApiResponse<MapAnalysisStatusResponse> analysisStatus(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_ANALYSIS_READ_SUCCESS,
+                MapAnalysisStatusResponse.from(
+                        analysisQueryService.status(
+                                festivalId,
+                                mapId,
+                                principal
+                        )
+                )
+        );
     }
 
     @Operation(summary = "축제 지도 편집용 배경 이미지와 분석 노드 조회")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{mapId}/editor")
-    public ApiResponse<MapEditorResponse> editor(@PathVariable UUID festivalId,@PathVariable UUID mapId,
-            @AuthenticationPrincipal AdminPrincipal principal){
-        return ApiResponse.success(SuccessCode.FESTIVAL_MAP_EDITOR_READ_SUCCESS,
-                MapEditorResponse.from(analysisQueryService.editor(festivalId,mapId,principal)));
+    public ApiResponse<MapEditorResponse> editor(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_EDITOR_READ_SUCCESS,
+                MapEditorResponse.from(
+                        analysisQueryService.editor(
+                                festivalId,
+                                mapId,
+                                principal
+                        )
+                )
+        );
     }
 
     @Operation(summary = "현재 축제 도면 검수 화면용 조회 URL 발급")

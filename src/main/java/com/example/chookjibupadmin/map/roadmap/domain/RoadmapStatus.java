@@ -1,2 +1,9 @@
 package com.example.chookjibupadmin.map.roadmap.domain;
-public enum RoadmapStatus { ANALYZING, REVIEW_REQUIRED, EDITING, PUBLISHED }
+
+public enum RoadmapStatus {
+
+    ANALYZING,
+    REVIEW_REQUIRED,
+    EDITING,
+    PUBLISHED
+}
