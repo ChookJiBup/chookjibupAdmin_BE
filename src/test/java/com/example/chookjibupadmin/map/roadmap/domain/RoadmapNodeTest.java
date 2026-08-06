@@ -35,4 +35,44 @@ class RoadmapNodeTest {
                 .isEqualTo(NodeReviewStatus.REVIEW_REQUIRED);
         assertThat(node.getGeometrySchemaVersion()).isEqualTo("1.0");
     }
+
+    @Test
+    @DisplayName("관리자가 새 노드를 생성하면 확인 완료 상태로 저장한다")
+    void success_Admin() {
+        RoadmapNode node = RoadmapNode.admin(
+                20L, 10L, NodeType.STAGE, "무대",
+                GeometryType.RECTANGLE,
+                "{\"x\":0.1,\"y\":0.2}", 1, 2L
+        );
+
+        assertThat(node.getSource()).isEqualTo(NodeSource.ADMIN);
+        assertThat(node.getReviewStatus()).isEqualTo(NodeReviewStatus.CONFIRMED);
+        assertThat(node.getCreatedByAdminId()).isEqualTo(2L);
+        assertThat(node.getLastModifiedByAdminId()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("관리자가 AI 노드를 수정하면 원본 출처를 유지하고 확인 완료로 전환한다")
+    void success_UpdateByAdmin() {
+        RoadmapNode node = RoadmapNode.ai(
+                20L, 10L, 30L, NodeType.BOOTH, "부스",
+                GeometryType.POINT, "{\"x\":0.1,\"y\":0.2}",
+                new BigDecimal("0.9000"), "부스", 0
+        );
+
+        node.updateByAdmin(
+                NodeType.INFORMATION,
+                "안내소",
+                GeometryType.POINT,
+                "{\"x\":0.3,\"y\":0.4}",
+                2,
+                3L
+        );
+
+        assertThat(node.getNodeType()).isEqualTo(NodeType.INFORMATION);
+        assertThat(node.getNodeName()).isEqualTo("안내소");
+        assertThat(node.getSource()).isEqualTo(NodeSource.AI);
+        assertThat(node.getReviewStatus()).isEqualTo(NodeReviewStatus.CONFIRMED);
+        assertThat(node.getLastModifiedByAdminId()).isEqualTo(3L);
+    }
 }

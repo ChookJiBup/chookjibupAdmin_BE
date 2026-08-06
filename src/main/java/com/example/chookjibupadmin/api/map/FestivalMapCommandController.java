@@ -1,14 +1,19 @@
 package com.example.chookjibupadmin.api.map;
 
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalMapResponse;
+import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftRequest;
+import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import com.example.chookjibupadmin.map.command.application.FestivalMapManagementApplicationService;
+import com.example.chookjibupadmin.map.command.application.RoadmapDraftApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -16,6 +21,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +38,28 @@ import org.springframework.web.multipart.MultipartFile;
 public class FestivalMapCommandController {
 
     private final FestivalMapManagementApplicationService managementService;
+    private final RoadmapDraftApplicationService roadmapDraftService;
+    private final ObjectMapper objectMapper;
+
+    @Operation(summary = "축제 지도 노드 편집 내용 일괄 저장")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/{mapId}/editor")
+    public ApiResponse<SaveRoadmapDraftResponse> saveEditor(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @Valid @RequestBody SaveRoadmapDraftRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_EDITOR_SAVE_SUCCESS,
+                SaveRoadmapDraftResponse.from(roadmapDraftService.save(
+                        festivalId,
+                        mapId,
+                        request.toCommand(objectMapper),
+                        principal
+                ))
+        );
+    }
 
     @Operation(summary = "AI 분석용 축제 도면 이미지 교체")
     @SecurityRequirement(name = "bearerAuth")

@@ -26,11 +26,19 @@ public class MapGeometryValidator {
             return false;
         }
 
-        return switch (node.geometryType()) {
-            case POINT -> point(node.geometry());
-            case RECTANGLE -> rectangle(node.geometry());
-            case POLYGON -> points(node.geometry(), 3);
-            case POLYLINE -> points(node.geometry(), 2);
+        return isValid(node.geometryType(), node.geometry());
+    }
+
+    public boolean isValid(GeometryType geometryType, JsonNode geometry) {
+        if (geometryType == null || geometry == null || !geometry.isObject()) {
+            return false;
+        }
+
+        return switch (geometryType) {
+            case POINT -> point(geometry);
+            case RECTANGLE -> rectangle(geometry);
+            case POLYGON -> points(geometry, 3);
+            case POLYLINE -> points(geometry, 2);
         };
     }
     private boolean point(JsonNode value) {

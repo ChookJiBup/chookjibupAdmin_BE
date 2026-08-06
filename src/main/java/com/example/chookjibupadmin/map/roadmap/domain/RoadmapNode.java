@@ -120,4 +120,48 @@ public class RoadmapNode extends BaseTimeEntity {
         node.sortOrder = sortOrder;
         return node;
     }
+
+    public static RoadmapNode admin(
+            Long roadmapId,
+            Long mapId,
+            NodeType type,
+            String name,
+            GeometryType geometryType,
+            String geometryData,
+            int sortOrder,
+            Long adminId
+    ) {
+        RoadmapNode node = new RoadmapNode();
+        node.publicId = UUID.randomUUID();
+        node.roadmapId = roadmapId;
+        node.mapId = mapId;
+        node.nodeType = type;
+        node.nodeName = name;
+        node.geometryType = geometryType;
+        node.geometryData = geometryData;
+        node.geometrySchemaVersion = "1.0";
+        node.source = NodeSource.ADMIN;
+        node.reviewStatus = NodeReviewStatus.CONFIRMED;
+        node.sortOrder = sortOrder;
+        node.createdByAdminId = adminId;
+        node.lastModifiedByAdminId = adminId;
+        return node;
+    }
+
+    public void updateByAdmin(
+            NodeType type,
+            String name,
+            GeometryType geometryType,
+            String geometryData,
+            int sortOrder,
+            Long adminId
+    ) {
+        nodeType = type;
+        nodeName = name;
+        this.geometryType = geometryType;
+        this.geometryData = geometryData;
+        this.sortOrder = sortOrder;
+        reviewStatus = NodeReviewStatus.CONFIRMED;
+        lastModifiedByAdminId = adminId;
+    }
 }

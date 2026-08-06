@@ -5,6 +5,7 @@ import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNodeRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+
 @Repository
 @RequiredArgsConstructor
 public class RoadmapNodeRepositoryImpl implements RoadmapNodeRepository {
@@ -25,5 +26,10 @@ public class RoadmapNodeRepositoryImpl implements RoadmapNodeRepository {
                 roadmapId,
                 mapId
         );
+    }
+
+    @Override
+    public void deleteAll(Iterable<RoadmapNode> nodes) {
+        jpaRepository.deleteAll(nodes);
     }
 }

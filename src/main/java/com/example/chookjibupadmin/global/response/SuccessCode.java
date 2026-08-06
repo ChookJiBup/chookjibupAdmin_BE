@@ -28,6 +28,7 @@ public enum SuccessCode {
     FESTIVAL_MAP_ANALYSIS_READ_SUCCESS(22011, "축제 도면 분석 상태 조회가 완료되었습니다."),
     FESTIVAL_MAP_EDITOR_READ_SUCCESS(22012, "축제 지도 편집 데이터 조회가 완료되었습니다."),
     FESTIVAL_LOCATION_READ_SUCCESS(22013, "축제 장소 조회가 완료되었습니다."),
+    FESTIVAL_MAP_EDITOR_SAVE_SUCCESS(22014, "축제 지도 편집 내용이 저장되었습니다."),
     FESTIVAL_DASHBOARD_READ_SUCCESS(23000, "축제 대시보드 조회가 완료되었습니다."),
     FESTIVAL_REPORT_SUMMARY_READ_SUCCESS(24000, "축제 결과 보고서 요약 조회가 완료되었습니다."),
     FIELD_STAFF_LOGIN_SUCCESS(25000, "현장 스태프 로그인에 성공했습니다."),

@@ -1,6 +1,8 @@
 package com.example.chookjibupadmin.map.roadmap.domain;
 
 import com.example.chookjibupadmin.common.domain.BaseTimeEntity;
+import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -79,5 +81,17 @@ public class FestivalRoadmap extends BaseTimeEntity {
     public void analysisCompleted() {
         status = RoadmapStatus.REVIEW_REQUIRED;
         editRevision++;
+    }
+
+    public long applyAdminEdit(long baseRevision) {
+        if (editRevision != baseRevision) {
+            throw new CustomException(ErrorCode.ROADMAP_REVISION_CONFLICT);
+        }
+        if (status == RoadmapStatus.ANALYZING) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
+        }
+
+        status = RoadmapStatus.EDITING;
+        return ++editRevision;
     }
 }

@@ -6,10 +6,15 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalMapResponse;
+import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftRequest;
+import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.map.command.application.FestivalMapManagementApplicationService;
+import com.example.chookjibupadmin.map.command.application.RoadmapDraftApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
+import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
+import com.example.chookjibupadmin.map.command.application.dto.SavedRoadmapDraft;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
@@ -18,6 +23,11 @@ import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
 import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
+import com.example.chookjibupadmin.map.roadmap.domain.GeometryType;
+import com.example.chookjibupadmin.map.roadmap.domain.NodeType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -36,6 +47,55 @@ class FestivalMapCommandControllerTest {
 
     @Mock
     private FestivalMapManagementApplicationService managementService;
+
+    @Mock
+    private RoadmapDraftApplicationService roadmapDraftService;
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    @DisplayName("지도 편집 요청을 애플리케이션 Command로 변환한다")
+    void success_SaveEditor() {
+        UUID festivalId = UUID.randomUUID();
+        UUID mapId = UUID.randomUUID();
+        UUID nodeId = UUID.randomUUID();
+        AdminPrincipal principal = new AdminPrincipal(1L, "owner@mapo.go.kr");
+        SaveRoadmapDraftRequest request = new SaveRoadmapDraftRequest(
+                3L,
+                List.of(new SaveRoadmapDraftRequest.NodeChangeRequest(
+                        nodeId,
+                        NodeType.BOOTH,
+                        "부스 1",
+                        GeometryType.POINT,
+                        Map.of("x", 0.1, "y", 0.2),
+                        false,
+                        0
+                ))
+        );
+        given(roadmapDraftService.save(any(), any(), any(), any()))
+                .willReturn(new SavedRoadmapDraft(4L));
+
+        ApiResponse<SaveRoadmapDraftResponse> response = controller.saveEditor(
+                festivalId,
+                mapId,
+                request,
+                principal
+        );
+
+        assertThat(response.data().editRevision()).isEqualTo(4L);
+        ArgumentCaptor<SaveRoadmapDraftCommand> captor =
+                ArgumentCaptor.forClass(SaveRoadmapDraftCommand.class);
+        then(roadmapDraftService).should().save(
+                org.mockito.ArgumentMatchers.eq(festivalId),
+                org.mockito.ArgumentMatchers.eq(mapId),
+                captor.capture(),
+                org.mockito.ArgumentMatchers.eq(principal)
+        );
+        assertThat(captor.getValue().baseRevision()).isEqualTo(3L);
+        assertThat(captor.getValue().nodes().getFirst().nodeId())
+                .isEqualTo(nodeId);
+    }
 
     @Test
     @DisplayName("교체 이미지 multipart를 프레임워크 독립 Command로 변환한다")

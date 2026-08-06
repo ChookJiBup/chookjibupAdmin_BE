@@ -7,4 +7,6 @@ public interface FestivalRoadmapRepository {
     FestivalRoadmap save(FestivalRoadmap roadmap);
 
     Optional<FestivalRoadmap> findByFestivalId(Long festivalId);
+
+    Optional<FestivalRoadmap> findByFestivalIdForUpdate(Long festivalId);
 }

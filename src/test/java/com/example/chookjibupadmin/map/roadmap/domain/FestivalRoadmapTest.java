@@ -1,6 +1,10 @@
 package com.example.chookjibupadmin.map.roadmap.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,5 +53,30 @@ class FestivalRoadmapTest {
         assertThat(roadmap.getStatus())
                 .isEqualTo(RoadmapStatus.REVIEW_REQUIRED);
         assertThat(roadmap.getEditRevision()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("현재 리비전으로 편집하면 편집 상태로 전환하고 리비전을 증가시킨다")
+    void success_ApplyAdminEdit() {
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+        roadmap.analysisCompleted();
+
+        long revision = roadmap.applyAdminEdit(1L);
+
+        assertThat(revision).isEqualTo(2L);
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.EDITING);
+    }
+
+    @Test
+    @DisplayName("오래된 리비전으로 편집하면 충돌 예외를 던진다")
+    void fail_ApplyAdminEdit_RevisionConflict() {
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+        roadmap.analysisCompleted();
+
+        assertThatThrownBy(() -> roadmap.applyAdminEdit(0L))
+                .isInstanceOfSatisfying(CustomException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.ROADMAP_REVISION_CONFLICT)
+                );
     }
 }

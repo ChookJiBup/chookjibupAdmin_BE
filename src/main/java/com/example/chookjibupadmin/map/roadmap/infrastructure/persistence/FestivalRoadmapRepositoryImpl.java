@@ -5,6 +5,7 @@ import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmapRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+
 @Repository
 @RequiredArgsConstructor
 public class FestivalRoadmapRepositoryImpl implements FestivalRoadmapRepository {
@@ -19,5 +20,10 @@ public class FestivalRoadmapRepositoryImpl implements FestivalRoadmapRepository 
     @Override
     public Optional<FestivalRoadmap> findByFestivalId(Long id) {
         return jpaRepository.findByFestivalId(id);
+    }
+
+    @Override
+    public Optional<FestivalRoadmap> findByFestivalIdForUpdate(Long id) {
+        return jpaRepository.findByFestivalIdForUpdate(id);
     }
 }
