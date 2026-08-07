@@ -43,6 +43,9 @@ app:
   email:
     verification:
       sender: ${APP_EMAIL_VERIFICATION_SENDER:log}
+      from-address: ${APP_EMAIL_FROM_ADDRESS:${SMTP_USERNAME:}}
+      from-name: ${APP_EMAIL_FROM_NAME:축지법}
+      reply-to: ${APP_EMAIL_REPLY_TO:}
   jwt:
     secret: ${APP_JWT_SECRET}
     access-token-expiration-seconds: 1800
