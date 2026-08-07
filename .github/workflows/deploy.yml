@@ -42,11 +42,19 @@ jobs:
     steps:
       - name: Validate deployment configuration
         shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
 
-          if [[ -z "$INSTANCE_ID" ]]; then
-            echo "ADMIN_EC2_INSTANCE_ID repository variable is required."
+          MISSING=()
+          [[ -n "$AWS_ACCESS_KEY_ID" ]] || MISSING+=("AWS_ACCESS_KEY_ID secret")
+          [[ -n "$AWS_SECRET_ACCESS_KEY" ]] || MISSING+=("AWS_SECRET_ACCESS_KEY secret")
+          [[ -n "$INSTANCE_ID" ]] || MISSING+=("ADMIN_EC2_INSTANCE_ID variable")
+
+          if (( ${#MISSING[@]} > 0 )); then
+            printf 'Missing production configuration: %s\n' "${MISSING[@]}"
             exit 1
           fi
 
