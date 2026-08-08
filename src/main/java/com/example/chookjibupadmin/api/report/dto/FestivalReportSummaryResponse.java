@@ -9,13 +9,15 @@ import java.util.UUID;
 public record FestivalReportSummaryResponse(
         @Schema(description = "외부 노출용 축제 ID", example = "11111111-1111-1111-1111-111111111111")
         UUID festivalId,
+        @Schema(description = "실제 집계 데이터 연결 여부", example = "false")
+        boolean dataAvailable,
         @Schema(description = "총 방문자 수", example = "0")
         long totalVisitorCount,
         @Schema(description = "최대 동시 방문자 수", example = "0")
         long peakConcurrentVisitorCount,
         @Schema(description = "평균 대기 시간 분", example = "0")
         long averageWaitMinutes,
-        @Schema(description = "보고서 생성 시각")
+        @Schema(description = "보고서 생성 시각, 데이터 미연결 시 null", nullable = true)
         LocalDateTime generatedAt
 ) {
 
@@ -25,6 +27,7 @@ public record FestivalReportSummaryResponse(
     public static FestivalReportSummaryResponse from(FestivalReportSummaryView view) {
         return new FestivalReportSummaryResponse(
                 view.festivalId(),
+                view.dataAvailable(),
                 view.totalVisitorCount(),
                 view.peakConcurrentVisitorCount(),
                 view.averageWaitMinutes(),

@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record FestivalReportSummaryView(
         UUID festivalId,
+        boolean dataAvailable,
         long totalVisitorCount,
         long peakConcurrentVisitorCount,
         long averageWaitMinutes,

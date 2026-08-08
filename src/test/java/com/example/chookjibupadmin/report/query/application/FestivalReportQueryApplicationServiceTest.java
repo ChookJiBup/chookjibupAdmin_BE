@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
+import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
@@ -22,6 +24,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.report.query.application.dto.FestivalReportSummaryView;
+import com.example.chookjibupadmin.report.query.application.port.FestivalReportMetricProvider;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -37,11 +40,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class FestivalReportQueryApplicationServiceTest {
 
+    @Mock
+    private FestivalReportMetricProvider metricProvider;
+
     @InjectMocks
     private FestivalReportQueryApplicationService reportQueryService;
 
     @Mock
     private AdminAccountService adminAccountService;
+
+    @Mock
+    private AdminFestivalRoleService adminFestivalRoleService;
 
     @Mock
     private FestivalService festivalService;
@@ -62,6 +71,10 @@ class FestivalReportQueryApplicationServiceTest {
                     .willReturn(festival);
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(festivalOwner(festivalId));
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    1L,
+                    festivalId
+            )).willReturn(AdminFestivalRole.createFestivalOwner(1L, festivalId));
 
             // when
             FestivalReportSummaryView view = reportQueryService.getSummary(
@@ -71,8 +84,10 @@ class FestivalReportQueryApplicationServiceTest {
 
             // then
             assertThat(view.festivalId()).isEqualTo(publicId);
+            assertThat(view.dataAvailable()).isFalse();
             assertThat(view.totalVisitorCount()).isZero();
             assertThat(view.peakConcurrentVisitorCount()).isZero();
+            assertThat(view.generatedAt()).isNull();
         }
 
         @Test
@@ -86,6 +101,10 @@ class FestivalReportQueryApplicationServiceTest {
                     .willReturn(festival);
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(festivalOwner(2L));
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    1L,
+                    1L
+            )).willThrow(new CustomException(ErrorCode.FORBIDDEN));
 
             // when & then
             assertThatThrownBy(() -> reportQueryService.getSummary(
@@ -107,6 +126,10 @@ class FestivalReportQueryApplicationServiceTest {
                     .willReturn(festival);
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(unassignedAdmin());
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    1L,
+                    1L
+            )).willThrow(new CustomException(ErrorCode.FORBIDDEN));
 
             // when & then
             assertThatThrownBy(() -> reportQueryService.getSummary(
@@ -131,12 +154,14 @@ class FestivalReportQueryApplicationServiceTest {
     }
 
     private AdminAccount unassignedAdmin() {
-        return AdminAccount.createAdmin(
+        AdminAccount adminAccount = AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
                 AdminPasswordHash.of("encoded-password")
         );
+        ReflectionTestUtils.setField(adminAccount, "id", 1L);
+        return adminAccount;
     }
 
     private AdminAccount festivalOwner(Long festivalId) {
