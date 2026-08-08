@@ -98,6 +98,13 @@ public class AdminAccount extends BaseTimeEntity {
     )
     private AdminPasswordHash passwordHash;
 
+    @Column(
+            name = "auth_version",
+            nullable = false,
+            columnDefinition = "bigint default 0"
+    )
+    private long authVersion;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private AdminStatus status;
@@ -139,6 +146,7 @@ public class AdminAccount extends BaseTimeEntity {
         this.department = department;
         this.rank = rank;
         this.passwordHash = passwordHash;
+        this.authVersion = 0L;
         this.status = AdminStatus.ACTIVE;
     }
 
@@ -263,6 +271,18 @@ public class AdminAccount extends BaseTimeEntity {
         }
 
         status = AdminStatus.DELETED;
+    }
+
+    /**
+     * 비밀번호를 변경하고 기존에 발급된 모든 관리자 JWT를 무효화한다.
+     */
+    public void changePassword(AdminPasswordHash passwordHash) {
+        if (passwordHash == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        this.passwordHash = passwordHash;
+        this.authVersion++;
     }
 
     public String getEmailValue() {

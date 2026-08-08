@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -44,6 +45,7 @@ public class JwtTokenProvider {
         payload.put("subjectType", ADMIN_SUBJECT_TYPE);
         payload.put("sub", adminAccount.getId());
         payload.put("email", adminAccount.getEmailValue());
+        payload.put("authVersion", adminAccount.getAuthVersion());
         payload.put("iat", now.getEpochSecond());
         payload.put("exp", expiresAt.getEpochSecond());
 
@@ -65,20 +67,30 @@ public class JwtTokenProvider {
 
         String unsignedToken = parts[0] + "." + parts[1];
         String expectedSignature = sign(unsignedToken);
-        if (!expectedSignature.equals(parts[2])) {
+        if (!hasValidSignature(expectedSignature, parts[2])) {
             throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
         }
 
         JsonNode payload = decodePayload(parts[1]);
         validateAdminSubject(payload);
+        long adminAccountId = payload.path("sub").asLong();
+        String email = payload.path("email").asText();
+        long authVersion = payload.path("authVersion").asLong(-1L);
         long exp = payload.path("exp").asLong();
-        if (Instant.now().getEpochSecond() > exp) {
+        if (adminAccountId <= 0L
+                || email.isBlank()
+                || authVersion < 0L
+                || exp <= 0L) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+        }
+        if (Instant.now().getEpochSecond() >= exp) {
             throw new CustomException(ErrorCode.AUTH_TOKEN_EXPIRED);
         }
 
         return new AdminPrincipal(
-                payload.path("sub").asLong(),
-                payload.path("email").asText()
+                adminAccountId,
+                email,
+                authVersion
         );
     }
 
@@ -109,9 +121,19 @@ public class JwtTokenProvider {
 
     private void validateAdminSubject(JsonNode payload) {
         JsonNode subjectType = payload.get("subjectType");
-        if (subjectType != null && !ADMIN_SUBJECT_TYPE.equals(subjectType.asText())) {
+        if (subjectType == null || !ADMIN_SUBJECT_TYPE.equals(subjectType.asText())) {
             throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
         }
+    }
+
+    private boolean hasValidSignature(
+            String expectedSignature,
+            String actualSignature
+    ) {
+        return MessageDigest.isEqual(
+                expectedSignature.getBytes(StandardCharsets.US_ASCII),
+                actualSignature.getBytes(StandardCharsets.US_ASCII)
+        );
     }
 
     private String sign(String unsignedToken) {

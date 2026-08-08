@@ -3,18 +3,22 @@ package com.example.chookjibupadmin.auth.command.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationConfirmRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationRequest;
 import com.example.chookjibupadmin.auth.command.application.port.AdminEmailVerificationSender;
+import com.example.chookjibupadmin.auth.command.application.port.AdminAuthRequestLimiter;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerification;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerificationRepository;
+import com.example.chookjibupadmin.auth.command.infrastructure.AdminAuthProperties;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.util.Map;
 import java.util.Optional;
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +39,9 @@ class AdminEmailVerificationApplicationServiceTest {
     private RecordingEmailVerificationSender verificationSender;
     private AdminEmailVerificationApplicationService verificationService;
 
+    @Mock
+    private AdminAuthRequestLimiter requestLimiter;
+
     @BeforeEach
     void setUp() {
         verificationRepository = new FakeAdminEmailVerificationRepository();
@@ -45,8 +52,30 @@ class AdminEmailVerificationApplicationServiceTest {
         verificationService = new AdminEmailVerificationApplicationService(
                 adminAccountService,
                 adminEmailVerificationService,
-                verificationSender
+                verificationSender,
+                requestLimiter,
+                new AdminAuthProperties(
+                        new AdminAuthProperties.RequestPolicy(
+                                5,
+                                Duration.ofMinutes(10),
+                                Duration.ofMinutes(1)
+                        ),
+                        new AdminAuthProperties.PasswordReset(
+                                5,
+                                Duration.ofMinutes(10),
+                                Duration.ofMinutes(1),
+                                Duration.ofMinutes(30),
+                                "http://localhost:3000/password-reset"
+                        )
+                )
         );
+        lenient().when(requestLimiter.tryAcquire(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        )).thenReturn(true);
     }
 
     @Nested
@@ -148,6 +177,32 @@ class AdminEmailVerificationApplicationServiceTest {
                                     .getMessage()
                     );
         }
+
+        @Test
+        @DisplayName("인증 코드 실패가 5회 누적되면 올바른 코드도 거부한다")
+        void fail_Confirm_MaxFailedAttempts_CustomException() {
+            // given
+            String email = "admin@mapo.go.kr";
+            given(adminAccountService.existsByEmail(AdminEmail.of(email)))
+                    .willReturn(false);
+            verificationService.request(new AdminEmailVerificationRequest(email));
+            String validCode = verificationSender.code;
+            for (int i = 0; i < 5; i++) {
+                assertThatThrownBy(() -> verificationService.confirm(
+                        new AdminEmailVerificationConfirmRequest(email, "invalid")
+                )).isInstanceOf(CustomException.class);
+            }
+
+            // when & then
+            assertThatThrownBy(() -> verificationService.confirm(
+                    new AdminEmailVerificationConfirmRequest(email, validCode)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(
+                            ErrorCode.AUTH_EMAIL_VERIFICATION_INVALID
+                                    .getMessage()
+                    );
+        }
     }
 
     @Nested
@@ -216,6 +271,11 @@ class AdminEmailVerificationApplicationServiceTest {
         @Override
         public Optional<AdminEmailVerification> findByEmail(AdminEmail email) {
             return Optional.ofNullable(storage.get(email.getValue()));
+        }
+
+        @Override
+        public void deleteByEmail(AdminEmail email) {
+            storage.remove(email.getValue());
         }
 
         @Override

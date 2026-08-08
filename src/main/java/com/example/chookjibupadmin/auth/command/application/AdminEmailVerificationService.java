@@ -35,6 +35,13 @@ public class AdminEmailVerificationService {
     }
 
     /**
+     * 이메일 발송에 실패한 인증 요청을 제거한다.
+     */
+    public void deleteByEmail(AdminEmail email) {
+        verificationRepository.deleteByEmail(email);
+    }
+
+    /**
      * 회원가입 가능 여부 판단을 위해 인증 완료 상태인지 확인한다.
      */
     public void ensureVerified(AdminEmail email) {

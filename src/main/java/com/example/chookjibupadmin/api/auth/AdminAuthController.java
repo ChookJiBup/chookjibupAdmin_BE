@@ -4,10 +4,13 @@ import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationConfirmReq
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminLoginRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminLoginResponse;
+import com.example.chookjibupadmin.api.auth.dto.AdminPasswordResetConfirmRequest;
+import com.example.chookjibupadmin.api.auth.dto.AdminPasswordResetRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminSignupRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminSignupResponse;
 import com.example.chookjibupadmin.auth.command.application.AdminEmailVerificationApplicationService;
 import com.example.chookjibupadmin.auth.command.application.AdminLoginService;
+import com.example.chookjibupadmin.auth.command.application.AdminPasswordResetApplicationService;
 import com.example.chookjibupadmin.auth.command.application.AdminSignupService;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
@@ -34,6 +37,7 @@ public class AdminAuthController {
     private final AdminSignupService adminSignupService;
     private final AdminLoginService adminLoginService;
     private final AdminEmailVerificationApplicationService emailVerificationService;
+    private final AdminPasswordResetApplicationService passwordResetService;
 
     /**
      * 정부 공식 이메일로 회원가입 인증 코드를 발송한다.
@@ -92,5 +96,32 @@ public class AdminAuthController {
         );
     }
 
-}
+    /**
+     * 가입 여부를 노출하지 않고 비밀번호 재설정 안내 메일 요청을 처리한다.
+     */
+    @Operation(summary = "관리자 비밀번호 재설정 링크 요청")
+    @PostMapping("/auth/password-reset/request")
+    public ApiResponse<Void> requestPasswordReset(
+            @Valid @RequestBody AdminPasswordResetRequest request
+    ) {
+        passwordResetService.request(request);
+        return ApiResponse.success(
+                SuccessCode.ADMIN_PASSWORD_RESET_REQUEST_SUCCESS
+        );
+    }
 
+    /**
+     * 일회용 토큰을 확인하고 관리자 비밀번호를 변경한다.
+     */
+    @Operation(summary = "관리자 비밀번호 재설정 확정")
+    @PostMapping("/auth/password-reset/confirm")
+    public ApiResponse<Void> confirmPasswordReset(
+            @Valid @RequestBody AdminPasswordResetConfirmRequest request
+    ) {
+        passwordResetService.confirm(request);
+        return ApiResponse.success(
+                SuccessCode.ADMIN_PASSWORD_RESET_CONFIRM_SUCCESS
+        );
+    }
+
+}

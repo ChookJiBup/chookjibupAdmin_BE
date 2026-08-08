@@ -3,6 +3,8 @@ package com.example.chookjibupadmin.auth.command.domain;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
 
 /**
@@ -10,21 +12,26 @@ import java.time.LocalDateTime;
  */
 public class AdminEmailVerification {
 
+    private static final int MAX_FAILED_ATTEMPTS = 5;
+
     private final AdminEmail email;
     private final String code;
     private final LocalDateTime expiresAt;
     private boolean verified;
+    private int failedAttempts;
 
     private AdminEmailVerification(
             AdminEmail email,
             String code,
             LocalDateTime expiresAt,
-            boolean verified
+            boolean verified,
+            int failedAttempts
     ) {
         this.email = email;
         this.code = code;
         this.expiresAt = expiresAt;
         this.verified = verified;
+        this.failedAttempts = failedAttempts;
     }
 
     /**
@@ -35,7 +42,7 @@ public class AdminEmailVerification {
             String code,
             LocalDateTime expiresAt
     ) {
-        return new AdminEmailVerification(email, code, expiresAt, false);
+        return new AdminEmailVerification(email, code, expiresAt, false, 0);
     }
 
     /**
@@ -47,18 +54,39 @@ public class AdminEmailVerification {
             LocalDateTime expiresAt,
             boolean verified
     ) {
-        return new AdminEmailVerification(email, code, expiresAt, verified);
+        return restore(email, code, expiresAt, verified, 0);
+    }
+
+    /**
+     * 저장소에 보관된 인증 상태와 실패 횟수를 복원한다.
+     */
+    public static AdminEmailVerification restore(
+            AdminEmail email,
+            String code,
+            LocalDateTime expiresAt,
+            boolean verified,
+            int failedAttempts
+    ) {
+        return new AdminEmailVerification(
+                email,
+                code,
+                expiresAt,
+                verified,
+                failedAttempts
+        );
     }
 
     /**
      * 입력된 인증 코드와 만료 시간을 검증하고 인증 완료 상태로 전환한다.
      */
     public void verify(String requestedCode, LocalDateTime now) {
-        if (now.isAfter(expiresAt)) {
+        if (!now.isBefore(expiresAt)) {
             throw new CustomException(ErrorCode.AUTH_EMAIL_VERIFICATION_EXPIRED);
         }
 
-        if (!code.equals(requestedCode)) {
+        if (failedAttempts >= MAX_FAILED_ATTEMPTS
+                || !matchesCode(requestedCode)) {
+            failedAttempts++;
             throw new CustomException(ErrorCode.AUTH_EMAIL_VERIFICATION_INVALID);
         }
 
@@ -91,5 +119,22 @@ public class AdminEmailVerification {
      */
     public boolean isVerified() {
         return verified;
+    }
+
+    /**
+     * 잘못된 인증 코드 확인 횟수를 반환한다.
+     */
+    public int getFailedAttempts() {
+        return failedAttempts;
+    }
+
+    private boolean matchesCode(String requestedCode) {
+        if (requestedCode == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                code.getBytes(StandardCharsets.UTF_8),
+                requestedCode.getBytes(StandardCharsets.UTF_8)
+        );
     }
 }

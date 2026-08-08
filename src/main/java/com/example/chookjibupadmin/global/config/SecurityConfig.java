@@ -39,6 +39,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/admin/auth/login").permitAll()
                         .requestMatchers(
                                 HttpMethod.POST,
+                                "/api/admin/auth/password-reset/request",
+                                "/api/admin/auth/password-reset/confirm"
+                        ).permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
                                 "/api/admin/auth/email-verification/request"
                         ).permitAll()
                         .requestMatchers(

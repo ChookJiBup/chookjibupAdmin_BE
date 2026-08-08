@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.admin.command.application.AdminAccountService
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationRequest;
 import com.example.chookjibupadmin.auth.command.application.port.AdminEmailVerificationSender;
+import com.example.chookjibupadmin.auth.command.application.port.AdminAuthRequestLimiter;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerification;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,6 +32,9 @@ class AdminEmailVerificationApplicationServiceIntegrationTest {
     @MockitoBean
     private AdminEmailVerificationSender verificationSender;
 
+    @MockitoBean
+    private AdminAuthRequestLimiter requestLimiter;
+
     @Nested
     @DisplayName("request")
     class Request {
@@ -43,6 +47,13 @@ class AdminEmailVerificationApplicationServiceIntegrationTest {
             AdminEmail adminEmail = AdminEmail.of(email);
             given(adminAccountService.existsByEmail(adminEmail))
                     .willReturn(false);
+            given(requestLimiter.tryAcquire(
+                    org.mockito.ArgumentMatchers.anyString(),
+                    org.mockito.ArgumentMatchers.eq(adminEmail),
+                    org.mockito.ArgumentMatchers.anyInt(),
+                    org.mockito.ArgumentMatchers.any(),
+                    org.mockito.ArgumentMatchers.any()
+            )).willReturn(true);
 
             // when
             emailVerificationService.request(

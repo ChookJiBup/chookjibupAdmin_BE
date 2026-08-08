@@ -19,6 +19,11 @@ public interface AdminEmailVerificationRepository {
     Optional<AdminEmailVerification> findByEmail(AdminEmail email);
 
     /**
+     * 발송에 실패한 인증 요청 정보를 제거한다.
+     */
+    void deleteByEmail(AdminEmail email);
+
+    /**
      * 인증 완료 상태를 한 번만 사용하고 제거한다.
      */
     boolean consumeVerified(AdminEmail email);

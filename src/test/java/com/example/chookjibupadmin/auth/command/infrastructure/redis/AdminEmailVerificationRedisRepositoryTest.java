@@ -52,7 +52,7 @@ class AdminEmailVerificationRedisRepositoryTest {
             // then
             then(valueOperations).should().set(
                     eq(KEY),
-                    eq("123456|false|" + verification.getExpiresAt()),
+                    eq("123456|false|" + verification.getExpiresAt() + "|0"),
                     any(Duration.class)
             );
         }
@@ -98,6 +98,7 @@ class AdminEmailVerificationRedisRepositoryTest {
             assertThat(result).isPresent();
             assertThat(result.get().getEmail()).isEqualTo(email);
             assertThat(result.get().isVerified()).isTrue();
+            assertThat(result.get().getFailedAttempts()).isZero();
         }
 
         @Test

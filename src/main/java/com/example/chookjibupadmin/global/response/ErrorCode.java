@@ -14,6 +14,9 @@ public enum ErrorCode {
     AUTH_EMAIL_VERIFICATION_EXPIRED(40005, HttpStatus.BAD_REQUEST, "이메일 인증 코드가 만료되었습니다."),
     AUTH_EMAIL_NOT_VERIFIED(40006, HttpStatus.BAD_REQUEST, "이메일 인증이 완료되지 않았습니다."),
     AUTH_PASSWORD_CONFIRM_MISMATCH(40101, HttpStatus.BAD_REQUEST, "비밀번호 확인이 일치하지 않습니다."),
+    AUTH_PASSWORD_RESET_TOKEN_INVALID(40009, HttpStatus.BAD_REQUEST, "비밀번호 재설정 링크가 유효하지 않거나 만료되었습니다."),
+
+    AUTH_EMAIL_REQUEST_LIMIT_EXCEEDED(42900, HttpStatus.TOO_MANY_REQUESTS, "잠시 후 이메일을 다시 요청해 주세요."),
 
     UNAUTHORIZED(40100, HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
     AUTH_INVALID_CREDENTIALS(40102, HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
@@ -53,12 +56,14 @@ public enum ErrorCode {
     ROADMAP_REVISION_CONFLICT(40910, HttpStatus.CONFLICT, "다른 관리자가 지도를 먼저 수정했습니다."),
     ROADMAP_NODE_INVALID(40008, HttpStatus.BAD_REQUEST, "축제 지도 노드 정보가 올바르지 않습니다."),
     FESTIVAL_LOCATION_IN_USE(40909, HttpStatus.CONFLICT, "배치도에서 사용 중인 축제 장소는 삭제할 수 없습니다."),
+    FESTIVAL_INVALID_STATUS(40911, HttpStatus.CONFLICT, "현재 상태에서는 축제 기본 정보를 수정할 수 없습니다."),
     FIELD_STAFF_LOGIN_ID_DUPLICATED(40906, HttpStatus.CONFLICT, "이미 사용 중인 현장 스태프 아이디입니다."),
     FIELD_STAFF_INVALID_CREDENTIALS(40105, HttpStatus.UNAUTHORIZED, "현장 스태프 아이디 또는 비밀번호가 올바르지 않습니다."),
     FIELD_STAFF_NOT_ACTIVE(40302, HttpStatus.FORBIDDEN, "사용할 수 없는 현장 스태프 계정입니다."),
     FIELD_STAFF_VALID_PERIOD_EXPIRED(40303, HttpStatus.FORBIDDEN, "현장 스태프 계정 유효기간이 아닙니다."),
 
     ROAD_ADDRESS_SEARCH_FAILED(50200, HttpStatus.BAD_GATEWAY, "도로명주소 검색에 실패했습니다."),
+    AUTH_EMAIL_SEND_FAILED(50205, HttpStatus.BAD_GATEWAY, "이메일 발송에 실패했습니다."),
     ROAD_ADDRESS_API_KEY_NOT_CONFIGURED(50300, HttpStatus.SERVICE_UNAVAILABLE, "도로명주소 검색 설정이 필요합니다."),
 
     INTERNAL_SERVER_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러가 발생하였습니다.");

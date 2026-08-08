@@ -49,6 +49,11 @@ public class AdminEmailVerificationRedisRepository
     }
 
     @Override
+    public void deleteByEmail(AdminEmail email) {
+        redisTemplate.delete(key(email));
+    }
+
+    @Override
     public boolean consumeVerified(AdminEmail email) {
         String value = redisTemplate.opsForValue().getAndDelete(key(email));
         if (value == null) {
@@ -67,7 +72,8 @@ public class AdminEmailVerificationRedisRepository
                 DELIMITER,
                 verification.getCode(),
                 Boolean.toString(verification.isVerified()),
-                verification.getExpiresAt().toString()
+                verification.getExpiresAt().toString(),
+                Integer.toString(verification.getFailedAttempts())
         );
     }
 
@@ -80,7 +86,8 @@ public class AdminEmailVerificationRedisRepository
                 email,
                 parts[0],
                 LocalDateTime.parse(parts[2]),
-                Boolean.parseBoolean(parts[1])
+                Boolean.parseBoolean(parts[1]),
+                parts.length >= 4 ? Integer.parseInt(parts[3]) : 0
         );
     }
 }

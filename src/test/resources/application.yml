@@ -18,6 +18,17 @@ spring:
       timeout: 2s
 
 app:
+  auth:
+    email-verification:
+      request-limit: 5
+      request-window: 10m
+      resend-cooldown: 1m
+    password-reset:
+      request-limit: 5
+      request-window: 10m
+      resend-cooldown: 1m
+      token-ttl: 30m
+      frontend-url: http://localhost:3000/password-reset
   jwt:
     secret: test-jwt-secret-key-for-chookjibup-admin-local-tests
     access-token-expiration-seconds: 1800

@@ -1,7 +1,9 @@
 package com.example.chookjibupadmin.auth.support;
 
+import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.auth.command.infrastructure.JwtTokenProvider;
 import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AdminAccountService adminAccountService;
 
     @Override
     protected void doFilterInternal(
@@ -39,6 +42,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 AdminPrincipal principal = jwtTokenProvider.parse(
                         authorization.substring(BEARER_PREFIX.length())
                 );
+                if (!adminAccountService.isAuthenticationValid(
+                        principal.adminId(),
+                        principal.authVersion()
+                )) {
+                    throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+                }
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 principal,

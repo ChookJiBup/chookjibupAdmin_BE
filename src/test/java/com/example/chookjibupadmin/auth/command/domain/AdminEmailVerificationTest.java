@@ -69,17 +69,19 @@ class AdminEmailVerificationTest {
     class Verify {
 
         @Test
-        @DisplayName("만료 시각과 같은 시각에는 인증할 수 있다")
-        void success_Verify_ExpiresAtBoundary() {
+        @DisplayName("만료 시각과 같은 시각에는 인증할 수 없다")
+        void fail_Verify_ExpiresAtBoundary_CustomException() {
             // given
             LocalDateTime expiresAt = LocalDateTime.of(2026, 7, 18, 12, 5);
             AdminEmailVerification verification = verification(expiresAt);
 
-            // when
-            verification.verify("123456", expiresAt);
-
-            // then
-            assertThat(verification.isVerified()).isTrue();
+            // when & then
+            assertThatThrownBy(() -> verification.verify("123456", expiresAt))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(
+                            ErrorCode.AUTH_EMAIL_VERIFICATION_EXPIRED
+                                    .getMessage()
+                    );
         }
 
         @Test
@@ -118,6 +120,28 @@ class AdminEmailVerificationTest {
                             ErrorCode.AUTH_EMAIL_VERIFICATION_INVALID
                                     .getMessage()
                     );
+        }
+
+        @Test
+        @DisplayName("인증 코드 실패가 5회 누적되면 올바른 코드도 거부한다")
+        void fail_Verify_MaxFailedAttempts_CustomException() {
+            // given
+            LocalDateTime expiresAt = LocalDateTime.of(2026, 7, 18, 12, 5);
+            AdminEmailVerification verification = verification(expiresAt);
+            LocalDateTime now = expiresAt.minusSeconds(1);
+            for (int i = 0; i < 5; i++) {
+                assertThatThrownBy(() -> verification.verify("000000", now))
+                        .isInstanceOf(CustomException.class);
+            }
+
+            // when & then
+            assertThatThrownBy(() -> verification.verify("123456", now))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(
+                            ErrorCode.AUTH_EMAIL_VERIFICATION_INVALID
+                                    .getMessage()
+                    );
+            assertThat(verification.getFailedAttempts()).isEqualTo(6);
         }
     }
 

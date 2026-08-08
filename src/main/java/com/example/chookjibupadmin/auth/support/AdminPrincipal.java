@@ -7,8 +7,13 @@ import com.example.chookjibupadmin.admin.command.domain.AdminRole;
  */
 public record AdminPrincipal(
         Long adminId,
-        String email
+        String email,
+        long authVersion
 ) {
+
+    public AdminPrincipal(Long adminId, String email) {
+        this(adminId, email, 0L);
+    }
 
     /**
      * TODO(auth): 기존 테스트 Fixture 정리 완료 후 제거한다.
@@ -20,6 +25,6 @@ public record AdminPrincipal(
             String email,
             AdminRole ignoredRole
     ) {
-        this(adminId, email);
+        this(adminId, email, 0L);
     }
 }

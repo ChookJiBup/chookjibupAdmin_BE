@@ -5,6 +5,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
+import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.auth.command.infrastructure.JwtTokenProvider;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
@@ -28,6 +29,9 @@ class JwtAuthenticationFilterTest {
     @Mock
     private JwtTokenProvider jwtTokenProvider;
 
+    @Mock
+    private AdminAccountService adminAccountService;
+
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
@@ -43,7 +47,7 @@ class JwtAuthenticationFilterTest {
                 throws ServletException, IOException {
             // given
             JwtAuthenticationFilter filter =
-                    new JwtAuthenticationFilter(jwtTokenProvider);
+                    new JwtAuthenticationFilter(jwtTokenProvider, adminAccountService);
             MockHttpServletRequest request = request("Bearer access-token");
             MockHttpServletResponse response = new MockHttpServletResponse();
             MockFilterChain filterChain = new MockFilterChain();
@@ -54,6 +58,10 @@ class JwtAuthenticationFilterTest {
                     AdminRole.SUB_ADMIN
             );
             given(jwtTokenProvider.parse("access-token")).willReturn(principal);
+            given(adminAccountService.isAuthenticationValid(
+                    principal.adminId(),
+                    principal.authVersion()
+            )).willReturn(true);
 
             // when
             filter.doFilter(request, response, filterChain);
@@ -77,7 +85,7 @@ class JwtAuthenticationFilterTest {
                 throws ServletException, IOException {
             // given
             JwtAuthenticationFilter filter =
-                    new JwtAuthenticationFilter(jwtTokenProvider);
+                    new JwtAuthenticationFilter(jwtTokenProvider, adminAccountService);
             MockHttpServletRequest request = request(null);
             MockHttpServletResponse response = new MockHttpServletResponse();
             MockFilterChain filterChain = new MockFilterChain();
@@ -97,7 +105,7 @@ class JwtAuthenticationFilterTest {
                 throws ServletException, IOException {
             // given
             JwtAuthenticationFilter filter =
-                    new JwtAuthenticationFilter(jwtTokenProvider);
+                    new JwtAuthenticationFilter(jwtTokenProvider, adminAccountService);
             MockHttpServletRequest request = request("Bearer invalid-token");
             MockHttpServletResponse response = new MockHttpServletResponse();
             MockFilterChain filterChain = new MockFilterChain();
