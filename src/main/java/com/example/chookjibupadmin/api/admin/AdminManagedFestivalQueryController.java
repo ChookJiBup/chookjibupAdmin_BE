@@ -1,13 +1,15 @@
 package com.example.chookjibupadmin.api.admin;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
+import com.example.chookjibupadmin.admin.query.application.AdminManagedFestivalDetailQueryApplicationService;
 import com.example.chookjibupadmin.admin.query.application.AdminManagedFestivalQueryApplicationService;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalCondition;
+import com.example.chookjibupadmin.api.admin.dto.AdminManagedFestivalDetailResponse;
 import com.example.chookjibupadmin.api.admin.dto.AdminManagedFestivalResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
-import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminManagedFestivalQueryController {
 
     private final AdminManagedFestivalQueryApplicationService queryService;
+    private final AdminManagedFestivalDetailQueryApplicationService detailQueryService;
 
     /**
      * 인증 관리자가 현재 관리 중인 축제 목록을 조회한다.
@@ -68,14 +71,14 @@ public class AdminManagedFestivalQueryController {
     @Operation(summary = "내 관리 축제 단건 조회")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{festivalId}")
-    public ApiResponse<AdminManagedFestivalResponse> getManagedFestival(
+    public ApiResponse<AdminManagedFestivalDetailResponse> getManagedFestival(
             @PathVariable UUID festivalId,
             @AuthenticationPrincipal AdminPrincipal principal
     ) {
         return ApiResponse.success(
                 SuccessCode.ADMIN_MANAGED_FESTIVAL_READ_SUCCESS,
-                AdminManagedFestivalResponse.from(
-                        queryService.getManagedFestival(
+                AdminManagedFestivalDetailResponse.from(
+                        detailQueryService.getManagedFestival(
                                 festivalId,
                                 principal
                         )

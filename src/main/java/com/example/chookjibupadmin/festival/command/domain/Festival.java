@@ -261,6 +261,9 @@ public class Festival extends BaseTimeEntity {
             FestivalPeriod period,
             FestivalOperationTime operationTime
     ) {
+        if (!status.canModifyBasicInfo()) {
+            throw new CustomException(ErrorCode.FESTIVAL_INVALID_STATUS);
+        }
         validateSameYear(period);
 
         this.name = name;
