@@ -1,6 +1,8 @@
 package com.example.chookjibupadmin.api.admin;
 
 import com.example.chookjibupadmin.admin.command.application.AdminSubAdminDeleteService;
+import com.example.chookjibupadmin.admin.command.application.AdminSubAdminAssignService;
+import com.example.chookjibupadmin.api.admin.dto.AssignSubAdminRequest;
 import com.example.chookjibupadmin.api.admin.dto.DeleteSubAdminsRequest;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
@@ -14,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,6 +31,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminSubAdminCommandController {
 
     private final AdminSubAdminDeleteService adminSubAdminDeleteService;
+    private final AdminSubAdminAssignService adminSubAdminAssignService;
+
+    @Operation(summary = "제2관리자 권한 부여")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping
+    public ApiResponse<Void> assign(
+            @PathVariable UUID festivalId,
+            @Valid @RequestBody AssignSubAdminRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        adminSubAdminAssignService.assign(festivalId, request.adminId(), principal);
+        return ApiResponse.success(SuccessCode.ADMIN_SUB_ADMIN_ASSIGN_SUCCESS);
+    }
 
     /**
      * 선택한 제2관리자의 해당 축제 권한을 일괄 삭제한다.
