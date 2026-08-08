@@ -7,7 +7,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
+import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
@@ -25,6 +27,7 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.command.application.dto.CreateFieldStaffCommand;
 import com.example.chookjibupadmin.operator.command.application.dto.CreateFieldStaffResult;
+import com.example.chookjibupadmin.operator.command.application.dto.UpdateFieldStaffCommand;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffStatus;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
@@ -60,6 +63,9 @@ class FieldStaffManagementServiceTest {
     private AdminAccountService adminAccountService;
 
     @Mock
+    private AdminFestivalRoleService adminFestivalRoleService;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -79,6 +85,7 @@ class FieldStaffManagementServiceTest {
             given(adminAccountService.getById(1L)).willReturn(adminAccount);
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
             given(fieldStaffAccountService.existsByFestivalIdAndLoginId(
                     1L,
                     FieldStaffLoginId.of("staff01")
@@ -118,6 +125,7 @@ class FieldStaffManagementServiceTest {
             given(adminAccountService.getById(1L)).willReturn(adminAccount);
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            givenManageRole(festival, AdminRole.SUB_ADMIN);
             given(fieldStaffAccountService.existsByFestivalIdAndLoginId(
                     1L,
                     FieldStaffLoginId.of("staff01")
@@ -147,6 +155,7 @@ class FieldStaffManagementServiceTest {
                     .willReturn(festivalOwner(1L));
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
             given(fieldStaffAccountService.existsByFestivalIdAndLoginId(
                     1L,
                     FieldStaffLoginId.of("staff01")
@@ -171,6 +180,10 @@ class FieldStaffManagementServiceTest {
                     .willReturn(festivalOwner(2L));
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    1L,
+                    festival.getId()
+            )).willThrow(new CustomException(ErrorCode.FORBIDDEN));
 
             // when & then
             assertThatThrownBy(() -> service.create(
@@ -197,6 +210,7 @@ class FieldStaffManagementServiceTest {
                     .willReturn(subAdmin(1L));
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            givenManageRole(festival, AdminRole.SUB_ADMIN);
             given(fieldStaffAccountService.getByPublicId(account.getPublicId()))
                     .willReturn(account);
 
@@ -221,6 +235,7 @@ class FieldStaffManagementServiceTest {
                     .willReturn(festivalOwner(1L));
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
             given(fieldStaffAccountService.getByPublicId(account.getPublicId()))
                     .willReturn(account);
 
@@ -350,6 +365,99 @@ class FieldStaffManagementServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("manage")
+    class Manage {
+
+        @Test
+        @DisplayName("담당 축제 스태프 정보를 수정한다")
+        void success_Update() {
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(1L);
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getByPublicId(account.getPublicId()))
+                    .willReturn(account);
+
+            service.update(
+                    festival.getPublicId(),
+                    account.getPublicId(),
+                    new UpdateFieldStaffCommand("박스태프", "010-9999-8888"),
+                    principal(AdminRole.FESTIVAL_OWNER)
+            );
+
+            assertThat(account.getNameValue()).isEqualTo("박스태프");
+            assertThat(account.getPhoneNumberValue()).isEqualTo("010-9999-8888");
+        }
+
+        @Test
+        @DisplayName("담당 축제 스태프 임시 비밀번호를 재발급한다")
+        void success_ReissuePassword() {
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(1L);
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getByPublicId(account.getPublicId()))
+                    .willReturn(account);
+            given(passwordGenerator.generate()).willReturn("1234567890123456");
+            given(passwordEncoder.encode("1234567890123456"))
+                    .willReturn("new-hash");
+
+            String result = service.reissuePassword(
+                    festival.getPublicId(),
+                    account.getPublicId(),
+                    principal(AdminRole.FESTIVAL_OWNER)
+            );
+
+            assertThat(result).isEqualTo("1234567890123456");
+            assertThat(account.getPasswordHashValue()).isEqualTo("new-hash");
+        }
+
+        @Test
+        @DisplayName("담당 축제 스태프를 비활성화한 뒤 다시 활성화한다")
+        void success_ChangeActiveStatus() {
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(1L);
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getByPublicId(account.getPublicId()))
+                    .willReturn(account);
+
+            service.changeActiveStatus(
+                    festival.getPublicId(),
+                    account.getPublicId(),
+                    false,
+                    principal(AdminRole.FESTIVAL_OWNER)
+            );
+            assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.INACTIVE);
+
+            service.changeActiveStatus(
+                    festival.getPublicId(),
+                    account.getPublicId(),
+                    true,
+                    principal(AdminRole.FESTIVAL_OWNER)
+            );
+            assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("다른 축제 스태프의 상태는 변경할 수 없다")
+        void fail_ChangeActiveStatus_DifferentFestival_CustomException() {
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(2L);
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getByPublicId(account.getPublicId()))
+                    .willReturn(account);
+
+            assertThatThrownBy(() -> service.changeActiveStatus(
+                    festival.getPublicId(),
+                    account.getPublicId(),
+                    false,
+                    principal(AdminRole.FESTIVAL_OWNER)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FIELD_STAFF_NOT_FOUND.getMessage());
+            assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
+        }
+    }
+
     private CreateFieldStaffCommand createCommand() {
         return new CreateFieldStaffCommand(
                 "staff01",
@@ -365,6 +473,17 @@ class FieldStaffManagementServiceTest {
     private void givenManagePermission(Festival festival) {
         given(adminAccountService.getById(1L)).willReturn(festivalOwner(1L));
         given(festivalService.getByPublicId(festival.getPublicId())).willReturn(festival);
+        givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
+    }
+
+    private void givenManageRole(Festival festival, AdminRole role) {
+        AdminFestivalRole festivalRole = role == AdminRole.FESTIVAL_OWNER
+                ? AdminFestivalRole.createFestivalOwner(1L, festival.getId())
+                : AdminFestivalRole.createSubAdmin(1L, festival.getId(), 2L);
+        given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                1L,
+                festival.getId()
+        )).willReturn(festivalRole);
     }
 
     private AdminAccount festivalOwner(Long festivalId) {
@@ -375,11 +494,12 @@ class FieldStaffManagementServiceTest {
                 AdminPasswordHash.of("encoded-password")
         );
         adminAccount.assignFestivalOwner(festivalId);
+        ReflectionTestUtils.setField(adminAccount, "id", 1L);
         return adminAccount;
     }
 
     private AdminAccount subAdmin(Long festivalId) {
-        return AdminAccount.createSubAdmin(
+        AdminAccount adminAccount = AdminAccount.createSubAdmin(
                 AdminEmail.of("sub@mapo.go.kr"),
                 AdminName.of("김서브"),
                 AdminOrganization.of("마포구청 소속"),
@@ -387,6 +507,8 @@ class FieldStaffManagementServiceTest {
                 AdminPasswordHash.of("encoded-password"),
                 1L
         );
+        ReflectionTestUtils.setField(adminAccount, "id", 1L);
+        return adminAccount;
     }
 
     private Festival festival(Long festivalId) {

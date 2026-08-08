@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.operator.query.infrastructure.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
+import com.example.chookjibupadmin.operator.command.domain.FieldStaffStatus;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
@@ -34,18 +35,21 @@ class FieldStaffQueryRepositoryTest {
     class FindAllByFestivalId {
 
         @Test
-        @DisplayName("같은 축제의 활성 현장 스태프만 조회한다")
-        void success_FindAllByFestivalId_ActiveFieldStaff() {
+        @DisplayName("같은 축제의 삭제되지 않은 현장 스태프만 조회한다")
+        void success_FindAllByFestivalId_NotDeletedFieldStaff() {
             // given
             FieldStaffAccount first = fieldStaffAccount("staff01", 1L);
             FieldStaffAccount second = fieldStaffAccount("staff02", 1L);
             FieldStaffAccount otherFestival = fieldStaffAccount("other01", 2L);
             FieldStaffAccount deleted = fieldStaffAccount("deleted01", 1L);
+            FieldStaffAccount inactive = fieldStaffAccount("inactive01", 1L);
             deleted.delete();
+            inactive.deactivate();
             persist(first);
             persist(second);
             persist(otherFestival);
             persist(deleted);
+            persist(inactive);
 
             // when
             var result = queryRepository.findAllByFestivalId(1L);
@@ -53,7 +57,7 @@ class FieldStaffQueryRepositoryTest {
             // then
             assertThat(result)
                     .extracting(FieldStaffView::loginId)
-                    .containsExactly("staff01", "staff02");
+                    .containsExactly("staff01", "staff02", "inactive01");
         }
 
         @Test
@@ -95,6 +99,28 @@ class FieldStaffQueryRepositoryTest {
                     .get()
                     .extracting(FieldStaffView::loginId)
                     .isEqualTo("staff01");
+        }
+
+        @Test
+        @DisplayName("같은 축제의 비활성 현장 스태프도 UUID로 조회한다")
+        void success_FindByFestivalIdAndPublicId_InactiveFieldStaff() {
+            // given
+            FieldStaffAccount account = fieldStaffAccount("staff01", 1L);
+            account.deactivate();
+            FieldStaffAccount saved = persist(account);
+
+            // when
+            var result = queryRepository.findByFestivalIdAndPublicId(
+                    1L,
+                    saved.getPublicId()
+            );
+
+            // then
+            assertThat(result)
+                    .isPresent()
+                    .get()
+                    .extracting(FieldStaffView::status)
+                    .isEqualTo(FieldStaffStatus.INACTIVE);
         }
 
         @Test

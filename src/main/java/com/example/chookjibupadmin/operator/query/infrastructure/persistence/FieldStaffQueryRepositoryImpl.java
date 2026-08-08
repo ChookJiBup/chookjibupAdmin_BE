@@ -1,7 +1,7 @@
 package com.example.chookjibupadmin.operator.query.infrastructure.persistence;
 
-import com.example.chookjibupadmin.operator.command.domain.QFieldStaffAccount;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffStatus;
+import com.example.chookjibupadmin.operator.command.domain.QFieldStaffAccount;
 import com.example.chookjibupadmin.operator.query.application.dto.FieldStaffView;
 import com.example.chookjibupadmin.operator.query.repository.FieldStaffQueryRepository;
 import com.querydsl.core.types.Projections;
@@ -37,7 +37,7 @@ public class FieldStaffQueryRepositoryImpl implements FieldStaffQueryRepository 
                 .from(fieldStaffAccount)
                 .where(
                         fieldStaffAccount.festivalId.eq(festivalId),
-                        fieldStaffAccount.status.eq(FieldStaffStatus.ACTIVE)
+                        fieldStaffAccount.status.ne(FieldStaffStatus.DELETED)
                 )
                 .orderBy(fieldStaffAccount.id.asc())
                 .fetch();
@@ -66,7 +66,7 @@ public class FieldStaffQueryRepositoryImpl implements FieldStaffQueryRepository 
                 .where(
                         fieldStaffAccount.festivalId.eq(festivalId),
                         fieldStaffAccount.publicId.eq(publicId),
-                        fieldStaffAccount.status.eq(FieldStaffStatus.ACTIVE)
+                        fieldStaffAccount.status.ne(FieldStaffStatus.DELETED)
                 )
                 .fetchOne();
 

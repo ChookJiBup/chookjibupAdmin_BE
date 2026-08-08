@@ -1,16 +1,17 @@
 package com.example.chookjibupadmin.operator.command.application;
 
-import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
+import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
-import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
+import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.command.application.dto.CreateFieldStaffCommand;
 import com.example.chookjibupadmin.operator.command.application.dto.CreateFieldStaffResult;
+import com.example.chookjibupadmin.operator.command.application.dto.UpdateFieldStaffCommand;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
@@ -105,6 +106,82 @@ public class FieldStaffManagementService {
     }
 
     /**
+     * 담당 축제의 현장 스태프 이름과 전화번호를 수정한다.
+     */
+    public void update(
+            UUID festivalId,
+            UUID fieldStaffId,
+            UpdateFieldStaffCommand command,
+            AdminPrincipal principal
+    ) {
+        FieldStaffAccount account = getManageableAccount(
+                festivalId,
+                fieldStaffId,
+                principal
+        );
+        account.update(
+                FieldStaffName.of(command.name()),
+                FieldStaffPhoneNumber.of(command.phoneNumber())
+        );
+    }
+
+    /**
+     * 담당 축제의 현장 스태프 비밀번호를 새 임시 비밀번호로 교체한다.
+     */
+    public String reissuePassword(
+            UUID festivalId,
+            UUID fieldStaffId,
+            AdminPrincipal principal
+    ) {
+        FieldStaffAccount account = getManageableAccount(
+                festivalId,
+                fieldStaffId,
+                principal
+        );
+        String temporaryPassword = passwordGenerator.generate();
+        account.changePassword(FieldStaffPasswordHash.of(
+                passwordEncoder.encode(temporaryPassword)
+        ));
+        return temporaryPassword;
+    }
+
+    /**
+     * 담당 축제의 현장 스태프 계정을 활성화하거나 비활성화한다.
+     */
+    public void changeActiveStatus(
+            UUID festivalId,
+            UUID fieldStaffId,
+            boolean active,
+            AdminPrincipal principal
+    ) {
+        FieldStaffAccount account = getManageableAccount(
+                festivalId,
+                fieldStaffId,
+                principal
+        );
+        if (active) {
+            account.activate();
+        } else {
+            account.deactivate();
+        }
+    }
+
+    private FieldStaffAccount getManageableAccount(
+            UUID festivalId,
+            UUID fieldStaffId,
+            AdminPrincipal principal
+    ) {
+        AdminAccount adminAccount = findAuthenticatedAdmin(principal);
+        Festival festival = findFestival(festivalId);
+        validateManagePermission(adminAccount, festival);
+        FieldStaffAccount account = fieldStaffAccountService.getByPublicId(fieldStaffId);
+        if (!festival.getId().equals(account.getFestivalId())) {
+            throw new CustomException(ErrorCode.FIELD_STAFF_NOT_FOUND);
+        }
+        return account;
+    }
+
+    /**
      * 1관리자 또는 2관리자가 담당 축제의 현장 스태프 계정을 일괄 삭제한다.
      *
      * 요청 계정 중 하나라도 없거나 다른 축제 소속이면 전체 삭제를 거부한다.
@@ -163,14 +240,6 @@ public class FieldStaffManagementService {
             AdminAccount adminAccount,
             Festival festival
     ) {
-        if (adminFestivalRoleService == null) {
-            if (!festival.getId().equals(adminAccount.getFestivalId())
-                    || !adminAccount.canManageFieldStaff()) {
-                throw new CustomException(ErrorCode.FORBIDDEN);
-            }
-            return;
-        }
-
         AdminFestivalRole role = adminFestivalRoleService
                 .getByAdminAccountIdAndFestivalId(
                         adminAccount.getId(),

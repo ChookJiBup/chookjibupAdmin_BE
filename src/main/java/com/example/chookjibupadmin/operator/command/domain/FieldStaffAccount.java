@@ -159,12 +159,24 @@ public class FieldStaffAccount extends BaseTimeEntity {
     }
 
     /**
+     * 관리자가 활성화한 계정인지 확인한다.
+     */
+    public boolean isActive() {
+        return status == FieldStaffStatus.ACTIVE;
+    }
+
+    /**
      * 현재 시점에 로그인 가능한 계정인지 확인한다.
      */
     public boolean isUsableAt(LocalDateTime now) {
-        return status == FieldStaffStatus.ACTIVE
-                && !now.isBefore(validFrom)
-                && !now.isAfter(validUntil);
+        return isActive() && isWithinValidPeriod(now);
+    }
+
+    /**
+     * 지정 시각이 계정 유효기간 안인지 확인한다.
+     */
+    public boolean isWithinValidPeriod(LocalDateTime now) {
+        return !now.isBefore(validFrom) && !now.isAfter(validUntil);
     }
 
     /**
@@ -176,6 +188,36 @@ public class FieldStaffAccount extends BaseTimeEntity {
         }
 
         status = FieldStaffStatus.DELETED;
+    }
+
+    public void update(
+            FieldStaffName name,
+            FieldStaffPhoneNumber phoneNumber
+    ) {
+        ensureNotDeleted();
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+    }
+
+    public void changePassword(FieldStaffPasswordHash passwordHash) {
+        ensureNotDeleted();
+        this.passwordHash = passwordHash;
+    }
+
+    public void activate() {
+        ensureNotDeleted();
+        status = FieldStaffStatus.ACTIVE;
+    }
+
+    public void deactivate() {
+        ensureNotDeleted();
+        status = FieldStaffStatus.INACTIVE;
+    }
+
+    private void ensureNotDeleted() {
+        if (isDeleted()) {
+            throw new CustomException(ErrorCode.FIELD_STAFF_NOT_ACTIVE);
+        }
     }
 
     public String getLoginIdValue() {

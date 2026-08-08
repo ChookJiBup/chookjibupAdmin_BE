@@ -3,6 +3,9 @@ package com.example.chookjibupadmin.api.fieldstaff;
 import com.example.chookjibupadmin.api.fieldstaff.dto.CreateFieldStaffRequest;
 import com.example.chookjibupadmin.api.fieldstaff.dto.CreateFieldStaffResponse;
 import com.example.chookjibupadmin.api.fieldstaff.dto.DeleteFieldStaffRequest;
+import com.example.chookjibupadmin.api.fieldstaff.dto.ReissueFieldStaffPasswordResponse;
+import com.example.chookjibupadmin.api.fieldstaff.dto.UpdateFieldStaffRequest;
+import com.example.chookjibupadmin.api.fieldstaff.dto.UpdateFieldStaffStatusRequest;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
@@ -17,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -96,5 +100,61 @@ public class FieldStaffCommandController {
         );
 
         return ApiResponse.success(SuccessCode.FIELD_STAFF_DELETE_SUCCESS);
+    }
+
+    @Operation(summary = "현장 스태프 정보 수정")
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/{staffId}")
+    public ApiResponse<Void> update(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID staffId,
+            @Valid @RequestBody UpdateFieldStaffRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        fieldStaffManagementService.update(
+                festivalId,
+                staffId,
+                request.toCommand(),
+                principal
+        );
+        return ApiResponse.success(SuccessCode.FIELD_STAFF_UPDATE_SUCCESS);
+    }
+
+    @Operation(summary = "현장 스태프 임시 비밀번호 재발급")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/{staffId}/password/reissue")
+    public ApiResponse<ReissueFieldStaffPasswordResponse> reissuePassword(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID staffId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FIELD_STAFF_PASSWORD_REISSUE_SUCCESS,
+                new ReissueFieldStaffPasswordResponse(
+                        fieldStaffManagementService.reissuePassword(
+                                festivalId,
+                                staffId,
+                                principal
+                        )
+                )
+        );
+    }
+
+    @Operation(summary = "현장 스태프 활성 상태 변경")
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/{staffId}/status")
+    public ApiResponse<Void> updateStatus(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID staffId,
+            @Valid @RequestBody UpdateFieldStaffStatusRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        fieldStaffManagementService.changeActiveStatus(
+                festivalId,
+                staffId,
+                request.active(),
+                principal
+        );
+        return ApiResponse.success(SuccessCode.FIELD_STAFF_STATUS_UPDATE_SUCCESS);
     }
 }

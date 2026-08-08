@@ -192,6 +192,53 @@ class FieldStaffAccountTest {
         }
     }
 
+    @Nested
+    @DisplayName("manage")
+    class Manage {
+
+        @Test
+        @DisplayName("정보 수정과 비밀번호 재발급을 반영한다")
+        void success_UpdateAndChangePassword() {
+            FieldStaffAccount account = fieldStaffAccount();
+
+            account.update(
+                    FieldStaffName.of("박스태프"),
+                    FieldStaffPhoneNumber.of("010-9999-8888")
+            );
+            account.changePassword(FieldStaffPasswordHash.of("new-hash"));
+
+            assertThat(account.getNameValue()).isEqualTo("박스태프");
+            assertThat(account.getPhoneNumberValue()).isEqualTo("010-9999-8888");
+            assertThat(account.getPasswordHashValue()).isEqualTo("new-hash");
+        }
+
+        @Test
+        @DisplayName("비활성 계정은 로그인할 수 없고 다시 활성화할 수 있다")
+        void success_DeactivateAndActivate() {
+            FieldStaffAccount account = fieldStaffAccount();
+            LocalDateTime now = LocalDateTime.of(2026, 10, 10, 0, 0);
+
+            account.deactivate();
+            assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.INACTIVE);
+            assertThat(account.isUsableAt(now)).isFalse();
+
+            account.activate();
+            assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
+            assertThat(account.isUsableAt(now)).isTrue();
+        }
+
+        @Test
+        @DisplayName("삭제된 계정은 다시 활성화할 수 없다")
+        void fail_Activate_Deleted_CustomException() {
+            FieldStaffAccount account = fieldStaffAccount();
+            account.delete();
+
+            assertThatThrownBy(account::activate)
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FIELD_STAFF_NOT_ACTIVE.getMessage());
+        }
+    }
+
     private FieldStaffAccount fieldStaffAccount() {
         return fieldStaffAccount(
                 LocalDateTime.of(2026, 10, 9, 0, 0),

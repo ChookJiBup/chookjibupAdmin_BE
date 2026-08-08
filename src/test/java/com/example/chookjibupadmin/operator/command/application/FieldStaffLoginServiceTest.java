@@ -155,6 +155,32 @@ class FieldStaffLoginServiceTest {
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FIELD_STAFF_NOT_ACTIVE.getMessage());
         }
+
+        @Test
+        @DisplayName("비활성 계정은 로그인할 수 없다")
+        void fail_Login_InactiveFieldStaff_CustomException() {
+            // given
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(1L);
+            account.deactivate();
+            FieldStaffLoginCommand command = command(
+                    festival.getPublicId(),
+                    "staff01",
+                    "plain"
+            );
+            given(festivalService.getByPublicId(festival.getPublicId()))
+                    .willReturn(festival);
+            given(fieldStaffAccountService.getByFestivalIdAndLoginIdForLogin(
+                    1L,
+                    FieldStaffLoginId.of("staff01")
+            )).willReturn(account);
+            given(passwordEncoder.matches("plain", "encoded-password")).willReturn(true);
+
+            // when & then
+            assertThatThrownBy(() -> service.login(command))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FIELD_STAFF_NOT_ACTIVE.getMessage());
+        }
     }
 
     private FieldStaffLoginCommand command(

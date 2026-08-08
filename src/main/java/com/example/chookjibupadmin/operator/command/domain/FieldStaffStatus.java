@@ -5,5 +5,6 @@ package com.example.chookjibupadmin.operator.command.domain;
  */
 public enum FieldStaffStatus {
     ACTIVE,
+    INACTIVE,
     DELETED
 }

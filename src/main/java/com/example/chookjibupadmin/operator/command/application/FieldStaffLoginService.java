@@ -48,11 +48,11 @@ public class FieldStaffLoginService {
             throw new CustomException(ErrorCode.FIELD_STAFF_INVALID_CREDENTIALS);
         }
 
-        if (fieldStaffAccount.isDeleted()) {
+        if (!fieldStaffAccount.isActive()) {
             throw new CustomException(ErrorCode.FIELD_STAFF_NOT_ACTIVE);
         }
 
-        if (!fieldStaffAccount.isUsableAt(LocalDateTime.now(clock))) {
+        if (!fieldStaffAccount.isWithinValidPeriod(LocalDateTime.now(clock))) {
             throw new CustomException(ErrorCode.FIELD_STAFF_VALID_PERIOD_EXPIRED);
         }
 
