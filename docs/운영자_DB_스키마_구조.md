@@ -4,7 +4,7 @@
 
 이 문서는 운영자 DB 생성 SQL 중 `chookjibupAdmin_BE`가 직접 생성·수정·조회하거나 관리자 권한 검증에 사용하는 테이블만 정리한다.
 
-- 기준 SQL: `reference/2026-08-01/운영자DB_SQl.sql`
+- 기준 SQL: `reference/2026-08/운영자DB_SQl.sql`
 - 기준 확인일: 2026-08-02
 - 대상 애플리케이션: `chookjibupAdmin_BE`
 - 대상 DBMS: PostgreSQL

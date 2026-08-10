@@ -12,7 +12,7 @@
 
 기준:
 
-- `reference/2026-08-01/운영자DB_SQl.sql`
+- `reference/2026-08/운영자DB_SQl.sql`
 - 현재 관리자 BE JPA와 API
 - 기준일 2026-08-02
 
