@@ -24,8 +24,6 @@ public enum AdminRole {
             true
     );
 
-    // TODO(operator): 현장 스태프 토큰으로 호출할 실제 운영 API 권한 모델을 확정한다.
-
     private final boolean canInviteSubAdmin;
     private final boolean canModifyFestivalInfo;
     private final boolean canManageFieldStaff;

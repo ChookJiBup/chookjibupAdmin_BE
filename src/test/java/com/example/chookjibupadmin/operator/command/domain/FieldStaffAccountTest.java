@@ -35,6 +35,7 @@ class FieldStaffAccountTest {
             assertThat(account.getFestivalId()).isEqualTo(1L);
             assertThat(account.getLoginIdValue()).isEqualTo("staff01");
             assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
+            assertThat(account.getAuthVersion()).isZero();
         }
 
         @Test
@@ -176,6 +177,7 @@ class FieldStaffAccountTest {
             // then
             assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.DELETED);
             assertThat(account.isDeleted()).isTrue();
+            assertThat(account.getAuthVersion()).isEqualTo(1L);
         }
 
         @Test
@@ -210,6 +212,7 @@ class FieldStaffAccountTest {
             assertThat(account.getNameValue()).isEqualTo("박스태프");
             assertThat(account.getPhoneNumberValue()).isEqualTo("010-9999-8888");
             assertThat(account.getPasswordHashValue()).isEqualTo("new-hash");
+            assertThat(account.getAuthVersion()).isEqualTo(1L);
         }
 
         @Test
@@ -221,10 +224,12 @@ class FieldStaffAccountTest {
             account.deactivate();
             assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.INACTIVE);
             assertThat(account.isUsableAt(now)).isFalse();
+            assertThat(account.getAuthVersion()).isEqualTo(1L);
 
             account.activate();
             assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
             assertThat(account.isUsableAt(now)).isTrue();
+            assertThat(account.getAuthVersion()).isEqualTo(2L);
         }
 
         @Test

@@ -60,7 +60,6 @@ public class FieldStaffAccount extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // TODO(operator): 운영 DB 반영 전 field_staff_accounts 마이그레이션을 작성한다.
     @Column(name = "public_id", nullable = false, updatable = false)
     private UUID publicId;
 
@@ -95,6 +94,13 @@ public class FieldStaffAccount extends BaseTimeEntity {
     )
     private FieldStaffPasswordHash passwordHash;
 
+    @Column(
+            name = "auth_version",
+            nullable = false,
+            columnDefinition = "bigint default 0"
+    )
+    private long authVersion;
+
     @Column(name = "valid_from", nullable = false)
     private LocalDateTime validFrom;
 
@@ -123,6 +129,7 @@ public class FieldStaffAccount extends BaseTimeEntity {
         this.name = name;
         this.phoneNumber = phoneNumber;
         this.passwordHash = passwordHash;
+        this.authVersion = 0L;
         this.validFrom = validFrom;
         this.validUntil = validUntil;
         this.status = FieldStaffStatus.ACTIVE;
@@ -188,6 +195,7 @@ public class FieldStaffAccount extends BaseTimeEntity {
         }
 
         status = FieldStaffStatus.DELETED;
+        authVersion++;
     }
 
     public void update(
@@ -202,16 +210,25 @@ public class FieldStaffAccount extends BaseTimeEntity {
     public void changePassword(FieldStaffPasswordHash passwordHash) {
         ensureNotDeleted();
         this.passwordHash = passwordHash;
+        authVersion++;
     }
 
     public void activate() {
         ensureNotDeleted();
+        if (status == FieldStaffStatus.ACTIVE) {
+            return;
+        }
         status = FieldStaffStatus.ACTIVE;
+        authVersion++;
     }
 
     public void deactivate() {
         ensureNotDeleted();
+        if (status == FieldStaffStatus.INACTIVE) {
+            return;
+        }
         status = FieldStaffStatus.INACTIVE;
+        authVersion++;
     }
 
     private void ensureNotDeleted() {

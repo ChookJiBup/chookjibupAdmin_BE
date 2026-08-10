@@ -60,6 +60,10 @@ app:
   jwt:
     secret: ${APP_JWT_SECRET}
     access-token-expiration-seconds: 1800
+  field-staff:
+    jwt:
+      secret: ${APP_FIELD_STAFF_JWT_SECRET:${APP_JWT_SECRET}}
+      access-token-expiration-seconds: ${APP_FIELD_STAFF_JWT_EXPIRATION_SECONDS:1800}
   internal-auth:
     timestamp-tolerance: ${APP_INTERNAL_AUTH_TIMESTAMP_TOLERANCE:5m}
     nonce-ttl: ${APP_INTERNAL_AUTH_NONCE_TTL:10m}

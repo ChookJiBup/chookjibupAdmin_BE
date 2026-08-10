@@ -9,7 +9,7 @@ public record AdminPrincipal(
         Long adminId,
         String email,
         long authVersion
-) {
+) implements FestivalActorPrincipal {
 
     public AdminPrincipal(Long adminId, String email) {
         this(adminId, email, 0L);

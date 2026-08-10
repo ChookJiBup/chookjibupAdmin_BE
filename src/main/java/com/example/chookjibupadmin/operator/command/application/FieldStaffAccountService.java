@@ -5,6 +5,8 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccountRepository;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
+import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -36,6 +38,30 @@ public class FieldStaffAccountService {
     public FieldStaffAccount getById(Long fieldStaffAccountId) {
         return fieldStaffAccountRepository.findById(fieldStaffAccountId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FIELD_STAFF_NOT_FOUND));
+    }
+
+    /**
+     * 토큰 Claim과 현재 계정 상태가 모두 유효한지 검증한다.
+     */
+    public void validateAuthentication(
+            FieldStaffPrincipal principal,
+            LocalDateTime now
+    ) {
+        FieldStaffAccount account = fieldStaffAccountRepository
+                .findById(principal.fieldStaffId())
+                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_TOKEN_INVALID));
+
+        if (!account.getFestivalId().equals(principal.festivalId())
+                || !account.getLoginIdValue().equals(principal.loginId())
+                || account.getAuthVersion() != principal.authVersion()) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+        }
+        if (!account.isActive()) {
+            throw new CustomException(ErrorCode.FIELD_STAFF_NOT_ACTIVE);
+        }
+        if (!account.isWithinValidPeriod(now)) {
+            throw new CustomException(ErrorCode.FIELD_STAFF_VALID_PERIOD_EXPIRED);
+        }
     }
 
     /**

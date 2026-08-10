@@ -4,14 +4,16 @@ import com.example.chookjibupadmin.admin.command.application.AdminAccountService
 import com.example.chookjibupadmin.auth.command.infrastructure.JwtTokenProvider;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.global.security.ApiAuthenticationEntryPoint;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -25,9 +27,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final String FIELD_STAFF_API_PREFIX = "/api/field-staff/";
+    private static final String INTERNAL_API_PREFIX = "/internal/api/";
+    private static final String ADMIN_AUTHORITY = "ROLE_ADMIN";
 
     private final JwtTokenProvider jwtTokenProvider;
     private final AdminAccountService adminAccountService;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String requestUri = request.getRequestURI();
+        return requestUri.equals("/api/field-staff")
+                || requestUri.startsWith(FIELD_STAFF_API_PREFIX)
+                || requestUri.startsWith(INTERNAL_API_PREFIX);
+    }
 
     @Override
     protected void doFilterInternal(
@@ -52,11 +65,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new UsernamePasswordAuthenticationToken(
                                 principal,
                                 null,
-                                Collections.emptyList()
+                                List.of(new SimpleGrantedAuthority(ADMIN_AUTHORITY))
                         );
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (CustomException exception) {
                 SecurityContextHolder.clearContext();
+                request.setAttribute(
+                        ApiAuthenticationEntryPoint.ERROR_CODE_ATTRIBUTE,
+                        exception.getErrorCode()
+                );
             }
         }
 

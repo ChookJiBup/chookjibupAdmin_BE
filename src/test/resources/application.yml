@@ -32,6 +32,10 @@ app:
   jwt:
     secret: test-jwt-secret-key-for-chookjibup-admin-local-tests
     access-token-expiration-seconds: 1800
+  field-staff:
+    jwt:
+      secret: test-field-staff-jwt-secret-key-for-local-tests
+      access-token-expiration-seconds: 1800
   road-address:
     base-url: https://business.juso.go.kr
     confirmation-key:

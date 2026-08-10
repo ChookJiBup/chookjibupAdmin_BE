@@ -9,6 +9,7 @@ import com.example.chookjibupadmin.admin.command.application.AdminAccountService
 import com.example.chookjibupadmin.auth.command.infrastructure.JwtTokenProvider;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.global.security.ApiAuthenticationEntryPoint;
 import jakarta.servlet.ServletException;
 import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
@@ -76,7 +77,29 @@ class JwtAuthenticationFilterTest {
             assertThat(SecurityContextHolder.getContext()
                     .getAuthentication()
                     .getAuthorities())
-                    .isEmpty();
+                    .extracting("authority")
+                    .containsExactly("ROLE_ADMIN");
+        }
+
+        @Test
+        @DisplayName("현장 스태프 전용 경로에서는 관리자 토큰을 처리하지 않는다")
+        void success_DoFilterInternal_FieldStaffPathBoundary()
+                throws ServletException, IOException {
+            // given
+            JwtAuthenticationFilter filter =
+                    new JwtAuthenticationFilter(jwtTokenProvider, adminAccountService);
+            MockHttpServletRequest request = request("Bearer admin-token");
+            request.setRequestURI("/api/field-staff/me");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            MockFilterChain filterChain = new MockFilterChain();
+
+            // when
+            filter.doFilter(request, response, filterChain);
+
+            // then
+            assertThat(SecurityContextHolder.getContext().getAuthentication())
+                    .isNull();
+            then(jwtTokenProvider).shouldHaveNoInteractions();
         }
 
         @Test
@@ -118,6 +141,9 @@ class JwtAuthenticationFilterTest {
             // then
             assertThat(SecurityContextHolder.getContext().getAuthentication())
                     .isNull();
+            assertThat(request.getAttribute(
+                    ApiAuthenticationEntryPoint.ERROR_CODE_ATTRIBUTE
+            )).isEqualTo(ErrorCode.AUTH_TOKEN_INVALID);
         }
     }
 

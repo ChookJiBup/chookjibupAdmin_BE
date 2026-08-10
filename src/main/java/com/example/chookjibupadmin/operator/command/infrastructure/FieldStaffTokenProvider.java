@@ -1,9 +1,14 @@
 package com.example.chookjibupadmin.operator.command.infrastructure;
 
-import com.example.chookjibupadmin.auth.command.infrastructure.JwtProperties;
+import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
+import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -24,13 +29,14 @@ public class FieldStaffTokenProvider {
     private static final String SUBJECT_TYPE = "FIELD_STAFF";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final JwtProperties jwtProperties;
+    private final FieldStaffJwtProperties jwtProperties;
+    private final Clock clock;
 
     /**
      * 현장 스태프 ID, 축제 ID, 로그인 아이디를 담은 Access Token을 발급한다.
      */
     public String createAccessToken(FieldStaffAccount fieldStaffAccount) {
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         Instant expiresAt = now.plusSeconds(jwtProperties.accessTokenExpirationSeconds());
 
         Map<String, Object> header = new LinkedHashMap<>();
@@ -42,6 +48,7 @@ public class FieldStaffTokenProvider {
         payload.put("sub", fieldStaffAccount.getId());
         payload.put("festivalId", fieldStaffAccount.getFestivalId());
         payload.put("loginId", fieldStaffAccount.getLoginIdValue());
+        payload.put("authVersion", fieldStaffAccount.getAuthVersion());
         payload.put("iat", now.getEpochSecond());
         payload.put("exp", expiresAt.getEpochSecond());
 
@@ -50,6 +57,47 @@ public class FieldStaffTokenProvider {
         String unsignedToken = encodedHeader + "." + encodedPayload;
 
         return unsignedToken + "." + sign(unsignedToken);
+    }
+
+    /**
+     * Access Token의 서명, 만료 시각과 필수 Claim을 검증한다.
+     */
+    public FieldStaffPrincipal parse(String token) {
+        String[] parts = token.split("\\.");
+        if (parts.length != 3) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+        }
+
+        String unsignedToken = parts[0] + "." + parts[1];
+        String expectedSignature = sign(unsignedToken);
+        if (!hasValidSignature(expectedSignature, parts[2])) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+        }
+
+        JsonNode payload = decodePayload(parts[1]);
+        validateSubject(payload);
+        long fieldStaffId = payload.path("sub").asLong();
+        long festivalId = payload.path("festivalId").asLong();
+        String loginId = payload.path("loginId").asText();
+        long authVersion = payload.path("authVersion").asLong(-1L);
+        long expiresAt = payload.path("exp").asLong();
+        if (fieldStaffId <= 0L
+                || festivalId <= 0L
+                || loginId.isBlank()
+                || authVersion < 0L
+                || expiresAt <= 0L) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+        }
+        if (clock.instant().getEpochSecond() >= expiresAt) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_EXPIRED);
+        }
+
+        return new FieldStaffPrincipal(
+                fieldStaffId,
+                festivalId,
+                loginId,
+                authVersion
+        );
     }
 
     /**
@@ -66,6 +114,32 @@ public class FieldStaffTokenProvider {
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to encode field staff JWT json.", exception);
         }
+    }
+
+    private JsonNode decodePayload(String encodedPayload) {
+        try {
+            byte[] json = Base64.getUrlDecoder().decode(encodedPayload);
+            return objectMapper.readTree(json);
+        } catch (Exception exception) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+        }
+    }
+
+    private void validateSubject(JsonNode payload) {
+        JsonNode subjectType = payload.get("subjectType");
+        if (subjectType == null || !SUBJECT_TYPE.equals(subjectType.asText())) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+        }
+    }
+
+    private boolean hasValidSignature(
+            String expectedSignature,
+            String actualSignature
+    ) {
+        return MessageDigest.isEqual(
+                expectedSignature.getBytes(StandardCharsets.US_ASCII),
+                actualSignature.getBytes(StandardCharsets.US_ASCII)
+        );
     }
 
     private String sign(String unsignedToken) {
