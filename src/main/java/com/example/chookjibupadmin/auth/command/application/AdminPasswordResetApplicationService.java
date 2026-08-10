@@ -10,6 +10,7 @@ import com.example.chookjibupadmin.auth.command.application.port.AdminAuthPolicy
 import com.example.chookjibupadmin.auth.command.application.port.AdminAuthRequestLimiter;
 import com.example.chookjibupadmin.auth.command.application.port.AdminPasswordResetEmailSender;
 import com.example.chookjibupadmin.auth.command.application.port.AdminPasswordResetTokenCodec;
+import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.net.URLEncoder;
@@ -46,6 +47,24 @@ public class AdminPasswordResetApplicationService {
         adminAccountService.findByEmail(email)
                 .filter(AdminAccount::isActive)
                 .ifPresent(account -> issueAndSend(account, policy));
+    }
+
+    /**
+     * 로그인한 관리자 계정의 등록 이메일로 비밀번호 변경 링크를 발송한다.
+     */
+    public void requestForAuthenticatedAdmin(AdminPrincipal principal) {
+        if (principal == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        AdminAccount adminAccount = adminAccountService.getById(principal.adminId());
+        if (!adminAccount.isActive()) {
+            throw new CustomException(ErrorCode.AUTH_ADMIN_INACTIVE);
+        }
+
+        AdminAuthPolicy.PasswordReset policy = authPolicy.passwordResetPolicy();
+        ensureRequestAllowed(adminAccount.getEmail(), policy);
+        issueAndSend(adminAccount, policy);
     }
 
     /**

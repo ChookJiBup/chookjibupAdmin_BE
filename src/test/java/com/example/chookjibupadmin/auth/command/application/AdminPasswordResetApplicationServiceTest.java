@@ -17,6 +17,7 @@ import com.example.chookjibupadmin.auth.command.application.port.AdminAuthReques
 import com.example.chookjibupadmin.auth.command.application.port.AdminPasswordResetEmailSender;
 import com.example.chookjibupadmin.auth.command.infrastructure.AdminAuthProperties;
 import com.example.chookjibupadmin.auth.command.infrastructure.AdminPasswordResetTokenManager;
+import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.Duration;
@@ -76,6 +77,74 @@ class AdminPasswordResetApplicationServiceTest {
                 properties,
                 passwordEncoder
         );
+    }
+
+    @Nested
+    @DisplayName("requestForAuthenticatedAdmin")
+    class RequestForAuthenticatedAdmin {
+
+        @Test
+        @DisplayName("로그인 계정의 등록 이메일로 비밀번호 변경 링크를 발송한다")
+        void success_RequestForAuthenticatedAdmin_ActiveAccount() {
+            // given
+            AdminAccount account = adminAccount();
+            given(adminAccountService.getById(1L)).willReturn(account);
+            given(requestLimiter.tryAcquire(any(), any(), any(Integer.class), any(), any()))
+                    .willReturn(true);
+            given(tokenManager.generate()).willReturn("raw-token");
+            given(tokenManager.hash("raw-token")).willReturn("token-hash");
+
+            // when
+            service.requestForAuthenticatedAdmin(
+                    new AdminPrincipal(1L, "jwt-email@mapo.go.kr")
+            );
+
+            // then
+            then(requestLimiter).should().tryAcquire(
+                    "password-reset",
+                    account.getEmail(),
+                    5,
+                    Duration.ofMinutes(10),
+                    Duration.ofMinutes(1)
+            );
+            then(tokenService).should().save(
+                    1L,
+                    "token-hash",
+                    Duration.ofMinutes(30)
+            );
+            then(emailSender).should().send(
+                    account.getEmail(),
+                    "https://admin.chookjibup.store/password-reset?token=raw-token"
+            );
+        }
+
+        @Test
+        @DisplayName("인증 주체가 없으면 링크를 발급하지 않는다")
+        void fail_RequestForAuthenticatedAdmin_MissingPrincipal_CustomException() {
+            assertThatThrownBy(() -> service.requestForAuthenticatedAdmin(null))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.UNAUTHORIZED.getMessage());
+            then(emailSender).shouldHaveNoInteractions();
+            then(tokenService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("비활성 계정이면 링크를 발급하지 않는다")
+        void fail_RequestForAuthenticatedAdmin_InactiveAccount_CustomException() {
+            // given
+            AdminAccount account = adminAccount();
+            account.withdraw();
+            given(adminAccountService.getById(1L)).willReturn(account);
+
+            // when & then
+            assertThatThrownBy(() -> service.requestForAuthenticatedAdmin(
+                    new AdminPrincipal(1L, account.getEmailValue())
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.AUTH_ADMIN_INACTIVE.getMessage());
+            then(emailSender).shouldHaveNoInteractions();
+            then(tokenService).shouldHaveNoInteractions();
+        }
     }
 
     @Nested
