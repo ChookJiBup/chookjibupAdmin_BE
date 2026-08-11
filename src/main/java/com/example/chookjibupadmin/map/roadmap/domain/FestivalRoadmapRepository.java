@@ -9,4 +9,6 @@ public interface FestivalRoadmapRepository {
     Optional<FestivalRoadmap> findByFestivalId(Long festivalId);
 
     Optional<FestivalRoadmap> findByFestivalIdForUpdate(Long festivalId);
+
+    void delete(FestivalRoadmap roadmap);
 }

@@ -114,4 +114,12 @@ public class FieldStaffAccountService {
                 loginId
         );
     }
+
+    /**
+     * 축제에 속한 현장 스태프 계정을 모두 삭제한다.
+     */
+    @Transactional
+    public void deleteAllByFestivalId(Long festivalId) {
+        fieldStaffAccountRepository.deleteAllByFestivalId(festivalId);
+    }
 }

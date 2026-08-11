@@ -14,6 +14,11 @@ public interface FestivalRepository {
     Festival save(Festival festival);
 
     /**
+     * 축제 기본 정보를 삭제한다.
+     */
+    void delete(Festival festival);
+
+    /**
      * 축제 ID로 축제 기본 정보를 조회한다.
      */
     Optional<Festival> findById(Long festivalId);

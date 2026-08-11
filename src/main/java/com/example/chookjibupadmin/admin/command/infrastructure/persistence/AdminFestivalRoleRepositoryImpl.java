@@ -60,6 +60,11 @@ public class AdminFestivalRoleRepositoryImpl
     }
 
     @Override
+    public List<AdminFestivalRole> findAllByFestivalId(Long festivalId) {
+        return jpaRepository.findAllByFestivalId(festivalId);
+    }
+
+    @Override
     public void deleteAll(Collection<AdminFestivalRole> roles) {
         jpaRepository.deleteAllInBatch(roles);
     }

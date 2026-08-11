@@ -32,4 +32,9 @@ public class RoadmapNodeRepositoryImpl implements RoadmapNodeRepository {
     public void deleteAll(Iterable<RoadmapNode> nodes) {
         jpaRepository.deleteAll(nodes);
     }
+
+    @Override
+    public void deleteAllByRoadmapId(Long roadmapId) {
+        jpaRepository.deleteAllByRoadmapId(roadmapId);
+    }
 }

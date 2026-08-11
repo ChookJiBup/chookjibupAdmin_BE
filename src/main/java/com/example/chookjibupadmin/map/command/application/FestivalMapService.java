@@ -4,6 +4,8 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMapRepository;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,7 +45,16 @@ public class FestivalMapService {
                 ));
     }
 
+    public List<FestivalMap> getAllByFestivalIdForUpdate(Long festivalId) {
+        return festivalMapRepository.findAllByFestivalIdForUpdate(festivalId);
+    }
+
     public boolean existsByLocationId(Long locationId) {
         return festivalMapRepository.existsByLocationId(locationId);
+    }
+
+    @Transactional
+    public void deleteAll(Collection<FestivalMap> festivalMaps) {
+        festivalMapRepository.deleteAll(festivalMaps);
     }
 }

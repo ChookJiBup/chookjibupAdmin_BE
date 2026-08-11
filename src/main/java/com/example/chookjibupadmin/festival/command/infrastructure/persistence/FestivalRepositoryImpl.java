@@ -19,6 +19,11 @@ public class FestivalRepositoryImpl implements FestivalRepository {
     }
 
     @Override
+    public void delete(Festival festival) {
+        jpaRepository.delete(festival);
+    }
+
+    @Override
     public Optional<Festival> findById(Long festivalId) {
         return jpaRepository.findById(festivalId);
     }

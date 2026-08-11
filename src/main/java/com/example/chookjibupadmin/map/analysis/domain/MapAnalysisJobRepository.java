@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.map.analysis.domain;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,4 +15,6 @@ public interface MapAnalysisJobRepository {
     Optional<MapAnalysisJob> findLatestByMapId(Long mapId);
 
     void cancelActiveByMapId(Long mapId);
+
+    void deleteAllByMapIdIn(Collection<Long> mapIds);
 }

@@ -30,4 +30,9 @@ public class RoadmapNodeService {
     public void deleteAll(Iterable<RoadmapNode> nodes) {
         repository.deleteAll(nodes);
     }
+
+    @Transactional
+    public void deleteAllByRoadmapId(Long roadmapId) {
+        repository.deleteAllByRoadmapId(roadmapId);
+    }
 }

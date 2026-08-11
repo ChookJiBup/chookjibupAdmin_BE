@@ -28,6 +28,14 @@ public class FestivalService {
     }
 
     /**
+     * 축제 기본 정보를 삭제한다.
+     */
+    @Transactional
+    public void delete(Festival festival) {
+        festivalRepository.delete(festival);
+    }
+
+    /**
      * 내부 식별자로 축제를 조회한다.
      */
     public Festival getById(Long festivalId) {

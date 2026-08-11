@@ -46,4 +46,9 @@ public interface FieldStaffAccountRepository {
             Long festivalId,
             FieldStaffLoginId loginId
     );
+
+    /**
+     * 축제에 속한 현장 스태프 계정을 모두 삭제한다.
+     */
+    void deleteAllByFestivalId(Long festivalId);
 }

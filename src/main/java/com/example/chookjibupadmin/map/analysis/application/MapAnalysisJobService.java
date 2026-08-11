@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJobRepository;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -46,5 +47,12 @@ public class MapAnalysisJobService {
     @Transactional
     public void cancelActive(Long mapId) {
         repository.cancelActiveByMapId(mapId);
+    }
+
+    @Transactional
+    public void deleteAllByMapIds(Collection<Long> mapIds) {
+        if (!mapIds.isEmpty()) {
+            repository.deleteAllByMapIdIn(mapIds);
+        }
     }
 }

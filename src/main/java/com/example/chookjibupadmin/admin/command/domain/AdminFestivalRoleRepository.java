@@ -28,5 +28,7 @@ public interface AdminFestivalRoleRepository {
             Long festivalId
     );
 
+    List<AdminFestivalRole> findAllByFestivalId(Long festivalId);
+
     void deleteAll(Collection<AdminFestivalRole> roles);
 }

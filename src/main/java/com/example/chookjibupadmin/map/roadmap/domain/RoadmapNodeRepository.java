@@ -9,4 +9,6 @@ public interface RoadmapNodeRepository {
     List<RoadmapNode> findAllByRoadmapIdAndMapId(Long roadmapId, Long mapId);
 
     void deleteAll(Iterable<RoadmapNode> nodes);
+
+    void deleteAllByRoadmapId(Long roadmapId);
 }

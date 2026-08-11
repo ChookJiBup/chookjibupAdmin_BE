@@ -24,6 +24,8 @@ public interface MapAnalysisJobJpaRepository extends JpaRepository<MapAnalysisJo
             Collection<MapAnalysisJobStatus> statuses
     );
 
+    void deleteAllByMapIdIn(Collection<Long> mapIds);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         select j

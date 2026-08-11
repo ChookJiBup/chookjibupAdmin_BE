@@ -2,6 +2,8 @@ package com.example.chookjibupadmin.map.command.infrastructure.persistence;
 
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMapRepository;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +36,17 @@ public class FestivalMapRepositoryImpl implements FestivalMapRepository {
     }
 
     @Override
+    public List<FestivalMap> findAllByFestivalIdForUpdate(Long festivalId) {
+        return jpaRepository.findAllByFestivalIdForUpdate(festivalId);
+    }
+
+    @Override
     public boolean existsByLocationId(Long locationId) {
         return jpaRepository.existsByLocationId(locationId);
+    }
+
+    @Override
+    public void deleteAll(Collection<FestivalMap> festivalMaps) {
+        jpaRepository.deleteAll(festivalMaps);
     }
 }

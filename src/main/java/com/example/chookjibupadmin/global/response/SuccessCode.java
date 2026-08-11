@@ -29,6 +29,7 @@ public enum SuccessCode {
     FIELD_STAFF_UPDATE_SUCCESS(22015, "현장 스태프 정보가 수정되었습니다."),
     FIELD_STAFF_PASSWORD_REISSUE_SUCCESS(22016, "현장 스태프 임시 비밀번호가 재발급되었습니다."),
     FIELD_STAFF_STATUS_UPDATE_SUCCESS(22017, "현장 스태프 상태가 변경되었습니다."),
+    FESTIVAL_DELETE_SUCCESS(22018, "축제가 삭제되었습니다."),
     FESTIVAL_MAP_REPLACE_SUCCESS(22008, "축제 배치도가 교체되었습니다."),
     FESTIVAL_MAP_DELETE_SUCCESS(22009, "축제 배치도가 삭제되었습니다."),
     FESTIVAL_MAP_READ_URL_SUCCESS(22010, "축제 배치도 조회 URL이 생성되었습니다."),

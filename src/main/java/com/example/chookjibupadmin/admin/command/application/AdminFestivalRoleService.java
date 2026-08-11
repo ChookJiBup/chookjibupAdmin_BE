@@ -94,6 +94,13 @@ public class AdminFestivalRoleService {
     }
 
     /**
+     * 축제에 연결된 모든 관리자 역할을 조회한다.
+     */
+    public List<AdminFestivalRole> getAllByFestivalId(Long festivalId) {
+        return adminFestivalRoleRepository.findAllByFestivalId(festivalId);
+    }
+
+    /**
      * 축제 관리자 역할 관계를 일괄 삭제한다.
      */
     @Transactional

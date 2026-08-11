@@ -29,4 +29,6 @@ interface AdminFestivalRoleJpaRepository
             Collection<Long> adminAccountIds,
             Long festivalId
     );
+
+    List<AdminFestivalRole> findAllByFestivalId(Long festivalId);
 }

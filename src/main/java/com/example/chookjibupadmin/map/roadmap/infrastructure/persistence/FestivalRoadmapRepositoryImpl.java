@@ -26,4 +26,9 @@ public class FestivalRoadmapRepositoryImpl implements FestivalRoadmapRepository 
     public Optional<FestivalRoadmap> findByFestivalIdForUpdate(Long id) {
         return jpaRepository.findByFestivalIdForUpdate(id);
     }
+
+    @Override
+    public void delete(FestivalRoadmap roadmap) {
+        jpaRepository.delete(roadmap);
+    }
 }

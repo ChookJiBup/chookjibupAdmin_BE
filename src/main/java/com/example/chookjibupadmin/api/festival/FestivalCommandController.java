@@ -6,6 +6,7 @@ import com.example.chookjibupadmin.api.festival.dto.CreateFestivalWithMapRespons
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
+import com.example.chookjibupadmin.festival.command.application.FestivalDeleteApplicationService;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalWithMapResult;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +45,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FestivalCommandController {
 
     private final FestivalApplicationService festivalApplicationService;
+    private final FestivalDeleteApplicationService festivalDeleteApplicationService;
     private final FestivalMapRegistrationApplicationService
             festivalMapRegistrationApplicationService;
     private final FestivalLocationQueryApplicationService locationQueryService;
@@ -131,5 +134,19 @@ public class FestivalCommandController {
                         )
                 )
         );
+    }
+
+    /**
+     * 1관리자 권한으로 축제와 모든 관리자용 연관 데이터를 삭제한다.
+     */
+    @Operation(summary = "축제 삭제")
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/{festivalId}")
+    public ApiResponse<Void> delete(
+            @PathVariable UUID festivalId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        festivalDeleteApplicationService.delete(festivalId, principal);
+        return ApiResponse.success(SuccessCode.FESTIVAL_DELETE_SUCCESS);
     }
 }

@@ -11,4 +11,6 @@ public interface RoadmapNodeJpaRepository
             Long roadmapId,
             Long mapId
     );
+
+    void deleteAllByRoadmapId(Long roadmapId);
 }

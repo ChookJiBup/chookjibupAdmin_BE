@@ -53,4 +53,9 @@ public class FieldStaffAccountRepositoryImpl implements FieldStaffAccountReposit
     ) {
         return jpaRepository.existsByFestivalIdAndLoginId(festivalId, loginId);
     }
+
+    @Override
+    public void deleteAllByFestivalId(Long festivalId) {
+        jpaRepository.deleteAllByFestivalId(festivalId);
+    }
 }

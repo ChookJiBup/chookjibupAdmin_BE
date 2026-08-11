@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
 import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmapRepository;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,11 +28,20 @@ public class FestivalRoadmapService {
                 ));
     }
 
+    public Optional<FestivalRoadmap> findByFestivalId(Long id) {
+        return repository.findByFestivalId(id);
+    }
+
     @Transactional
     public FestivalRoadmap getByFestivalIdForUpdate(Long id) {
         return repository.findByFestivalIdForUpdate(id)
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.FESTIVAL_ROADMAP_NOT_FOUND
                 ));
+    }
+
+    @Transactional
+    public void delete(FestivalRoadmap roadmap) {
+        repository.delete(roadmap);
     }
 }

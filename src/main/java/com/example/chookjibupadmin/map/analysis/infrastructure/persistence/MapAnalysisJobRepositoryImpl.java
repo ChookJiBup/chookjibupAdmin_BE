@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJobRepository;
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJobStatus;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,5 +52,10 @@ public class MapAnalysisJobRepositoryImpl implements MapAnalysisJobRepository {
                 )
         )
                 .forEach(MapAnalysisJob::cancel);
+    }
+
+    @Override
+    public void deleteAllByMapIdIn(Collection<Long> mapIds) {
+        jpaRepository.deleteAllByMapIdIn(mapIds);
     }
 }

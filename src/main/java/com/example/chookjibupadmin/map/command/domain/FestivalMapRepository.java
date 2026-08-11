@@ -1,5 +1,7 @@
 package com.example.chookjibupadmin.map.command.domain;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -16,5 +18,9 @@ public interface FestivalMapRepository {
 
     Optional<FestivalMap> findByPublicIdForUpdate(UUID publicId);
 
+    List<FestivalMap> findAllByFestivalIdForUpdate(Long festivalId);
+
     boolean existsByLocationId(Long locationId);
+
+    void deleteAll(Collection<FestivalMap> festivalMaps);
 }

@@ -9,6 +9,7 @@ import com.example.chookjibupadmin.api.festival.dto.CreateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalWithMapResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
+import com.example.chookjibupadmin.festival.command.application.FestivalDeleteApplicationService;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalWithMapResult;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
@@ -50,6 +51,9 @@ class FestivalCommandControllerTest {
     private FestivalApplicationService festivalApplicationService;
 
     @Mock
+    private FestivalDeleteApplicationService festivalDeleteApplicationService;
+
+    @Mock
     private FestivalMapRegistrationApplicationService registrationService;
 
     @Mock
@@ -86,6 +90,22 @@ class FestivalCommandControllerTest {
         assertThat(captor.getValue().fileSize()).isEqualTo(3);
         assertThat(captor.getValue().inputStreamSupplier().open().readAllBytes())
                 .containsExactly(1, 2, 3);
+    }
+
+    @Test
+    @DisplayName("축제 삭제 요청을 애플리케이션 서비스에 전달한다")
+    void success_Delete() {
+        UUID festivalId = UUID.randomUUID();
+        AdminPrincipal principal = new AdminPrincipal(1L, "owner@mapo.go.kr");
+
+        ApiResponse<Void> response = controller.delete(festivalId, principal);
+
+        assertThat(response.code()).isEqualTo(22018);
+        assertThat(response.data()).isNull();
+        then(festivalDeleteApplicationService).should().delete(
+                festivalId,
+                principal
+        );
     }
 
     private CreateFestivalRequest request() {

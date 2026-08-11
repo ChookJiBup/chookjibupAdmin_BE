@@ -23,4 +23,6 @@ interface FieldStaffAccountJpaRepository extends JpaRepository<FieldStaffAccount
             Long festivalId,
             FieldStaffLoginId loginId
     );
+
+    void deleteAllByFestivalId(Long festivalId);
 }
