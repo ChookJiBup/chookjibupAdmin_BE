@@ -69,13 +69,6 @@ app:
     jwt:
       secret: ${APP_FIELD_STAFF_JWT_SECRET:${APP_JWT_SECRET}}
       access-token-expiration-seconds: ${APP_FIELD_STAFF_JWT_EXPIRATION_SECONDS:1800}
-  internal-auth:
-    timestamp-tolerance: ${APP_INTERNAL_AUTH_TIMESTAMP_TOLERANCE:5m}
-    nonce-ttl: ${APP_INTERNAL_AUTH_NONCE_TTL:10m}
-    clients:
-      chookjibup-user-server:
-        secret: ${APP_INTERNAL_CHOOKJIBUP_USER_SECRET:}
-        previous-secret: ${APP_INTERNAL_CHOOKJIBUP_USER_PREVIOUS_SECRET:}
   road-address:
     base-url: ${APP_ROAD_ADDRESS_BASE_URL:https://business.juso.go.kr}
     confirmation-key: ${APP_ROAD_ADDRESS_CONFIRMATION_KEY:}

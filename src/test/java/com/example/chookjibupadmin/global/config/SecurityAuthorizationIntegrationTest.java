@@ -123,6 +123,12 @@ class SecurityAuthorizationIntegrationTest {
     }
 
     @Test
+    void success_MissingAuthentication_InternalApi() throws Exception {
+        mockMvc.perform(get("/internal/api/security-probe"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void success_RealAdminToken_AdminApi() throws Exception {
         AdminAccount account = adminAccountService.save(adminAccount());
         String token = adminTokenProvider.createAccessToken(account);
@@ -247,6 +253,11 @@ class SecurityAuthorizationIntegrationTest {
         @GetMapping("/api/festivals/{festivalId}/operations/security-probe")
         String operation() {
             return "operation";
+        }
+
+        @GetMapping("/internal/api/security-probe")
+        String internal() {
+            return "internal";
         }
     }
 }

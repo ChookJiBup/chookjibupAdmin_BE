@@ -22,7 +22,6 @@ public enum ErrorCode {
     AUTH_INVALID_CREDENTIALS(40102, HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
     AUTH_TOKEN_INVALID(40103, HttpStatus.UNAUTHORIZED, "유효하지 않은 인증 토큰입니다."),
     AUTH_TOKEN_EXPIRED(40104, HttpStatus.UNAUTHORIZED, "만료된 인증 토큰입니다."),
-    INTERNAL_AUTH_FAILED(40106, HttpStatus.UNAUTHORIZED, "내부 서버 인증에 실패했습니다."),
 
     FORBIDDEN(40300, HttpStatus.FORBIDDEN, "권한이 없습니다."),
     AUTH_ADMIN_INACTIVE(40301, HttpStatus.FORBIDDEN, "활성화되지 않은 관리자 계정입니다."),

@@ -3,7 +3,6 @@ package com.example.chookjibupadmin.global.config;
 import com.example.chookjibupadmin.auth.support.JwtAuthenticationFilter;
 import com.example.chookjibupadmin.global.security.ApiAccessDeniedHandler;
 import com.example.chookjibupadmin.global.security.ApiAuthenticationEntryPoint;
-import com.example.chookjibupadmin.global.security.internal.InternalApiAuthenticationFilter;
 import com.example.chookjibupadmin.operator.support.FieldStaffAuthenticationFilter;
 import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
@@ -28,20 +27,8 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final FieldStaffAuthenticationFilter fieldStaffAuthenticationFilter;
-    private final InternalApiAuthenticationFilter internalApiAuthenticationFilter;
     private final ApiAuthenticationEntryPoint authenticationEntryPoint;
     private final ApiAccessDeniedHandler accessDeniedHandler;
-
-    /**
-     * 내부 API 필터가 Security 체인 밖에서 중복 실행되지 않도록 한다.
-     */
-    @Bean
-    public FilterRegistrationBean<InternalApiAuthenticationFilter>
-            internalApiFilterRegistration(
-                    InternalApiAuthenticationFilter filter
-            ) {
-        return disabledRegistration(filter);
-    }
 
     /**
      * 관리자 JWT 필터가 Security 체인 밖에서 중복 실행되지 않도록 한다.
@@ -99,8 +86,7 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
-                        .requestMatchers("/internal/api/**")
-                        .hasRole("INTERNAL_API")
+                        .requestMatchers("/internal/api/**").permitAll()
                         .requestMatchers("/api/field-staff/**")
                         .hasRole("FIELD_STAFF")
                         .requestMatchers(
@@ -111,10 +97,6 @@ public class SecurityConfig {
                         .anyRequest().hasRole("ADMIN")
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
-                .addFilterBefore(
-                        internalApiAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                )
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
