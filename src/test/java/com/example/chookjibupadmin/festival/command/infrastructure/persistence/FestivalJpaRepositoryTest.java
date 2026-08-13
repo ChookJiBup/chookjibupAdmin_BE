@@ -53,6 +53,34 @@ class FestivalJpaRepositoryTest {
         }
 
         @Test
+        @DisplayName("파이프라인 SQL의 축제 컬럼명으로 저장한다")
+        void success_Save_PipelineColumnNames() {
+            // given
+            Festival festival = festival();
+
+            // when
+            Festival saved = festivalJpaRepository.saveAndFlush(festival);
+            Object[] row = (Object[]) entityManager.createNativeQuery("""
+                            select festival_name,
+                                   content,
+                                   road_address,
+                                   publication_status,
+                                   loaded_at
+                            from festivals
+                            where festival_id = :festivalId
+                            """)
+                    .setParameter("festivalId", saved.getId())
+                    .getSingleResult();
+
+            // then
+            assertThat(row[0]).isEqualTo("마포나루 새우젓축제");
+            assertThat(row[1]).isEqualTo("마포구 대표 지역 축제");
+            assertThat(row[2]).isEqualTo("서울특별시 마포구 월드컵로 243");
+            assertThat(row[3]).isEqualTo(FestivalStatus.DRAFT.name());
+            assertThat(row[4]).isNotNull();
+        }
+
+        @Test
         @DisplayName("최소 축제 기간 경계값으로 DB에 저장한다")
         void success_Save_SameDateBoundary() {
             // given

@@ -16,7 +16,7 @@ public record InternalFestivalSummaryResponse(
         String description,
         String address,
         String detailAddress,
-        int year,
+        Integer year,
         LocalDate startDate,
         LocalDate endDate,
         LocalTime operationStartTime,

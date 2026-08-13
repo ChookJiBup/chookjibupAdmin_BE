@@ -17,6 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class FestivalTest {
 
@@ -117,6 +118,31 @@ class FestivalTest {
                             FestivalPeriod.of(
                                     LocalDate.of(2027, 11, 1),
                                     LocalDate.of(2027, 11, 3)
+                            ),
+                            FestivalOperationTime.of(
+                                    LocalTime.of(9, 0),
+                                    LocalTime.of(20, 0)
+                            )
+                    ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_YEAR_CANNOT_BE_CHANGED.getMessage());
+        }
+
+        @Test
+        @DisplayName("개최 연도가 없는 기존 축제는 기본 정보를 수정할 수 없다")
+        void fail_UpdateBasicInfo_YearMissing_CustomException() {
+            // given
+            Festival festival = festival();
+            ReflectionTestUtils.setField(festival, "year", null);
+
+            // when & then
+            assertThatThrownBy(() -> festival.updateBasicInfo(
+                            FestivalName.of("수정 축제"),
+                            FestivalDescription.of("수정 설명"),
+                            FestivalAddress.of("서울특별시 마포구 수정로 1"),
+                            FestivalPeriod.of(
+                                    LocalDate.of(2026, 11, 1),
+                                    LocalDate.of(2026, 11, 3)
                             ),
                             FestivalOperationTime.of(
                                     LocalTime.of(9, 0),

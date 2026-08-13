@@ -33,6 +33,16 @@ import lombok.NoArgsConstructor;
  */
 @Entity
 @Getter
+@AttributeOverrides({
+        @AttributeOverride(
+                name = "createdAt",
+                column = @Column(name = "loaded_at", nullable = false, updatable = false)
+        ),
+        @AttributeOverride(
+                name = "updatedAt",
+                column = @Column(name = "updated_at", nullable = false)
+        )
+})
 @Table(
         name = "festivals",
         uniqueConstraints = {
@@ -51,40 +61,39 @@ public class Festival extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "festival_id")
     private Long id;
 
-    // TODO(festival): 현재 축제 저장 필드는 임시 기준이며 추후 DB 설계서와 API 정보를 확인한 뒤 필드/제약/응답을 수정한다.
-    // TODO(festival): 운영 DB 반영 전 기존 festivals 데이터의 public_id, series_id, series_public_id, festival_year 백필 마이그레이션을 작성한다.
     @Column(name = "public_id", nullable = false, updatable = false)
     private UUID publicId;
 
-    @Column(name = "series_id", nullable = false)
+    @Column(name = "series_id")
     private Long seriesId;
 
-    @Column(name = "series_public_id", nullable = false, updatable = false)
+    @Column(name = "series_public_id", updatable = false)
     private UUID seriesPublicId;
 
-    @Column(name = "festival_year", nullable = false)
-    private int year;
+    @Column(name = "festival_year")
+    private Integer year;
 
     @Embedded
     @AttributeOverride(
             name = "value",
-            column = @Column(name = "name", nullable = false, length = 100)
+            column = @Column(name = "festival_name", nullable = false, columnDefinition = "TEXT")
     )
     private FestivalName name;
 
     @Embedded
     @AttributeOverride(
             name = "value",
-            column = @Column(name = "description", nullable = false, length = 1000)
+            column = @Column(name = "content", columnDefinition = "TEXT")
     )
     private FestivalDescription description;
 
     @Embedded
     @AttributeOverride(
             name = "value",
-            column = @Column(name = "address", nullable = false, length = 255)
+            column = @Column(name = "road_address", columnDefinition = "TEXT")
     )
     private FestivalAddress address;
 
@@ -93,18 +102,17 @@ public class Festival extends BaseTimeEntity {
             name = "value",
             column = @Column(name = "detail_address", length = 100)
     )
-    // TODO(festival): 운영 배포 전 festivals.detail_address 컬럼 마이그레이션을 작성한다.
     private FestivalDetailAddress detailAddress;
 
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(
                     name = "startDate",
-                    column = @Column(name = "start_date", nullable = false)
+                    column = @Column(name = "start_date")
             ),
             @AttributeOverride(
                     name = "endDate",
-                    column = @Column(name = "end_date", nullable = false)
+                    column = @Column(name = "end_date")
             )
     })
     private FestivalPeriod period;
@@ -113,17 +121,17 @@ public class Festival extends BaseTimeEntity {
     @AttributeOverrides({
             @AttributeOverride(
                     name = "startTime",
-                    column = @Column(name = "operation_start_time", nullable = false)
+                    column = @Column(name = "operation_start_time")
             ),
             @AttributeOverride(
                     name = "endTime",
-                    column = @Column(name = "operation_end_time", nullable = false)
+                    column = @Column(name = "operation_end_time")
             )
     })
     private FestivalOperationTime operationTime;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column(name = "publication_status", nullable = false, length = 30)
     private FestivalStatus status;
 
     private Festival(
@@ -295,7 +303,7 @@ public class Festival extends BaseTimeEntity {
     }
 
     private void validateSameYear(FestivalPeriod period) {
-        if (year != period.getStartDate().getYear()) {
+        if (year == null || year != period.getStartDate().getYear()) {
             throw new CustomException(ErrorCode.FESTIVAL_YEAR_CANNOT_BE_CHANGED);
         }
     }

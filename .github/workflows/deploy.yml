@@ -30,7 +30,7 @@ jobs:
     timeout-minutes: 20
     environment: production
     env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-northeast-2' }}
       INSTANCE_ID: ${{ vars.ADMIN_EC2_INSTANCE_ID }}
       DEPLOY_PATH: ${{ vars.ADMIN_DEPLOY_PATH || '/home/ec2-user/app/chookjibupAdmin_BE' }}
       DEPLOY_USER: ${{ vars.ADMIN_DEPLOY_USER || 'ec2-user' }}
@@ -39,6 +39,7 @@ jobs:
       JAVA_HOME: ${{ vars.ADMIN_JAVA_HOME || '/usr/lib/jvm/java-21-amazon-corretto.x86_64' }}
       SECRET_PARAMETER: ${{ vars.ADMIN_APPLICATION_SECRET_PARAMETER || '/chookjibup/admin/application-secret-yml' }}
       SECRET_FILE: ${{ vars.ADMIN_APPLICATION_SECRET_FILE || '/etc/chookjibup-admin/application-secret.yml' }}
+      HEALTH_URL: ${{ vars.ADMIN_HEALTH_URL || 'http://127.0.0.1:8080/swagger-ui/index.html' }}
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
     steps:
@@ -108,6 +109,7 @@ jobs:
             --arg service "$SYSTEMD_SERVICE" \
             --arg secretParameter "$SECRET_PARAMETER" \
             --arg secretFile "$SECRET_FILE" \
+            --arg healthUrl "$HEALTH_URL" \
             '[
               "set -euo pipefail",
               ("cd " + ($deployPath | @sh)),
@@ -132,8 +134,11 @@ jobs:
               "printf \"[Service]\\nEnvironment=\\\"SPRING_CONFIG_IMPORT=file:%s\\\"\\n\" \"$SECRET_FILE\" > \"$DROPIN_DIR/application-secret.conf\"",
               "chmod 644 \"$DROPIN_DIR/application-secret.conf\"",
               "systemctl daemon-reload",
+              "DEPLOY_STARTED_AT=$(date \"+%Y-%m-%d %H:%M:%S\")",
               ("systemctl restart " + ($service | @sh)),
-              "sleep 10",
+              "APPLICATION_READY=false",
+              "for attempt in $(seq 1 30); do if ! systemctl is-active --quiet \"$SERVICE_UNIT\"; then break; fi; if curl --fail --silent --max-time 5 " + ($healthUrl | @sh) + " >/dev/null 2>&1; then APPLICATION_READY=true; break; fi; sleep 2; done",
+              "if [ \"$APPLICATION_READY\" != true ]; then systemctl status \"$SERVICE_UNIT\" --no-pager -l -n 20 || true; echo \"===== STARTUP ROOT CAUSES =====\"; journalctl -u \"$SERVICE_UNIT\" --since \"$DEPLOY_STARTED_AT\" --no-pager -o cat | grep -E \"APPLICATION FAILED|Caused by:|ERROR|Flyway|Migration|SQL State|Message|BeanCreationException|Schema-validation\" | tail -n 80 || true; echo \"===== STARTUP LOG TAIL =====\"; journalctl -u \"$SERVICE_UNIT\" --since \"$DEPLOY_STARTED_AT\" --no-pager -o cat | tail -n 80 || true; exit 1; fi",
               ("systemctl is-active " + ($service | @sh))
             ]')
           PARAMETERS=$(jq -cn --argjson commands "$COMMANDS" '{commands: $commands}')

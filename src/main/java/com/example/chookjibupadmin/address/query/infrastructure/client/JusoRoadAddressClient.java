@@ -7,7 +7,6 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -19,14 +18,20 @@ import org.springframework.web.client.RestClientException;
  * 자동 재시도는 짧은 시간의 반복 호출 차단 가능성 때문에 적용하지 않는다.
  */
 @Component
-@RequiredArgsConstructor
 public class JusoRoadAddressClient implements RoadAddressSearchPort {
 
     private static final String SUCCESS_CODE = "0";
 
-    @Qualifier("roadAddressRestClient")
     private final RestClient restClient;
     private final RoadAddressProperties properties;
+
+    public JusoRoadAddressClient(
+            @Qualifier("roadAddressRestClient") RestClient restClient,
+            RoadAddressProperties properties
+    ) {
+        this.restClient = restClient;
+        this.properties = properties;
+    }
 
     @Override
     public RoadAddressSearchResult search(

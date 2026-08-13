@@ -49,7 +49,7 @@ Parameter에 대한 `ssm:GetParameter` 권한이 필요하다. 고객 관리형 
 | 이름 | 필수 | 기본값 또는 설명 |
 | --- | --- | --- |
 | `ADMIN_EC2_INSTANCE_ID` | 필수 | 배포 대상 EC2 인스턴스 ID |
-| `AWS_REGION` | 선택 | `us-east-1` |
+| `AWS_REGION` | 선택 | `ap-northeast-2` |
 | `ADMIN_DEPLOY_PATH` | 선택 | `/home/ec2-user/app/chookjibupAdmin_BE` |
 | `ADMIN_DEPLOY_USER` | 선택 | `ec2-user` |
 | `ADMIN_DEPLOY_HOME` | 선택 | `/home/ec2-user` |
@@ -57,6 +57,7 @@ Parameter에 대한 `ssm:GetParameter` 권한이 필요하다. 고객 관리형 
 | `ADMIN_JAVA_HOME` | 선택 | `/usr/lib/jvm/java-21-amazon-corretto.x86_64` |
 | `ADMIN_APPLICATION_SECRET_PARAMETER` | 선택 | `/chookjibup/admin/application-secret-yml` |
 | `ADMIN_APPLICATION_SECRET_FILE` | 선택 | `/etc/chookjibup-admin/application-secret.yml` |
+| `ADMIN_HEALTH_URL` | 선택 | `http://127.0.0.1:8080/swagger-ui/index.html` |
 
 인스턴스 ID는 인증 정보는 아니지만 서버 구성을 코드와 분리하기 위해
 Environment Variable로 관리한다.
@@ -76,6 +77,10 @@ Environment Variable로 관리한다.
 저장하고, EC2에서 `ADMIN_APPLICATION_SECRET_FILE`로 복원한다. 파일 권한은 `600`으로
 설정하며 systemd의 `SPRING_CONFIG_IMPORT`를 통해 외부 설정으로 읽는다. 따라서
 운영 Secret은 빌드된 JAR에 포함되지 않는다.
+
+서비스 재시작 후에는 `ADMIN_HEALTH_URL`이 실제 HTTP 성공 응답을 반환할 때까지
+최대 60초간 확인한다. 프로세스가 종료되거나 준비 상태가 되지 않으면 systemd 상태와
+최근 journal 로그를 Actions 로그에 출력하고 배포를 실패 처리한다.
 
 `ADMIN_APPLICATION_SECRET_YML`의 Value에는 `application-secret.yml` 내용을
 따옴표나 Base64 변환 없이 그대로 붙여넣는다.

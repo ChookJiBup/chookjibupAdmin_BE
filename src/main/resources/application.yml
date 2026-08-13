@@ -26,6 +26,11 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  flyway:
+    enabled: ${APP_DB_MIGRATION_ENABLED:true}
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-migration-naming: true
   h2:
     console:
       enabled: false
