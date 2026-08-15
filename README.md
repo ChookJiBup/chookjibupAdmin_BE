@@ -34,7 +34,6 @@
 - 관리자 본인이 관리하는 축제 이력 조회
 - 현장 스태프 생성, 조회, 삭제, 로그인
 - 사용자 서버에서 조회할 진행 예정/진행 중/진행 완료 축제 목록 API
-- 서버 간 통신용 HMAC 기반 내부 API 인증
 - Querydsl 기반 Query Repository projection 조회
 - Swagger/OpenAPI 설정
 - GitHub Actions 기반 CI 테스트 검증
@@ -119,8 +118,8 @@ JWT는 계정 인증을 의미하며, 축제별 총괄관리자/운영자 권한
 운영 secret은 Git에 커밋하지 않고 환경 변수 또는 secret manager로 주입한다.
 로컬 개발용 secret은 `src/main/resources/application-secret.yml`에 두며 `.gitignore` 대상이다.
 
-사용자 서버와 통신하는 내부 API는 API Key, timestamp, nonce, HMAC signature 기반 검증을 사용한다.
-nonce는 Redis로 재사용을 방지한다.
+사용자 서버가 호출하는 내부 API(`/internal/api/**`)는 애플리케이션 계층 HMAC 인증을 사용하지 않는다.
+호출 신뢰는 네트워크 격리 등 인프라 계층에서 보장한다.
 
 ## 로컬 실행
 
@@ -182,7 +181,6 @@ CI가 실패하면 GitHub Actions 결과는 실패로 표시된다.
 - `05_테스트_Fixture_가이드.md`: 테스트 범위와 작성 규칙
 - `06_구현품질_JPA_트랜잭션_빌드_가이드.md`: JPA, VO, Lombok, 설정, 의존성
 - `07_CodingAgent_리뷰체크리스트_가이드.md`: JavaDoc과 리뷰 기준
-- `08_서버간_통신_보안_가이드.md`: 내부 API 보안 규격
 
 기능 명세 정리는 `docs/정리_Notion_기능명세서.md`에 보존한다.
 작업 중 작성하는 계획서와 결과보고서는 `reference/YYYY-MM-DD/`에 작성하지만,
