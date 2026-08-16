@@ -132,6 +132,8 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
+                AdminDepartment.of("관광정책과"),
+                AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         ));
         adminFestivalRoleService.assignFestivalOwner(owner.getId(), festival.getId());
