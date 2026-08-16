@@ -30,7 +30,7 @@ app:
       request-window: 10m
       resend-cooldown: 1m
       token-ttl: 30m
-      frontend-url: http://localhost:3000/password-reset
+      frontend-url: http://localhost:3000/reset-password
   jwt:
     secret: test-jwt-secret-key-for-chookjibup-admin-local-tests
     access-token-expiration-seconds: 1800
