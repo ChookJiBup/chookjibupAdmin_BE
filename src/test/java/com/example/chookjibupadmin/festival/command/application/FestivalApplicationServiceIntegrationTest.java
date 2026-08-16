@@ -233,9 +233,7 @@ class FestivalApplicationServiceIntegrationTest {
     private AdminPrincipal principal(AdminAccount adminAccount) {
         return new AdminPrincipal(
                 adminAccount.getId(),
-                adminAccount.getFestivalId(),
-                adminAccount.getEmailValue(),
-                adminAccount.getRole()
+                adminAccount.getEmailValue()
         );
     }
 

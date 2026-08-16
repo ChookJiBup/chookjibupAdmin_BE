@@ -149,11 +149,10 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
     }
 
     private AdminAccount owner(Long festivalId) {
-        AdminAccount adminAccount = AdminAccount.createFestivalOwner(
+        AdminAccount adminAccount = AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
                 AdminPasswordHash.of("encoded-password")
         );
         ReflectionTestUtils.setField(adminAccount, "id", 1L);
@@ -161,13 +160,11 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
     }
 
     private AdminAccount subAdmin(Long festivalId) {
-        AdminAccount adminAccount = AdminAccount.createSubAdmin(
+        AdminAccount adminAccount = AdminAccount.createAdmin(
                 AdminEmail.of("sub@mapo.go.kr"),
                 AdminName.of("김관리"),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
-                AdminPasswordHash.of("encoded-password"),
-                1L
+                AdminPasswordHash.of("encoded-password")
         );
         ReflectionTestUtils.setField(adminAccount, "id", 2L);
         return adminAccount;
@@ -176,9 +173,7 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
     private AdminPrincipal principal(AdminAccount adminAccount) {
         return new AdminPrincipal(
                 adminAccount.getId(),
-                adminAccount.getFestivalId(),
-                adminAccount.getEmailValue(),
-                adminAccount.getRole()
+                adminAccount.getEmailValue()
         );
     }
 

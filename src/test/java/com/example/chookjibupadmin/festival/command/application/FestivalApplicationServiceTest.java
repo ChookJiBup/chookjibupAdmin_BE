@@ -7,8 +7,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
-import com.example.chookjibupadmin.admin.command.domain.AdminRole;
+import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -55,6 +56,9 @@ class FestivalApplicationServiceTest {
     private AdminAccountService adminAccountService;
 
     @Mock
+    private AdminFestivalRoleService adminFestivalRoleService;
+
+    @Mock
     private FestivalLocationService festivalLocationService;
 
     @Nested
@@ -67,7 +71,7 @@ class FestivalApplicationServiceTest {
             // given
             CreateFestivalCommand command = createCommand();
             AdminAccount adminAccount = unassignedAdmin();
-            AdminPrincipal principal = principal(null, null);
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(adminAccount);
             given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
@@ -95,8 +99,8 @@ class FestivalApplicationServiceTest {
             assertThat(festival.getSeriesId()).isEqualTo(10L);
             assertThat(festival.getYear()).isEqualTo(2026);
             assertThat(festival.getStartDate()).isEqualTo(command.startDate());
-            assertThat(adminAccount.getFestivalId()).isEqualTo(festival.getId());
-            assertThat(adminAccount.getRole()).isEqualTo(AdminRole.FESTIVAL_OWNER);
+            then(adminFestivalRoleService).should()
+                    .assignFestivalOwner(1L, festival.getId());
 
             ArgumentCaptor<Festival> captor =
                     ArgumentCaptor.forClass(Festival.class);
@@ -114,7 +118,7 @@ class FestivalApplicationServiceTest {
             FestivalSeries festivalSeries = festivalSeries(10L);
             CreateFestivalCommand command = createCommand(festivalSeries.getPublicId());
             AdminAccount adminAccount = unassignedAdmin();
-            AdminPrincipal principal = principal(null, null);
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(adminAccount);
             given(festivalSeriesService.getByPublicId(festivalSeries.getPublicId()))
@@ -144,7 +148,7 @@ class FestivalApplicationServiceTest {
             // given
             FestivalSeries festivalSeries = festivalSeries(10L);
             CreateFestivalCommand command = createCommand(festivalSeries.getPublicId());
-            AdminPrincipal principal = principal(null, null);
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(unassignedAdmin());
             given(festivalSeriesService.getByPublicId(festivalSeries.getPublicId()))
@@ -167,7 +171,7 @@ class FestivalApplicationServiceTest {
             // given
             UUID seriesId = UUID.randomUUID();
             CreateFestivalCommand command = createCommand(seriesId);
-            AdminPrincipal principal = principal(null, null);
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(unassignedAdmin());
             given(festivalSeriesService.getByPublicId(seriesId))
@@ -198,7 +202,7 @@ class FestivalApplicationServiceTest {
                     LocalTime.of(10, 0),
                     LocalTime.of(21, 0)
             );
-            AdminPrincipal principal = principal(null, null);
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(unassignedAdmin());
             given(festivalSeriesService.getByPublicId(festivalSeries.getPublicId()))
@@ -226,14 +230,12 @@ class FestivalApplicationServiceTest {
             Festival festival = festival(festivalId);
             UUID publicId = festival.getPublicId();
             UpdateFestivalCommand command = updateCommand();
-            AdminPrincipal principal = principal(
-                    festivalId,
-                    AdminRole.FESTIVAL_OWNER
-            );
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
-                    .willReturn(festivalOwner(festivalId));
+                    .willReturn(unassignedAdmin());
             given(festivalService.getByPublicIdForUpdate(publicId))
                     .willReturn(festival);
+            givenOwnerRole(1L, festivalId);
 
             // when
             Festival updated = festivalApplicationService.update(
@@ -256,11 +258,13 @@ class FestivalApplicationServiceTest {
             // given
             UUID festivalId = UUID.randomUUID();
             UpdateFestivalCommand command = updateCommand();
-            AdminPrincipal principal = principal(1L, AdminRole.SUB_ADMIN);
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
-                    .willReturn(subAdmin(1L));
+                    .willReturn(unassignedAdmin());
             given(festivalService.getByPublicIdForUpdate(festivalId))
                     .willReturn(festival(1L));
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(1L, 1L))
+                    .willReturn(AdminFestivalRole.createSubAdmin(1L, 1L, 2L));
 
             // when & then
             assertThatThrownBy(() -> festivalApplicationService.update(
@@ -278,11 +282,13 @@ class FestivalApplicationServiceTest {
             // given
             UUID festivalId = UUID.randomUUID();
             UpdateFestivalCommand command = updateCommand();
-            AdminPrincipal principal = principal(2L, AdminRole.FESTIVAL_OWNER);
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
-                    .willReturn(festivalOwner(2L));
+                    .willReturn(unassignedAdmin());
             given(festivalService.getByPublicIdForUpdate(festivalId))
                     .willReturn(festival(1L));
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(1L, 1L))
+                    .willThrow(new CustomException(ErrorCode.FORBIDDEN));
 
             // when & then
             assertThatThrownBy(() -> festivalApplicationService.update(
@@ -301,12 +307,9 @@ class FestivalApplicationServiceTest {
             Long festivalId = 1L;
             UUID publicId = UUID.randomUUID();
             UpdateFestivalCommand command = updateCommand();
-            AdminPrincipal principal = principal(
-                    festivalId,
-                    AdminRole.FESTIVAL_OWNER
-            );
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
-                    .willReturn(festivalOwner(festivalId));
+                    .willReturn(unassignedAdmin());
             given(festivalService.getByPublicIdForUpdate(publicId))
                     .willThrow(new CustomException(ErrorCode.FESTIVAL_NOT_FOUND));
 
@@ -337,14 +340,12 @@ class FestivalApplicationServiceTest {
                     LocalTime.of(9, 0),
                     LocalTime.of(20, 0)
             );
-            AdminPrincipal principal = principal(
-                    festivalId,
-                    AdminRole.FESTIVAL_OWNER
-            );
+            AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
-                    .willReturn(festivalOwner(festivalId));
+                    .willReturn(unassignedAdmin());
             given(festivalService.getByPublicIdForUpdate(publicId))
                     .willReturn(festival);
+            givenOwnerRole(1L, festivalId);
 
             // when & then
             assertThatThrownBy(() -> festivalApplicationService.update(
@@ -388,16 +389,8 @@ class FestivalApplicationServiceTest {
         );
     }
 
-    private AdminPrincipal principal(
-            Long festivalId,
-            AdminRole role
-    ) {
-        return new AdminPrincipal(
-                1L,
-                festivalId,
-                "owner@mapo.go.kr",
-                role
-        );
+    private AdminPrincipal principal() {
+        return new AdminPrincipal(1L, "owner@mapo.go.kr");
     }
 
     private Festival festival() {
@@ -445,20 +438,10 @@ class FestivalApplicationServiceTest {
         return admin;
     }
 
-    private AdminAccount festivalOwner(Long festivalId) {
-        AdminAccount adminAccount = unassignedAdmin();
-        adminAccount.assignFestivalOwner(festivalId);
-        return adminAccount;
-    }
-
-    private AdminAccount subAdmin(Long festivalId) {
-        return AdminAccount.createSubAdmin(
-                AdminEmail.of("sub@mapo.go.kr"),
-                AdminName.of("김서브"),
-                AdminOrganization.of("마포구청 소속"),
-                festivalId,
-                AdminPasswordHash.of("encoded-password"),
-                1L
-        );
+    private void givenOwnerRole(Long adminId, Long festivalId) {
+        given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                adminId,
+                festivalId
+        )).willReturn(AdminFestivalRole.createFestivalOwner(adminId, festivalId));
     }
 }

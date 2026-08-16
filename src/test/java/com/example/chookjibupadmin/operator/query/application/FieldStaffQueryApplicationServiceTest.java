@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
+import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -46,6 +48,9 @@ class FieldStaffQueryApplicationServiceTest {
     private AdminAccountService adminAccountService;
 
     @Mock
+    private AdminFestivalRoleService adminFestivalRoleService;
+
+    @Mock
     private FestivalService festivalService;
 
     @Mock
@@ -67,6 +72,13 @@ class FieldStaffQueryApplicationServiceTest {
                     .willReturn(owner);
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    owner.getId(),
+                    festival.getId()
+            )).willReturn(AdminFestivalRole.createFestivalOwner(
+                    owner.getId(),
+                    festival.getId()
+            ));
             given(fieldStaffQueryService.searchByFestivalId(
                     festival.getId(),
                     "staff"
@@ -96,6 +108,14 @@ class FieldStaffQueryApplicationServiceTest {
                     .willReturn(subAdmin);
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    subAdmin.getId(),
+                    festival.getId()
+            )).willReturn(AdminFestivalRole.createSubAdmin(
+                    subAdmin.getId(),
+                    festival.getId(),
+                    1L
+            ));
             given(fieldStaffQueryService.searchByFestivalId(
                     festival.getId(),
                     null
@@ -139,6 +159,10 @@ class FieldStaffQueryApplicationServiceTest {
                     .willReturn(owner);
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    owner.getId(),
+                    festival.getId()
+            )).willThrow(new CustomException(ErrorCode.FORBIDDEN));
 
             // when & then
             assertThatThrownBy(() ->
@@ -170,6 +194,13 @@ class FieldStaffQueryApplicationServiceTest {
                     .willReturn(owner);
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    owner.getId(),
+                    festival.getId()
+            )).willReturn(AdminFestivalRole.createFestivalOwner(
+                    owner.getId(),
+                    festival.getId()
+            ));
             given(fieldStaffQueryService.getByFestivalIdAndPublicId(
                     festival.getId(),
                     staffId
@@ -189,11 +220,10 @@ class FieldStaffQueryApplicationServiceTest {
     }
 
     private AdminAccount owner(Long festivalId) {
-        AdminAccount adminAccount = AdminAccount.createFestivalOwner(
+        AdminAccount adminAccount = AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
                 AdminPasswordHash.of("encoded-password")
         );
         ReflectionTestUtils.setField(adminAccount, "id", 1L);
@@ -201,13 +231,11 @@ class FieldStaffQueryApplicationServiceTest {
     }
 
     private AdminAccount subAdmin(Long festivalId) {
-        AdminAccount adminAccount = AdminAccount.createSubAdmin(
+        AdminAccount adminAccount = AdminAccount.createAdmin(
                 AdminEmail.of("sub@mapo.go.kr"),
                 AdminName.of("김관리"),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
-                AdminPasswordHash.of("encoded-password"),
-                1L
+                AdminPasswordHash.of("encoded-password")
         );
         ReflectionTestUtils.setField(adminAccount, "id", 2L);
         return adminAccount;
@@ -216,9 +244,7 @@ class FieldStaffQueryApplicationServiceTest {
     private AdminPrincipal principal(AdminAccount adminAccount) {
         return new AdminPrincipal(
                 adminAccount.getId(),
-                adminAccount.getFestivalId(),
-                adminAccount.getEmailValue(),
-                adminAccount.getRole()
+                adminAccount.getEmailValue()
         );
     }
 

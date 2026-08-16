@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
-import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
@@ -48,12 +47,7 @@ class AdminSubAdminQueryRepositoryTest {
             AdminAccount owner = owner("owner@mapo.go.kr", 1L);
             AdminAccount deleted = subAdmin("deleted@mapo.go.kr", 1L, invitedByAdminId);
             deleted.withdraw();
-            persist(first);
-            persist(second);
-            persist(otherFestival);
-            persist(otherInviter);
-            persist(owner);
-            persist(deleted);
+            entityManager.flush();
 
             // when
             var result = queryRepository.findInvitedSubAdmins(
@@ -121,11 +115,11 @@ class AdminSubAdminQueryRepositoryTest {
         void success_FindInvitedSubAdmin() {
             // given
             Long invitedByAdminId = 1L;
-            AdminAccount saved = persist(subAdmin(
+            AdminAccount saved = subAdmin(
                     "sub@mapo.go.kr",
                     1L,
                     invitedByAdminId
-            ));
+            );
 
             // when
             var result = queryRepository.findInvitedSubAdmin(
@@ -147,11 +141,11 @@ class AdminSubAdminQueryRepositoryTest {
         void success_FindInvitedSubAdmin_DifferentFestival() {
             // given
             Long invitedByAdminId = 1L;
-            AdminAccount saved = persist(subAdmin(
+            AdminAccount saved = subAdmin(
                     "sub@mapo.go.kr",
                     2L,
                     invitedByAdminId
-            ));
+            );
 
             // when
             var result = queryRepository.findInvitedSubAdmin(
@@ -171,7 +165,7 @@ class AdminSubAdminQueryRepositoryTest {
             Long invitedByAdminId = 1L;
             AdminAccount saved = subAdmin("sub@mapo.go.kr", 1L, invitedByAdminId);
             saved.withdraw();
-            persist(saved);
+            entityManager.flush();
 
             // when
             var result = queryRepository.findInvitedSubAdmin(
@@ -185,14 +179,32 @@ class AdminSubAdminQueryRepositoryTest {
         }
     }
 
-    private AdminAccount owner(String email, Long festivalId) {
-        return AdminAccount.createFestivalOwner(
+    private AdminAccount persistAdmin(
+            String email,
+            String name,
+            String organization
+    ) {
+        AdminAccount adminAccount = AdminAccount.createAdmin(
                 AdminEmail.of(email),
-                AdminName.of("홍길동"),
-                AdminOrganization.of("마포구청 소속"),
-                festivalId,
+                AdminName.of(name),
+                AdminOrganization.of(organization),
+                AdminDepartment.of("관광정책과"),
+                AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );
+        entityManager.persist(adminAccount);
+        entityManager.flush();
+        return adminAccount;
+    }
+
+    private AdminAccount owner(String email, Long festivalId) {
+        AdminAccount adminAccount = persistAdmin(email, "홍길동", "마포구청 소속");
+        entityManager.persist(AdminFestivalRole.createFestivalOwner(
+                adminAccount.getId(),
+                festivalId
+        ));
+        entityManager.flush();
+        return adminAccount;
     }
 
     private AdminAccount subAdmin(
@@ -216,14 +228,14 @@ class AdminSubAdminQueryRepositoryTest {
             Long festivalId,
             Long invitedByAdminId
     ) {
-        return AdminAccount.createSubAdmin(
-                AdminEmail.of(email),
-                AdminName.of(name),
-                AdminOrganization.of(organization),
+        AdminAccount adminAccount = persistAdmin(email, name, organization);
+        entityManager.persist(AdminFestivalRole.createSubAdmin(
+                adminAccount.getId(),
                 festivalId,
-                AdminPasswordHash.of("encoded-password"),
                 invitedByAdminId
-        );
+        ));
+        entityManager.flush();
+        return adminAccount;
     }
 
     private AdminAccount persistSubAdminWithEmployeeInfo(
@@ -248,28 +260,6 @@ class AdminSubAdminQueryRepositoryTest {
                 festivalId,
                 invitedByAdminId
         ));
-        entityManager.flush();
-        return adminAccount;
-    }
-
-    private AdminAccount persist(AdminAccount adminAccount) {
-        entityManager.persist(adminAccount);
-        entityManager.flush();
-        if (adminAccount.getFestivalId() != null
-                && adminAccount.getRole() == AdminRole.FESTIVAL_OWNER) {
-            entityManager.persist(AdminFestivalRole.createFestivalOwner(
-                    adminAccount.getId(),
-                    adminAccount.getFestivalId()
-            ));
-        }
-        if (adminAccount.getFestivalId() != null
-                && adminAccount.getRole() == AdminRole.SUB_ADMIN) {
-            entityManager.persist(AdminFestivalRole.createSubAdmin(
-                    adminAccount.getId(),
-                    adminAccount.getFestivalId(),
-                    adminAccount.getInvitedByAdminId()
-            ));
-        }
         entityManager.flush();
         return adminAccount;
     }

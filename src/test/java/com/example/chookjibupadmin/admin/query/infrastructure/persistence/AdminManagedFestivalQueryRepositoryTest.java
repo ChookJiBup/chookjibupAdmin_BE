@@ -343,15 +343,6 @@ class AdminManagedFestivalQueryRepositoryTest {
     private <T> T persist(T entity) {
         entityManager.persist(entity);
         entityManager.flush();
-        if (entity instanceof AdminAccount adminAccount
-                && adminAccount.getFestivalId() != null
-                && adminAccount.getRole() == AdminRole.FESTIVAL_OWNER) {
-            entityManager.persist(AdminFestivalRole.createFestivalOwner(
-                    adminAccount.getId(),
-                    adminAccount.getFestivalId()
-            ));
-            entityManager.flush();
-        }
         return entity;
     }
 

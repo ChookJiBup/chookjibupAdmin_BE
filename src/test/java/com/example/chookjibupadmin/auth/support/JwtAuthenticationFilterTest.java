@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
-import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.auth.command.infrastructure.JwtTokenProvider;
 import com.example.chookjibupadmin.global.response.CustomException;
@@ -52,12 +51,7 @@ class JwtAuthenticationFilterTest {
             MockHttpServletRequest request = request("Bearer access-token");
             MockHttpServletResponse response = new MockHttpServletResponse();
             MockFilterChain filterChain = new MockFilterChain();
-            AdminPrincipal principal = new AdminPrincipal(
-                    1L,
-                    10L,
-                    "admin@mapo.go.kr",
-                    AdminRole.SUB_ADMIN
-            );
+            AdminPrincipal principal = new AdminPrincipal(1L, "admin@mapo.go.kr");
             given(jwtTokenProvider.parse("access-token")).willReturn(principal);
             given(adminAccountService.isAuthenticationValid(
                     principal.adminId(),

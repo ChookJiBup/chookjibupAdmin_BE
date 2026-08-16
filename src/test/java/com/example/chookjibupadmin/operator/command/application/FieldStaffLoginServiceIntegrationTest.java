@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.operator.command.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
@@ -45,6 +46,9 @@ class FieldStaffLoginServiceIntegrationTest {
     @Autowired
     private AdminAccountService adminAccountService;
 
+    @Autowired
+    private AdminFestivalRoleService adminFestivalRoleService;
+
     @Nested
     @DisplayName("login")
     class Login {
@@ -54,7 +58,7 @@ class FieldStaffLoginServiceIntegrationTest {
         void success_Login_Persisted() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount adminAccount = adminAccountService.save(festivalOwner(festival.getId()));
+            AdminAccount adminAccount = persistOwner(festival);
             CreateFieldStaffResult created = managementService.create(
                     festival.getPublicId(),
                     createCommand(),
@@ -86,20 +90,19 @@ class FieldStaffLoginServiceIntegrationTest {
     private AdminPrincipal principal(AdminAccount adminAccount) {
         return new AdminPrincipal(
                 adminAccount.getId(),
-                adminAccount.getFestivalId(),
-                adminAccount.getEmailValue(),
-                adminAccount.getRole()
+                adminAccount.getEmailValue()
         );
     }
 
-    private AdminAccount festivalOwner(Long festivalId) {
-        return AdminAccount.createFestivalOwner(
+    private AdminAccount persistOwner(Festival festival) {
+        AdminAccount owner = adminAccountService.save(AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
                 AdminPasswordHash.of("encoded-password")
-        );
+        ));
+        adminFestivalRoleService.assignFestivalOwner(owner.getId(), festival.getId());
+        return owner;
     }
 
     private Festival festival() {

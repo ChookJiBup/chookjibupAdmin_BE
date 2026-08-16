@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.admin.query.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
@@ -39,6 +40,9 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
     private AdminAccountService adminAccountService;
 
     @Autowired
+    private AdminFestivalRoleService adminFestivalRoleService;
+
+    @Autowired
     private FestivalService festivalService;
 
     @Nested
@@ -50,17 +54,17 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
         void success_GetSubAdmins_Persisted() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
-            adminAccountService.save(subAdmin(
+            AdminAccount owner = persistOwner(festival);
+            persistSubAdmin(
                     "sub1@mapo.go.kr",
-                    festival.getId(),
-                    owner.getId()
-            ));
-            adminAccountService.save(subAdmin(
+                    festival,
+                    owner
+            );
+            persistSubAdmin(
                     "sub2@mapo.go.kr",
-                    festival.getId(),
-                    owner.getId()
-            ));
+                    festival,
+                    owner
+            );
 
             // when
             List<AdminSubAdminView> result = applicationService.getSubAdmins(
@@ -82,17 +86,17 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
         void success_GetSubAdmins_EmailTypo() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
-            adminAccountService.save(subAdmin(
+            AdminAccount owner = persistOwner(festival);
+            persistSubAdmin(
                     "dlgkrwns213@korea.kr",
-                    festival.getId(),
-                    owner.getId()
-            ));
-            adminAccountService.save(subAdmin(
+                    festival,
+                    owner
+            );
+            persistSubAdmin(
                     "other@korea.kr",
-                    festival.getId(),
-                    owner.getId()
-            ));
+                    festival,
+                    owner
+            );
 
             // when
             List<AdminSubAdminView> result = applicationService.getSubAdmins(
@@ -113,19 +117,19 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
         void success_GetSubAdmins_Name() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
-            adminAccountService.save(subAdmin(
+            AdminAccount owner = persistOwner(festival);
+            persistSubAdmin(
                     "first@korea.kr",
                     "김검색",
-                    festival.getId(),
-                    owner.getId()
-            ));
-            adminAccountService.save(subAdmin(
+                    festival,
+                    owner
+            );
+            persistSubAdmin(
                     "second@korea.kr",
                     "이관리",
-                    festival.getId(),
-                    owner.getId()
-            ));
+                    festival,
+                    owner
+            );
 
             // when
             List<AdminSubAdminView> result = applicationService.getSubAdmins(
@@ -151,12 +155,12 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
         void success_GetSubAdmin_Persisted() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
-            AdminAccount subAdmin = adminAccountService.save(subAdmin(
+            AdminAccount owner = persistOwner(festival);
+            AdminAccount subAdmin = persistSubAdmin(
                     "sub@mapo.go.kr",
-                    festival.getId(),
-                    owner.getId()
-            ));
+                    festival,
+                    owner
+            );
 
             // when
             AdminSubAdminView result = applicationService.getSubAdmin(
@@ -174,44 +178,47 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
     private AdminPrincipal principal(AdminAccount adminAccount) {
         return new AdminPrincipal(
                 adminAccount.getId(),
-                adminAccount.getFestivalId(),
-                adminAccount.getEmailValue(),
-                adminAccount.getRole()
+                adminAccount.getEmailValue()
         );
     }
 
-    private AdminAccount owner(Long festivalId) {
-        return AdminAccount.createFestivalOwner(
+    private AdminAccount persistOwner(Festival festival) {
+        AdminAccount owner = adminAccountService.save(AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
                 AdminPasswordHash.of("encoded-password")
-        );
+        ));
+        adminFestivalRoleService.assignFestivalOwner(owner.getId(), festival.getId());
+        return owner;
     }
 
-    private AdminAccount subAdmin(
+    private AdminAccount persistSubAdmin(
             String email,
-            Long festivalId,
-            Long invitedByAdminId
+            Festival festival,
+            AdminAccount owner
     ) {
-        return subAdmin(email, "김관리", festivalId, invitedByAdminId);
+        return persistSubAdmin(email, "김관리", festival, owner);
     }
 
-    private AdminAccount subAdmin(
+    private AdminAccount persistSubAdmin(
             String email,
             String name,
-            Long festivalId,
-            Long invitedByAdminId
+            Festival festival,
+            AdminAccount owner
     ) {
-        return AdminAccount.createSubAdmin(
+        AdminAccount subAdmin = adminAccountService.save(AdminAccount.createAdmin(
                 AdminEmail.of(email),
                 AdminName.of(name),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
-                AdminPasswordHash.of("encoded-password"),
-                invitedByAdminId
+                AdminPasswordHash.of("encoded-password")
+        ));
+        adminFestivalRoleService.assignSubAdmin(
+                subAdmin.getId(),
+                festival.getId(),
+                owner.getId()
         );
+        return subAdmin;
     }
 
     private Festival festival() {

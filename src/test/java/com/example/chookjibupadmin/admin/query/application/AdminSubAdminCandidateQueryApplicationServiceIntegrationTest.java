@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.admin.query.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
@@ -41,6 +42,9 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
     private AdminAccountService adminAccountService;
 
     @Autowired
+    private AdminFestivalRoleService adminFestivalRoleService;
+
+    @Autowired
     private FestivalService festivalService;
 
     @Nested
@@ -52,7 +56,7 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
         void success_SearchCandidates_Persisted() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
+            AdminAccount owner = persistOwner(festival);
             adminAccountService.save(admin(
                     "candidate1@mapo.go.kr",
                     "김후보",
@@ -86,7 +90,7 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
         void success_SearchCandidates_EmailTypo() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
+            AdminAccount owner = persistOwner(festival);
             adminAccountService.save(admin(
                     "dlgkrwns213@korea.kr",
                     "이학준",
@@ -119,20 +123,19 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
     private AdminPrincipal principal(AdminAccount adminAccount) {
         return new AdminPrincipal(
                 adminAccount.getId(),
-                adminAccount.getFestivalId(),
-                adminAccount.getEmailValue(),
-                adminAccount.getRole()
+                adminAccount.getEmailValue()
         );
     }
 
-    private AdminAccount owner(Long festivalId) {
-        return AdminAccount.createFestivalOwner(
+    private AdminAccount persistOwner(Festival festival) {
+        AdminAccount owner = adminAccountService.save(AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
                 AdminPasswordHash.of("encoded-password")
-        );
+        ));
+        adminFestivalRoleService.assignFestivalOwner(owner.getId(), festival.getId());
+        return owner;
     }
 
     private AdminAccount admin(

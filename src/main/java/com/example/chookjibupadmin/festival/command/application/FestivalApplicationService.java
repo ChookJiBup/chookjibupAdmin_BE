@@ -126,14 +126,10 @@ public class FestivalApplicationService {
         List<FestivalLocation> savedLocations = festivalLocationService.saveAll(
                 toLocations(savedFestival, command.locations(), creator.getId())
         );
-        if (adminFestivalRoleService == null) {
-            creator.assignFestivalOwner(savedFestival.getId());
-        } else {
-            adminFestivalRoleService.assignFestivalOwner(
-                    creator.getId(),
-                    savedFestival.getId()
-            );
-        }
+        adminFestivalRoleService.assignFestivalOwner(
+                creator.getId(),
+                savedFestival.getId()
+        );
 
         FestivalMap festivalMap = null;
         MapAnalysisJob analysisJob = null;
@@ -375,14 +371,6 @@ public class FestivalApplicationService {
             Festival festival,
             AdminAccount adminAccount
     ) {
-        if (adminFestivalRoleService == null) {
-            if (!festival.getId().equals(adminAccount.getFestivalId())
-                    || !adminAccount.canModifyFestivalInfo()) {
-                throw new CustomException(ErrorCode.FORBIDDEN);
-            }
-            return;
-        }
-
         AdminFestivalRole role = adminFestivalRoleService
                 .getByAdminAccountIdAndFestivalId(
                         adminAccount.getId(),

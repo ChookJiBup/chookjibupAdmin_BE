@@ -82,14 +82,6 @@ public class AdminSubAdminQueryApplicationService {
             AdminAccount adminAccount,
             Festival festival
     ) {
-        if (adminFestivalRoleService == null) {
-            if (!festival.getId().equals(adminAccount.getFestivalId())
-                    || !adminAccount.canInviteSubAdmin()) {
-                throw new CustomException(ErrorCode.FORBIDDEN);
-            }
-            return;
-        }
-
         AdminFestivalRole role = adminFestivalRoleService
                 .getByAdminAccountIdAndFestivalId(
                         adminAccount.getId(),

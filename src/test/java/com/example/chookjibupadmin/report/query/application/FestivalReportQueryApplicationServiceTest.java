@@ -8,7 +8,6 @@ import com.example.chookjibupadmin.admin.command.application.AdminAccountService
 import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
-import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -66,11 +65,11 @@ class FestivalReportQueryApplicationServiceTest {
             Long festivalId = 1L;
             Festival festival = festival(festivalId);
             UUID publicId = festival.getPublicId();
-            AdminPrincipal principal = principal(festivalId, AdminRole.FESTIVAL_OWNER);
+            AdminPrincipal principal = principal();
             given(festivalService.getByPublicId(publicId))
                     .willReturn(festival);
             given(adminAccountService.getById(principal.adminId()))
-                    .willReturn(festivalOwner(festivalId));
+                    .willReturn(unassignedAdmin());
             given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
                     1L,
                     festivalId
@@ -96,11 +95,11 @@ class FestivalReportQueryApplicationServiceTest {
             // given
             Festival festival = festival(1L);
             UUID publicId = festival.getPublicId();
-            AdminPrincipal principal = principal(2L, AdminRole.FESTIVAL_OWNER);
+            AdminPrincipal principal = principal();
             given(festivalService.getByPublicId(publicId))
                     .willReturn(festival);
             given(adminAccountService.getById(principal.adminId()))
-                    .willReturn(festivalOwner(2L));
+                    .willReturn(unassignedAdmin());
             given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
                     1L,
                     1L
@@ -121,7 +120,7 @@ class FestivalReportQueryApplicationServiceTest {
             // given
             Festival festival = festival(1L);
             UUID publicId = festival.getPublicId();
-            AdminPrincipal principal = principal(null, null);
+            AdminPrincipal principal = principal();
             given(festivalService.getByPublicId(publicId))
                     .willReturn(festival);
             given(adminAccountService.getById(principal.adminId()))
@@ -141,16 +140,8 @@ class FestivalReportQueryApplicationServiceTest {
         }
     }
 
-    private AdminPrincipal principal(
-            Long festivalId,
-            AdminRole role
-    ) {
-        return new AdminPrincipal(
-                1L,
-                festivalId,
-                "owner@mapo.go.kr",
-                role
-        );
+    private AdminPrincipal principal() {
+        return new AdminPrincipal(1L, "owner@mapo.go.kr");
     }
 
     private AdminAccount unassignedAdmin() {
@@ -161,12 +152,6 @@ class FestivalReportQueryApplicationServiceTest {
                 AdminPasswordHash.of("encoded-password")
         );
         ReflectionTestUtils.setField(adminAccount, "id", 1L);
-        return adminAccount;
-    }
-
-    private AdminAccount festivalOwner(Long festivalId) {
-        AdminAccount adminAccount = unassignedAdmin();
-        adminAccount.assignFestivalOwner(festivalId);
         return adminAccount;
     }
 
