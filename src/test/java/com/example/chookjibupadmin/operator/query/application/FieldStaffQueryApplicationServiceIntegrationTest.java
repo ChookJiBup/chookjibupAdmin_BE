@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.operator.query.application;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
@@ -46,6 +47,9 @@ class FieldStaffQueryApplicationServiceIntegrationTest {
     private AdminAccountService adminAccountService;
 
     @Autowired
+    private AdminFestivalRoleService adminFestivalRoleService;
+
+    @Autowired
     private FestivalService festivalService;
 
     @Autowired
@@ -60,7 +64,7 @@ class FieldStaffQueryApplicationServiceIntegrationTest {
         void success_GetFieldStaff_Persisted() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
+            AdminAccount owner = persistOwner(festival);
             fieldStaffAccountService.save(fieldStaffAccount("staff01", festival.getId()));
             fieldStaffAccountService.save(fieldStaffAccount("staff02", festival.getId()));
 
@@ -82,7 +86,7 @@ class FieldStaffQueryApplicationServiceIntegrationTest {
         void success_GetFieldStaff_ByKeyword() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
+            AdminAccount owner = persistOwner(festival);
             fieldStaffAccountService.save(fieldStaffAccount("staff01", "김검색", festival.getId()));
             fieldStaffAccountService.save(fieldStaffAccount("staff02", "이관리", festival.getId()));
 
@@ -109,7 +113,7 @@ class FieldStaffQueryApplicationServiceIntegrationTest {
         void success_GetFieldStaffById_Persisted() {
             // given
             Festival festival = festivalService.save(festival());
-            AdminAccount owner = adminAccountService.save(owner(festival.getId()));
+            AdminAccount owner = persistOwner(festival);
             FieldStaffAccount fieldStaff = fieldStaffAccountService.save(
                     fieldStaffAccount("staff01", festival.getId())
             );
@@ -130,20 +134,19 @@ class FieldStaffQueryApplicationServiceIntegrationTest {
     private AdminPrincipal principal(AdminAccount adminAccount) {
         return new AdminPrincipal(
                 adminAccount.getId(),
-                adminAccount.getFestivalId(),
-                adminAccount.getEmailValue(),
-                adminAccount.getRole()
+                adminAccount.getEmailValue()
         );
     }
 
-    private AdminAccount owner(Long festivalId) {
-        return AdminAccount.createFestivalOwner(
+    private AdminAccount persistOwner(Festival festival) {
+        AdminAccount owner = adminAccountService.save(AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
-                festivalId,
                 AdminPasswordHash.of("encoded-password")
-        );
+        ));
+        adminFestivalRoleService.assignFestivalOwner(owner.getId(), festival.getId());
+        return owner;
     }
 
     private FieldStaffAccount fieldStaffAccount(String loginId, Long festivalId) {

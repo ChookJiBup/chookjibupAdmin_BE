@@ -77,14 +77,6 @@ public class FieldStaffQueryApplicationService {
             AdminAccount adminAccount,
             Festival festival
     ) {
-        if (adminFestivalRoleService == null) {
-            if (!festival.getId().equals(adminAccount.getFestivalId())
-                    || !adminAccount.canManageFieldStaff()) {
-                throw new CustomException(ErrorCode.FORBIDDEN);
-            }
-            return;
-        }
-
         AdminFestivalRole role = adminFestivalRoleService
                 .getByAdminAccountIdAndFestivalId(
                         adminAccount.getId(),

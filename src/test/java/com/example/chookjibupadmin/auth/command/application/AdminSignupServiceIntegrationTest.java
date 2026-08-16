@@ -50,8 +50,6 @@ class AdminSignupServiceIntegrationTest {
             assertThat(response.rank()).isEqualTo("주무관");
             assertThat(saved.getDepartmentValue()).isEqualTo("관광정책과");
             assertThat(saved.getRankValue()).isEqualTo("주무관");
-            assertThat(saved.getFestivalId()).isNull();
-            assertThat(saved.getRole()).isNull();
         }
     }
 

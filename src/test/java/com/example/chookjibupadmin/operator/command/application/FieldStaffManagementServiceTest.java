@@ -80,7 +80,7 @@ class FieldStaffManagementServiceTest {
         void success_Create_FestivalOwner() {
             // given
             Festival festival = festival(1L);
-            AdminAccount adminAccount = festivalOwner(1L);
+            AdminAccount adminAccount = adminAccount();
             CreateFieldStaffCommand command = createCommand();
             given(adminAccountService.getById(1L)).willReturn(adminAccount);
             given(festivalService.getByPublicId(festival.getPublicId()))
@@ -99,7 +99,7 @@ class FieldStaffManagementServiceTest {
             CreateFieldStaffResult result = service.create(
                     festival.getPublicId(),
                     command,
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             );
 
             // then
@@ -120,7 +120,7 @@ class FieldStaffManagementServiceTest {
         void success_Create_SubAdmin() {
             // given
             Festival festival = festival(1L);
-            AdminAccount adminAccount = subAdmin(1L);
+            AdminAccount adminAccount = adminAccount();
             CreateFieldStaffCommand command = createCommand();
             given(adminAccountService.getById(1L)).willReturn(adminAccount);
             given(festivalService.getByPublicId(festival.getPublicId()))
@@ -139,7 +139,7 @@ class FieldStaffManagementServiceTest {
             CreateFieldStaffResult result = service.create(
                     festival.getPublicId(),
                     command,
-                    principal(AdminRole.SUB_ADMIN)
+                    principal()
             );
 
             // then
@@ -152,7 +152,7 @@ class FieldStaffManagementServiceTest {
             // given
             Festival festival = festival(1L);
             given(adminAccountService.getById(1L))
-                    .willReturn(festivalOwner(1L));
+                    .willReturn(adminAccount());
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
             givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
@@ -165,7 +165,7 @@ class FieldStaffManagementServiceTest {
             assertThatThrownBy(() -> service.create(
                     festival.getPublicId(),
                     createCommand(),
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FIELD_STAFF_LOGIN_ID_DUPLICATED.getMessage());
@@ -177,7 +177,7 @@ class FieldStaffManagementServiceTest {
             // given
             Festival festival = festival(1L);
             given(adminAccountService.getById(1L))
-                    .willReturn(festivalOwner(2L));
+                    .willReturn(adminAccount());
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
             given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
@@ -189,7 +189,7 @@ class FieldStaffManagementServiceTest {
             assertThatThrownBy(() -> service.create(
                     festival.getPublicId(),
                     createCommand(),
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FORBIDDEN.getMessage());
@@ -207,7 +207,7 @@ class FieldStaffManagementServiceTest {
             Festival festival = festival(1L);
             FieldStaffAccount account = fieldStaffAccount(1L);
             given(adminAccountService.getById(1L))
-                    .willReturn(subAdmin(1L));
+                    .willReturn(adminAccount());
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
             givenManageRole(festival, AdminRole.SUB_ADMIN);
@@ -218,7 +218,7 @@ class FieldStaffManagementServiceTest {
             service.delete(
                     festival.getPublicId(),
                     account.getPublicId(),
-                    principal(AdminRole.SUB_ADMIN)
+                    principal()
             );
 
             // then
@@ -232,7 +232,7 @@ class FieldStaffManagementServiceTest {
             Festival festival = festival(1L);
             FieldStaffAccount account = fieldStaffAccount(2L);
             given(adminAccountService.getById(1L))
-                    .willReturn(festivalOwner(1L));
+                    .willReturn(adminAccount());
             given(festivalService.getByPublicId(festival.getPublicId()))
                     .willReturn(festival);
             givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
@@ -243,7 +243,7 @@ class FieldStaffManagementServiceTest {
             assertThatThrownBy(() -> service.delete(
                     festival.getPublicId(),
                     account.getPublicId(),
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FIELD_STAFF_NOT_FOUND.getMessage());
@@ -270,7 +270,7 @@ class FieldStaffManagementServiceTest {
             service.deleteAll(
                     festival.getPublicId(),
                     publicIds,
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             );
 
             // then
@@ -289,7 +289,7 @@ class FieldStaffManagementServiceTest {
             assertThatThrownBy(() -> service.deleteAll(
                     festival.getPublicId(),
                     List.of(),
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
@@ -307,7 +307,7 @@ class FieldStaffManagementServiceTest {
             assertThatThrownBy(() -> service.deleteAll(
                     festival.getPublicId(),
                     List.of(publicId, publicId),
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
@@ -332,7 +332,7 @@ class FieldStaffManagementServiceTest {
             assertThatThrownBy(() -> service.deleteAll(
                     festival.getPublicId(),
                     publicIds,
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FIELD_STAFF_NOT_FOUND.getMessage());
@@ -357,7 +357,7 @@ class FieldStaffManagementServiceTest {
             assertThatThrownBy(() -> service.deleteAll(
                     festival.getPublicId(),
                     publicIds,
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FIELD_STAFF_NOT_ACTIVE.getMessage());
@@ -382,7 +382,7 @@ class FieldStaffManagementServiceTest {
                     festival.getPublicId(),
                     account.getPublicId(),
                     new UpdateFieldStaffCommand("박스태프", "010-9999-8888"),
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             );
 
             assertThat(account.getNameValue()).isEqualTo("박스태프");
@@ -404,7 +404,7 @@ class FieldStaffManagementServiceTest {
             String result = service.reissuePassword(
                     festival.getPublicId(),
                     account.getPublicId(),
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             );
 
             assertThat(result).isEqualTo("1234567890123456");
@@ -424,7 +424,7 @@ class FieldStaffManagementServiceTest {
                     festival.getPublicId(),
                     account.getPublicId(),
                     false,
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             );
             assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.INACTIVE);
 
@@ -432,7 +432,7 @@ class FieldStaffManagementServiceTest {
                     festival.getPublicId(),
                     account.getPublicId(),
                     true,
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             );
             assertThat(account.getStatus()).isEqualTo(FieldStaffStatus.ACTIVE);
         }
@@ -450,7 +450,7 @@ class FieldStaffManagementServiceTest {
                     festival.getPublicId(),
                     account.getPublicId(),
                     false,
-                    principal(AdminRole.FESTIVAL_OWNER)
+                    principal()
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FIELD_STAFF_NOT_FOUND.getMessage());
@@ -466,12 +466,12 @@ class FieldStaffManagementServiceTest {
         );
     }
 
-    private AdminPrincipal principal(AdminRole role) {
-        return new AdminPrincipal(1L, 1L, "owner@mapo.go.kr", role);
+    private AdminPrincipal principal() {
+        return new AdminPrincipal(1L, "owner@mapo.go.kr");
     }
 
     private void givenManagePermission(Festival festival) {
-        given(adminAccountService.getById(1L)).willReturn(festivalOwner(1L));
+        given(adminAccountService.getById(1L)).willReturn(adminAccount());
         given(festivalService.getByPublicId(festival.getPublicId())).willReturn(festival);
         givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
     }
@@ -486,26 +486,12 @@ class FieldStaffManagementServiceTest {
         )).willReturn(festivalRole);
     }
 
-    private AdminAccount festivalOwner(Long festivalId) {
+    private AdminAccount adminAccount() {
         AdminAccount adminAccount = AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
                 AdminPasswordHash.of("encoded-password")
-        );
-        adminAccount.assignFestivalOwner(festivalId);
-        ReflectionTestUtils.setField(adminAccount, "id", 1L);
-        return adminAccount;
-    }
-
-    private AdminAccount subAdmin(Long festivalId) {
-        AdminAccount adminAccount = AdminAccount.createSubAdmin(
-                AdminEmail.of("sub@mapo.go.kr"),
-                AdminName.of("김서브"),
-                AdminOrganization.of("마포구청 소속"),
-                festivalId,
-                AdminPasswordHash.of("encoded-password"),
-                1L
         );
         ReflectionTestUtils.setField(adminAccount, "id", 1L);
         return adminAccount;

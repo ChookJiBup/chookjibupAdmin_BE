@@ -40,12 +40,7 @@ class AdminWithdrawServiceTest {
         void success_Withdraw() {
             // given
             AdminAccount adminAccount = adminAccount();
-            AdminPrincipal principal = new AdminPrincipal(
-                    1L,
-                    null,
-                    "admin@mapo.go.kr",
-                    null
-            );
+            AdminPrincipal principal = new AdminPrincipal(1L, "admin@mapo.go.kr");
             given(adminAccountService.getById(1L)).willReturn(adminAccount);
 
             // when
@@ -74,12 +69,7 @@ class AdminWithdrawServiceTest {
             // given
             AdminAccount adminAccount = adminAccount();
             adminAccount.withdraw();
-            AdminPrincipal principal = new AdminPrincipal(
-                    1L,
-                    null,
-                    "admin@mapo.go.kr",
-                    null
-            );
+            AdminPrincipal principal = new AdminPrincipal(1L, "admin@mapo.go.kr");
             given(adminAccountService.getById(1L)).willReturn(adminAccount);
 
             // when & then

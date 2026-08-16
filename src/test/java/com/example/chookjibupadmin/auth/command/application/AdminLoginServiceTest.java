@@ -78,7 +78,7 @@ class AdminLoginServiceTest {
         void success_Login_WithoutFestivalRole() {
             // given
             AdminLoginRequest request = loginRequest();
-            AdminAccount adminAccount = festivalOwner(1L);
+            AdminAccount adminAccount = adminAccount();
             given(adminAccountService.getByEmailForLogin(AdminEmail.of(request.email())))
                     .willReturn(adminAccount);
             given(passwordEncoder.matches(
@@ -167,16 +167,6 @@ class AdminLoginServiceTest {
                 AdminOrganization.of("마포구청 소속"),
                 AdminDepartment.of("관광정책과"),
                 AdminRank.of("주무관"),
-                AdminPasswordHash.of("encoded-password")
-        );
-    }
-
-    private AdminAccount festivalOwner(Long festivalId) {
-        return AdminAccount.createFestivalOwner(
-                AdminEmail.of("admin@mapo.go.kr"),
-                AdminName.of("홍길동"),
-                AdminOrganization.of("마포구청 소속"),
-                festivalId,
                 AdminPasswordHash.of("encoded-password")
         );
     }

@@ -40,9 +40,7 @@ class AdminWithdrawServiceIntegrationTest {
             AdminAccount saved = adminAccountService.save(adminAccount());
             AdminPrincipal principal = new AdminPrincipal(
                     saved.getId(),
-                    null,
-                    saved.getEmailValue(),
-                    null
+                    saved.getEmailValue()
             );
 
             // when
@@ -60,9 +58,7 @@ class AdminWithdrawServiceIntegrationTest {
             AdminAccount saved = adminAccountService.save(adminAccount());
             AdminPrincipal principal = new AdminPrincipal(
                     saved.getId(),
-                    null,
-                    saved.getEmailValue(),
-                    null
+                    saved.getEmailValue()
             );
             adminWithdrawService.withdraw(principal);
 

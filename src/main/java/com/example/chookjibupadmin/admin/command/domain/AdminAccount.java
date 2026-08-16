@@ -19,7 +19,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -109,24 +108,6 @@ public class AdminAccount extends BaseTimeEntity {
     @Column(nullable = false, length = 50)
     private AdminStatus status;
 
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다. 영속 권한은 AdminFestivalRole에서만 관리한다.
-     */
-    @Transient
-    private Long festivalId;
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다. 영속 권한은 AdminFestivalRole에서만 관리한다.
-     */
-    @Transient
-    private AdminRole role;
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다. 영속 권한은 AdminFestivalRole에서만 관리한다.
-     */
-    @Transient
-    private Long invitedByAdminId;
-
     private AdminAccount(
             AdminEmail email,
             AdminName name,
@@ -191,64 +172,6 @@ public class AdminAccount extends BaseTimeEntity {
     }
 
     /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
-    public static AdminAccount createFestivalOwner(
-            AdminEmail email,
-            AdminName name,
-            AdminOrganization organization,
-            Long festivalId,
-            AdminPasswordHash passwordHash
-    ) {
-        AdminAccount adminAccount = createAdmin(
-                email,
-                name,
-                organization,
-                passwordHash
-        );
-        adminAccount.assignFestivalOwner(festivalId);
-        return adminAccount;
-    }
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
-    public static AdminAccount createSubAdmin(
-            AdminEmail email,
-            AdminName name,
-            AdminOrganization organization,
-            Long festivalId,
-            AdminPasswordHash passwordHash,
-            Long invitedByAdminId
-    ) {
-        AdminAccount adminAccount = createAdmin(
-                email,
-                name,
-                organization,
-                passwordHash
-        );
-        adminAccount.festivalId = festivalId;
-        adminAccount.role = AdminRole.SUB_ADMIN;
-        adminAccount.invitedByAdminId = invitedByAdminId;
-        return adminAccount;
-    }
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
-    public void assignFestivalOwner(Long festivalId) {
-        if (this.festivalId != null || festivalId == null) {
-            throw new CustomException(ErrorCode.AUTH_ADMIN_ALREADY_ASSIGNED);
-        }
-
-        this.festivalId = festivalId;
-        this.role = AdminRole.FESTIVAL_OWNER;
-    }
-
-    /**
      * 로그인과 API 사용이 가능한 활성 계정인지 확인한다.
      */
     public boolean isActive() {
@@ -307,45 +230,5 @@ public class AdminAccount extends BaseTimeEntity {
 
     public String getPasswordHashValue() {
         return passwordHash.getValue();
-    }
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
-    public boolean canInviteSubAdmin() {
-        return role != null && role.canInviteSubAdmin();
-    }
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
-    public boolean canModifyFestivalInfo() {
-        return role != null && role.canModifyFestivalInfo();
-    }
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
-    public boolean canManageFieldStaff() {
-        return role != null && role.canManageFieldStaff();
-    }
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
-    public boolean canViewOperationReport() {
-        return role != null && role.canViewOperationReport();
-    }
-
-    /**
-     * TODO(admin): 기존 테스트 Fixture 정리 완료 후 제거한다.
-     */
-    @Deprecated(forRemoval = true)
-    public boolean canUpdateQueueTail() {
-        return role != null && role.canUpdateQueueTail();
     }
 }
