@@ -65,7 +65,7 @@ class AdminEmailVerificationApplicationServiceTest {
                                 Duration.ofMinutes(10),
                                 Duration.ofMinutes(1),
                                 Duration.ofMinutes(30),
-                                "http://localhost:3000/password-reset"
+                                "http://localhost:3000/reset-password"
                         )
                 )
         );

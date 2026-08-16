@@ -67,7 +67,7 @@ class AdminPasswordResetApplicationServiceTest {
                         Duration.ofMinutes(10),
                         Duration.ofMinutes(1),
                         Duration.ofMinutes(30),
-                        "https://admin.chookjibup.store/password-reset"
+                        "https://admin.chookjibup.store/reset-password"
                 )
         );
         service = new AdminPasswordResetApplicationService(
@@ -116,7 +116,7 @@ class AdminPasswordResetApplicationServiceTest {
             );
             then(emailSender).should().send(
                     account.getEmail(),
-                    "https://admin.chookjibup.store/password-reset?token=raw-token"
+                    "https://admin.chookjibup.store/reset-password?token=raw-token"
             );
         }
 
@@ -177,7 +177,7 @@ class AdminPasswordResetApplicationServiceTest {
             );
             then(emailSender).should().send(
                     email,
-                    "https://admin.chookjibup.store/password-reset?token=raw-token"
+                    "https://admin.chookjibup.store/reset-password?token=raw-token"
             );
         }
 
