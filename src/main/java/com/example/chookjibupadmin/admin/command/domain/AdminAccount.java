@@ -153,25 +153,6 @@ public class AdminAccount extends BaseTimeEntity {
     }
 
     /**
-     * TODO(admin): 기존 테스트 Fixture를 부서·직급 필수 팩터리로 이전한 뒤 제거한다.
-     */
-    public static AdminAccount createAdmin(
-            AdminEmail email,
-            AdminName name,
-            AdminOrganization organization,
-            AdminPasswordHash passwordHash
-    ) {
-        return createAdmin(
-                email,
-                name,
-                organization,
-                AdminDepartment.of("미지정"),
-                AdminRank.of("미지정"),
-                passwordHash
-        );
-    }
-
-    /**
      * 로그인과 API 사용이 가능한 활성 계정인지 확인한다.
      */
     public boolean isActive() {

@@ -8,9 +8,11 @@ import static org.mockito.BDDMockito.then;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminStatus;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
@@ -84,6 +86,8 @@ class AdminWithdrawServiceTest {
                 AdminEmail.of("admin@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("마포구청 소속"),
+                AdminDepartment.of("관광정책과"),
+                AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );
     }

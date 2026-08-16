@@ -9,9 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.auth.command.infrastructure.JwtTokenProvider;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.operator.command.application.FieldStaffAccountService;
@@ -221,6 +223,8 @@ class SecurityAuthorizationIntegrationTest {
                 AdminEmail.of("security-admin@mapo.go.kr"),
                 AdminName.of("보안관리자"),
                 AdminOrganization.of("마포구청"),
+                AdminDepartment.of("관광정책과"),
+                AdminRank.of("주무관"),
                 AdminPasswordHash.of("password-hash")
         );
     }
