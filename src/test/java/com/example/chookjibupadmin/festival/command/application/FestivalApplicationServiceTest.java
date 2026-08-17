@@ -217,6 +217,31 @@ class FestivalApplicationServiceTest {
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
         }
+
+        @Test
+        @DisplayName("외부업자 계정은 축제를 생성할 수 없다")
+        void fail_Create_ContractorForbidden() {
+            // given
+            CreateFestivalCommand command = createCommand();
+            AdminAccount contractor = AdminAccount.createContractor(
+                    AdminEmail.of("vendor@gmail.com"),
+                    AdminName.of("김업체"),
+                    AdminOrganization.of("축제기획(주)"),
+                    AdminPasswordHash.of("encoded-password")
+            );
+            ReflectionTestUtils.setField(contractor, "id", 2L);
+            AdminPrincipal principal = new AdminPrincipal(2L, contractor.getEmailValue());
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(contractor);
+
+            // when & then
+            assertThatThrownBy(() -> festivalApplicationService.create(
+                    command,
+                    principal
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.AUTH_FESTIVAL_CREATE_FORBIDDEN.getMessage());
+        }
     }
 
     @Nested

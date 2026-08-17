@@ -53,6 +53,9 @@ public class AdminSubAdminAssignService {
         if (!target.isActive() || target.getId().equals(owner.getId())) {
             throw new CustomException(ErrorCode.ADMIN_SUB_ADMIN_NOT_FOUND);
         }
+        if (!target.isContractor()) {
+            throw new CustomException(ErrorCode.AUTH_GOVERNMENT_ACCOUNT_CANNOT_BE_OPERATOR);
+        }
         return roleService.assignSubAdmin(
                 target.getId(),
                 festival.getId(),

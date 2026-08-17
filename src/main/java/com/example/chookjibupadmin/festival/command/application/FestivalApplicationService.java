@@ -94,6 +94,9 @@ public class FestivalApplicationService {
             UploadedFestivalMap uploadedMap
     ) {
         AdminAccount creator = findAuthenticatedAdmin(principal);
+        if (!creator.canCreateFestival()) {
+            throw new CustomException(ErrorCode.AUTH_FESTIVAL_CREATE_FORBIDDEN);
+        }
         if (uploadedMap != null && !creator.isActive()) {
             throw new CustomException(ErrorCode.AUTH_ADMIN_INACTIVE);
         }
