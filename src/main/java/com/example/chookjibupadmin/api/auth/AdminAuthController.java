@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.api.auth;
 
+import com.example.chookjibupadmin.api.auth.dto.AdminContractorSignupRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationConfirmRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminLoginRequest;
@@ -72,20 +73,34 @@ public class AdminAuthController {
     }
 
     /**
-     * 관리자 계정을 생성한다.
+     * 공무원 관리자 계정을 생성한다.
      */
-    @Operation(summary = "관리자 회원가입")
+    @Operation(summary = "공무원 관리자 회원가입")
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/auth/signup")
-    public ApiResponse<AdminSignupResponse> signup(
+    public ApiResponse<AdminSignupResponse> signupGovernment(
             @Valid @RequestBody AdminSignupRequest request
     ) {
         return ApiResponse.success(
                 SuccessCode.ADMIN_SIGNUP_SUCCESS,
-                adminSignupService.signup(request)
+                adminSignupService.signupGovernment(request)
         );
     }
 
+    /**
+     * 외부업자 관리자 계정을 생성한다.
+     */
+    @Operation(summary = "외부업자 관리자 회원가입")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/auth/signup/contractor")
+    public ApiResponse<AdminSignupResponse> signupContractor(
+            @Valid @RequestBody AdminContractorSignupRequest request
+    ) {
+        return ApiResponse.success(
+                SuccessCode.ADMIN_SIGNUP_SUCCESS,
+                adminSignupService.signupContractor(request)
+        );
+    }
     /**
      * 관리자 이메일과 비밀번호를 검증하고 JWT를 발급한다.
      */

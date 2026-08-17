@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.auth.command.infrastructure.redis;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerification;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerificationRepository;
@@ -73,7 +74,8 @@ public class AdminEmailVerificationRedisRepository
                 verification.getCode(),
                 Boolean.toString(verification.isVerified()),
                 verification.getExpiresAt().toString(),
-                Integer.toString(verification.getFailedAttempts())
+                Integer.toString(verification.getFailedAttempts()),
+                verification.getAccountKind().name()
         );
     }
 
@@ -82,8 +84,12 @@ public class AdminEmailVerificationRedisRepository
             String value
     ) {
         String[] parts = value.split("\\|", -1);
+        AccountKind accountKind = parts.length >= 5
+                ? AccountKind.valueOf(parts[4])
+                : AccountKind.GOVERNMENT;
         return AdminEmailVerification.restore(
                 email,
+                accountKind,
                 parts[0],
                 LocalDateTime.parse(parts[2]),
                 Boolean.parseBoolean(parts[1]),

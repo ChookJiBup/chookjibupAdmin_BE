@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.api.admin.dto;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.AdminStatus;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminAccountProfileView;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,11 +20,14 @@ public record AdminAccountProfileResponse(
         @Schema(description = "관리자 이름", example = "홍길동")
         String name,
 
-        @Schema(description = "과·팀", example = "관광정책과")
+        @Schema(description = "과·팀 또는 업체명", example = "관광정책과")
         String organization,
 
-        @Schema(description = "직급", example = "과장")
+        @Schema(description = "직급. 외부업자는 null", example = "과장")
         String rank,
+
+        @Schema(description = "계정 종류", example = "GOVERNMENT")
+        AccountKind accountKind,
 
         @Schema(description = "계정 상태", example = "ACTIVE")
         AdminStatus status
@@ -39,6 +43,7 @@ public record AdminAccountProfileResponse(
                 view.name(),
                 view.organization(),
                 view.rank(),
+                view.accountKind(),
                 view.status()
         );
     }

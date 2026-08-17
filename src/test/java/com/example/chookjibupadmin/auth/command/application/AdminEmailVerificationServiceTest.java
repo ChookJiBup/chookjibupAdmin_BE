@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerification;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerificationRepository;
@@ -85,6 +86,7 @@ class AdminEmailVerificationServiceTest {
     private AdminEmailVerification verification() {
         return AdminEmailVerification.issue(
                 AdminEmail.of("admin@mapo.go.kr"),
+                AccountKind.GOVERNMENT,
                 "123456",
                 LocalDateTime.now().plusMinutes(5)
         );

@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerification;
 import java.time.Duration;
@@ -52,7 +53,7 @@ class AdminEmailVerificationRedisRepositoryTest {
             // then
             then(valueOperations).should().set(
                     eq(KEY),
-                    eq("123456|false|" + verification.getExpiresAt() + "|0"),
+                    eq("123456|false|" + verification.getExpiresAt() + "|0|GOVERNMENT"),
                     any(Duration.class)
             );
         }
@@ -169,6 +170,7 @@ class AdminEmailVerificationRedisRepositoryTest {
     ) {
         return AdminEmailVerification.restore(
                 AdminEmail.of("admin@mapo.go.kr"),
+                AccountKind.GOVERNMENT,
                 "123456",
                 expiresAt,
                 verified

@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.auth.command.application;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationConfirmRequest;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationRequest;
@@ -35,10 +36,11 @@ public class AdminEmailVerificationApplicationService {
     private final SecureRandom secureRandom = new SecureRandom();
 
     /**
-     * 정부 공식 이메일인지 확인한 뒤 인증 코드를 발급한다.
+     * 계정 종류에 맞는 이메일인지 확인한 뒤 인증 코드를 발급한다.
      */
     public void request(AdminEmailVerificationRequest request) {
-        AdminEmail email = AdminEmail.of(request.email());
+        AccountKind accountKind = request.accountKind();
+        AdminEmail email = AdminEmail.of(request.email(), accountKind);
         ensureRequestAllowed(email);
         if (adminAccountService.existsByEmail(email)) {
             throw new CustomException(ErrorCode.AUTH_EMAIL_DUPLICATED);
@@ -47,6 +49,7 @@ public class AdminEmailVerificationApplicationService {
         String code = generateCode();
         verificationService.save(AdminEmailVerification.issue(
                 email,
+                accountKind,
                 code,
                 LocalDateTime.now().plus(CODE_TTL)
         ));

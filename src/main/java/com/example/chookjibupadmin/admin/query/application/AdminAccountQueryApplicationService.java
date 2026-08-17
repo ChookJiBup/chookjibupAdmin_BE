@@ -39,6 +39,7 @@ public class AdminAccountQueryApplicationService {
                 adminAccount.getNameValue(),
                 adminAccount.getOrganizationValue(),
                 adminAccount.getRankValue(),
+                adminAccount.getAccountKind(),
                 adminAccount.getStatus()
         );
     }

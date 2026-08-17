@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.lenient;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationConfirmRequest;
@@ -91,7 +92,7 @@ class AdminEmailVerificationApplicationServiceTest {
                     .willReturn(false);
 
             // when
-            verificationService.request(new AdminEmailVerificationRequest(email));
+            verificationService.request(new AdminEmailVerificationRequest(email, AccountKind.GOVERNMENT));
 
             // then
             assertThat(verificationSender.email).isEqualTo(email);
@@ -108,7 +109,7 @@ class AdminEmailVerificationApplicationServiceTest {
 
             // when & then
             assertThatThrownBy(() -> verificationService.request(
-                    new AdminEmailVerificationRequest(email)
+                    new AdminEmailVerificationRequest(email, AccountKind.GOVERNMENT)
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.AUTH_EMAIL_DUPLICATED.getMessage());
@@ -126,7 +127,7 @@ class AdminEmailVerificationApplicationServiceTest {
             String email = "admin@mapo.go.kr";
             given(adminAccountService.existsByEmail(AdminEmail.of(email)))
                     .willReturn(false);
-            verificationService.request(new AdminEmailVerificationRequest(email));
+            verificationService.request(new AdminEmailVerificationRequest(email, AccountKind.GOVERNMENT));
 
             // when
             verificationService.confirm(new AdminEmailVerificationConfirmRequest(
@@ -165,7 +166,7 @@ class AdminEmailVerificationApplicationServiceTest {
             String email = "admin@mapo.go.kr";
             given(adminAccountService.existsByEmail(AdminEmail.of(email)))
                     .willReturn(false);
-            verificationService.request(new AdminEmailVerificationRequest(email));
+            verificationService.request(new AdminEmailVerificationRequest(email, AccountKind.GOVERNMENT));
 
             // when & then
             assertThatThrownBy(() -> verificationService.confirm(
@@ -185,7 +186,7 @@ class AdminEmailVerificationApplicationServiceTest {
             String email = "admin@mapo.go.kr";
             given(adminAccountService.existsByEmail(AdminEmail.of(email)))
                     .willReturn(false);
-            verificationService.request(new AdminEmailVerificationRequest(email));
+            verificationService.request(new AdminEmailVerificationRequest(email, AccountKind.GOVERNMENT));
             String validCode = verificationSender.code;
             for (int i = 0; i < 5; i++) {
                 assertThatThrownBy(() -> verificationService.confirm(
@@ -216,17 +217,22 @@ class AdminEmailVerificationApplicationServiceTest {
             String value = "admin@mapo.go.kr";
             AdminEmail email = AdminEmail.of(value);
             given(adminAccountService.existsByEmail(email)).willReturn(false);
-            verificationService.request(new AdminEmailVerificationRequest(value));
+            verificationService.request(
+                    new AdminEmailVerificationRequest(value, AccountKind.GOVERNMENT)
+            );
             verificationService.confirm(new AdminEmailVerificationConfirmRequest(
                     value,
                     verificationSender.code
             ));
 
             // when
-            adminEmailVerificationService.consumeVerified(email);
+            adminEmailVerificationService.consumeVerified(email, AccountKind.GOVERNMENT);
 
             // then
-            assertThatThrownBy(() -> adminEmailVerificationService.consumeVerified(email))
+            assertThatThrownBy(() -> adminEmailVerificationService.consumeVerified(
+                    email,
+                    AccountKind.GOVERNMENT
+            ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.AUTH_EMAIL_NOT_VERIFIED.getMessage());
         }
@@ -238,7 +244,10 @@ class AdminEmailVerificationApplicationServiceTest {
             AdminEmail email = AdminEmail.of("admin@mapo.go.kr");
 
             // when & then
-            assertThatThrownBy(() -> adminEmailVerificationService.consumeVerified(email))
+            assertThatThrownBy(() -> adminEmailVerificationService.consumeVerified(
+                    email,
+                    AccountKind.GOVERNMENT
+            ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.AUTH_EMAIL_NOT_VERIFIED.getMessage());
         }
