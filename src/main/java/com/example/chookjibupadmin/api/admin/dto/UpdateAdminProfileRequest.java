@@ -11,9 +11,9 @@ public record UpdateAdminProfileRequest(
         @Schema(description = "이름", example = "홍길동")
         String name,
 
-        @NotBlank @Size(min = 2, max = 100)
-        @Schema(description = "부서", example = "문화예술과")
-        String department,
+        @NotBlank @Size(min = 2, max = 255)
+        @Schema(description = "과·팀", example = "문화예술과")
+        String organization,
 
         @NotBlank @Size(max = 50)
         @Schema(description = "직급", example = "주무관")

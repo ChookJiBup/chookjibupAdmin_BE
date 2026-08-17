@@ -181,14 +181,14 @@ public class AdminAccount extends BaseTimeEntity {
     /** 관리자 본인의 프로필 정보를 변경한다. */
     public void updateProfile(
             AdminName name,
-            AdminDepartment department,
+            AdminOrganization organization,
             AdminRank rank
     ) {
-        if (name == null || department == null || rank == null) {
+        if (name == null || organization == null || rank == null) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
         this.name = name;
-        this.department = department;
+        this.organization = organization;
         this.rank = rank;
     }
 

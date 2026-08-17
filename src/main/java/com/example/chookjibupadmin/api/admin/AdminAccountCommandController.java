@@ -2,8 +2,8 @@ package com.example.chookjibupadmin.api.admin;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.application.AdminWithdrawService;
-import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.api.admin.dto.UpdateAdminProfileRequest;
 import com.example.chookjibupadmin.auth.command.application.AdminPasswordResetApplicationService;
@@ -35,7 +35,7 @@ public class AdminAccountCommandController {
     private final AdminPasswordResetApplicationService passwordResetService;
     private final AdminAccountService adminAccountService;
 
-    /** 로그인한 관리자 본인의 이름, 부서, 직급을 수정한다. */
+    /** 로그인한 관리자 본인의 이름, 과·팀, 직급을 수정한다. */
     @Operation(summary = "관리자 본인 정보 수정")
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping
@@ -46,7 +46,7 @@ public class AdminAccountCommandController {
         adminAccountService.updateProfile(
                 principal.adminId(),
                 AdminName.of(request.name()),
-                AdminDepartment.of(request.department()),
+                AdminOrganization.of(request.organization()),
                 AdminRank.of(request.rank())
         );
         return ApiResponse.success(SuccessCode.ADMIN_ACCOUNT_UPDATE_SUCCESS);
