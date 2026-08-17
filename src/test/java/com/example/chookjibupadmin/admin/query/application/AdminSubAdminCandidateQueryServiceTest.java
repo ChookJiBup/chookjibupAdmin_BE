@@ -68,7 +68,6 @@ class AdminSubAdminCandidateQueryServiceTest {
                 UUID.randomUUID(),
                 "candidate@mapo.go.kr",
                 "김후보",
-                "마포구청",
                 "관광정책과",
                 "주무관",
                 AdminStatus.ACTIVE

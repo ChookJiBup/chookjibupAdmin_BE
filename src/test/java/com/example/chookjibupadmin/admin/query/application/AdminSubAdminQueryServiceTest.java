@@ -148,7 +148,6 @@ class AdminSubAdminQueryServiceTest {
                 adminId,
                 "sub@mapo.go.kr",
                 "김관리",
-                "마포구청",
                 "관광정책과",
                 "주무관",
                 AdminStatus.ACTIVE

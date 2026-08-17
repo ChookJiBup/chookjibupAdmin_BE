@@ -159,6 +159,34 @@ class AdminAccountServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("updateProfile")
+    class UpdateProfile {
+
+        @Test
+        @DisplayName("관리자 본인의 이름, 과·팀, 직급 변경 결과를 저장한다")
+        void success_UpdateProfile() {
+            // given
+            AdminAccount adminAccount = adminAccount();
+            given(adminAccountRepository.findById(1L)).willReturn(Optional.of(adminAccount));
+            given(adminAccountRepository.save(adminAccount)).willReturn(adminAccount);
+
+            // when
+            adminAccountService.updateProfile(
+                    1L,
+                    AdminName.of("김철수"),
+                    AdminOrganization.of("문화예술과"),
+                    AdminRank.of("과장")
+            );
+
+            // then
+            assertThat(adminAccount.getNameValue()).isEqualTo("김철수");
+            assertThat(adminAccount.getOrganizationValue()).isEqualTo("문화예술과");
+            assertThat(adminAccount.getRankValue()).isEqualTo("과장");
+            then(adminAccountRepository).should().save(adminAccount);
+        }
+    }
+
     private AdminAccount adminAccount() {
         return adminAccount("admin@mapo.go.kr");
     }
