@@ -19,10 +19,10 @@ class AdminSignupRequestTest {
     class EmployeeInfoValidation {
 
         @Test
-        @DisplayName("부서와 직급의 최소 길이 경계값을 허용한다")
+        @DisplayName("과·팀과 직급의 최소 길이 경계값을 허용한다")
         void success_EmployeeInfo_MinBoundary() {
             // given
-            AdminSignupRequest request = request("관광", "관");
+            AdminSignupRequest request = request("관광", "과");
 
             // when
             var violations = validator.validate(request);
@@ -32,11 +32,11 @@ class AdminSignupRequestTest {
         }
 
         @Test
-        @DisplayName("부서와 직급의 최대 길이 경계값을 허용한다")
+        @DisplayName("과·팀과 직급의 최대 길이 경계값을 허용한다")
         void success_EmployeeInfo_MaxBoundary() {
             // given
             AdminSignupRequest request = request(
-                    "가".repeat(100),
+                    "가".repeat(255),
                     "나".repeat(50)
             );
 
@@ -45,32 +45,6 @@ class AdminSignupRequestTest {
 
             // then
             assertThat(violations).isEmpty();
-        }
-
-        @Test
-        @DisplayName("빈 부서는 거절한다")
-        void fail_Department_Blank_ConstraintViolation() {
-            // given
-            AdminSignupRequest request = request(" ", "주무관");
-
-            // when
-            var violations = validator.validate(request);
-
-            // then
-            assertThat(violations).isNotEmpty();
-        }
-
-        @Test
-        @DisplayName("100자를 초과한 부서는 거절한다")
-        void fail_Department_OverMax_ConstraintViolation() {
-            // given
-            AdminSignupRequest request = request("가".repeat(101), "주무관");
-
-            // when
-            var violations = validator.validate(request);
-
-            // then
-            assertThat(violations).isNotEmpty();
         }
 
         @Test
@@ -100,12 +74,11 @@ class AdminSignupRequestTest {
         }
     }
 
-    private AdminSignupRequest request(String department, String rank) {
+    private AdminSignupRequest request(String organization, String rank) {
         return new AdminSignupRequest(
                 "admin@mapo.go.kr",
                 "홍길동",
-                "마포구청 소속",
-                department,
+                organization,
                 rank,
                 "Password!123",
                 "Password!123"

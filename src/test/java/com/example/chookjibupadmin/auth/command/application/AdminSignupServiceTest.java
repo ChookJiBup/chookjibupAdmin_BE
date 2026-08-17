@@ -58,7 +58,6 @@ class AdminSignupServiceTest {
 
             // then
             assertThat(response.email()).isEqualTo("admin@mapo.go.kr");
-            assertThat(response.department()).isEqualTo("관광정책과");
             assertThat(response.rank()).isEqualTo("주무관");
             assertThat(response.festivalId()).isNull();
             assertThat(response.role()).isNull();
@@ -95,7 +94,6 @@ class AdminSignupServiceTest {
         return new AdminSignupRequest(
                 email,
                 "홍길동",
-                "마포구청 소속",
                 "관광정책과",
                 "주무관",
                 "Password!123",

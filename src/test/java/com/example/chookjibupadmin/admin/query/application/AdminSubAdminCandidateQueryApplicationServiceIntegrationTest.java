@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
-import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -60,12 +59,12 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
             adminAccountService.save(admin(
                     "candidate1@mapo.go.kr",
                     "김후보",
-                    "마포구청 소속"
+                    "마포구청"
             ));
             adminAccountService.save(admin(
                     "candidate2@seoul.go.kr",
                     "이후보",
-                    "서울시 소속"
+                    "서울시"
             ));
 
             // when
@@ -80,7 +79,6 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
             assertThat(result).singleElement().satisfies(candidate -> {
                 assertThat(candidate.name()).isEqualTo("김후보");
                 assertThat(candidate.email()).isEqualTo("candidate1@mapo.go.kr");
-                assertThat(candidate.department()).isEqualTo("관광정책과");
                 assertThat(candidate.rank()).isEqualTo("주무관");
             });
         }
@@ -94,12 +92,12 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
             adminAccountService.save(admin(
                     "dlgkrwns213@korea.kr",
                     "이학준",
-                    "서울시 소속"
+                    "서울시"
             ));
             adminAccountService.save(admin(
                     "other@korea.kr",
                     "김다른",
-                    "서울시 소속"
+                    "서울시"
             ));
 
             // when
@@ -114,7 +112,6 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
             assertThat(result).singleElement().satisfies(candidate -> {
                 assertThat(candidate.name()).isEqualTo("이학준");
                 assertThat(candidate.email()).isEqualTo("dlgkrwns213@korea.kr");
-                assertThat(candidate.department()).isEqualTo("관광정책과");
                 assertThat(candidate.rank()).isEqualTo("주무관");
             });
         }
@@ -131,8 +128,7 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
         AdminAccount owner = adminAccountService.save(AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
-                AdminOrganization.of("마포구청 소속"),
-                AdminDepartment.of("관광정책과"),
+                AdminOrganization.of("관광정책과"),
                 AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         ));
@@ -143,13 +139,12 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
     private AdminAccount admin(
             String email,
             String name,
-            String organization
+            String department
     ) {
         return AdminAccount.createAdmin(
                 AdminEmail.of(email),
                 AdminName.of(name),
-                AdminOrganization.of(organization),
-                AdminDepartment.of("관광정책과"),
+                AdminOrganization.of("관광정책과"),
                 AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );

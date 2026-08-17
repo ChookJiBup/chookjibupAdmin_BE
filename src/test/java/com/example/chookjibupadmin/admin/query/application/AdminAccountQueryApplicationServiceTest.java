@@ -7,7 +7,6 @@ import static org.mockito.BDDMockito.given;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminStatus;
-import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -48,8 +47,7 @@ class AdminAccountQueryApplicationServiceTest {
         assertThat(result.adminId()).isEqualTo(account.getPublicId());
         assertThat(result.email()).isEqualTo("admin@mapo.go.kr");
         assertThat(result.name()).isEqualTo("홍길동");
-        assertThat(result.organization()).isEqualTo("마포구청");
-        assertThat(result.department()).isEqualTo("문화예술과");
+        assertThat(result.organization()).isEqualTo("문화예술과");
         assertThat(result.rank()).isEqualTo("주무관");
         assertThat(result.status()).isEqualTo(AdminStatus.ACTIVE);
     }
@@ -80,8 +78,7 @@ class AdminAccountQueryApplicationServiceTest {
         AdminAccount account = AdminAccount.createAdmin(
                 AdminEmail.of("admin@mapo.go.kr"),
                 AdminName.of("홍길동"),
-                AdminOrganization.of("마포구청"),
-                AdminDepartment.of("문화예술과"),
+                AdminOrganization.of("문화예술과"),
                 AdminRank.of("주무관"),
                 AdminPasswordHash.of("password-hash")
         );

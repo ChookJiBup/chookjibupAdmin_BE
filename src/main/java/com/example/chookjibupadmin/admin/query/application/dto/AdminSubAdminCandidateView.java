@@ -11,7 +11,6 @@ public record AdminSubAdminCandidateView(
         String email,
         String name,
         String organization,
-        String department,
         String rank,
         AdminStatus status
 ) implements AdminNameEmailSearchTarget {

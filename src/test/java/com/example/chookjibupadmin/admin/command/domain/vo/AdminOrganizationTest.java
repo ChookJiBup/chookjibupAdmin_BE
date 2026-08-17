@@ -33,23 +33,23 @@ class AdminOrganizationTest {
     class Of {
 
         @Test
-        @DisplayName("관리자 조직은 앞뒤 공백을 제거한다")
+        @DisplayName("과·팀명은 앞뒤 공백을 제거한다")
         void success_Of_Normalized() {
             // given
-            String value = " 서울시 소속 ";
+            String value = " 토목과 ";
 
             // when
             AdminOrganization organization = AdminOrganization.of(value);
 
             // then
-            assertThat(organization.getValue()).isEqualTo("서울시 소속");
+            assertThat(organization.getValue()).isEqualTo("토목과");
         }
 
         @Test
         @DisplayName("관리자 조직은 최소 길이 경계값이면 생성한다")
         void success_Of_MinLengthBoundary() {
             // given
-            String value = "서울";
+            String value = "토목";
 
             // when
             AdminOrganization organization = AdminOrganization.of(value);

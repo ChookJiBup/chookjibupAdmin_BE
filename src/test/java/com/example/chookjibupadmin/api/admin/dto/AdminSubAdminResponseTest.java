@@ -24,7 +24,6 @@ class AdminSubAdminResponseTest {
                     adminId,
                     "operator@korea.kr",
                     "김관리",
-                    "마포구청 소속",
                     "관광정책과",
                     "주무관",
                     AdminStatus.ACTIVE
@@ -37,7 +36,6 @@ class AdminSubAdminResponseTest {
             assertThat(response.adminId()).isEqualTo(adminId);
             assertThat(response.name()).isEqualTo("김관리");
             assertThat(response.email()).isEqualTo("operator@korea.kr");
-            assertThat(response.department()).isEqualTo("관광정책과");
             assertThat(response.rank()).isEqualTo("주무관");
         }
     }

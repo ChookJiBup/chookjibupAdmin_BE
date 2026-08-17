@@ -1,7 +1,6 @@
 package com.example.chookjibupadmin.admin.command.domain;
 
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
-import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
@@ -68,6 +67,7 @@ public class AdminAccount extends BaseTimeEntity {
     )
     private AdminName name;
 
+    /** 과·팀 (예: 토목과, 관광정책과) */
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -75,14 +75,7 @@ public class AdminAccount extends BaseTimeEntity {
     )
     private AdminOrganization organization;
 
-    // TODO(admin): 운영 DB 반영 전 기존 계정의 부서와 직급을 백필하는 마이그레이션을 작성한다.
-    @Embedded
-    @AttributeOverride(
-            name = "value",
-            column = @Column(name = "department", nullable = false, length = 100)
-    )
-    private AdminDepartment department;
-
+    /** 직급 (예: 과장, 주무관) */
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -112,11 +105,10 @@ public class AdminAccount extends BaseTimeEntity {
             AdminEmail email,
             AdminName name,
             AdminOrganization organization,
-            AdminDepartment department,
             AdminRank rank,
             AdminPasswordHash passwordHash
     ) {
-        if (department == null || rank == null) {
+        if (rank == null) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
 
@@ -124,7 +116,6 @@ public class AdminAccount extends BaseTimeEntity {
         this.email = email;
         this.name = name;
         this.organization = organization;
-        this.department = department;
         this.rank = rank;
         this.passwordHash = passwordHash;
         this.authVersion = 0L;
@@ -138,7 +129,6 @@ public class AdminAccount extends BaseTimeEntity {
             AdminEmail email,
             AdminName name,
             AdminOrganization organization,
-            AdminDepartment department,
             AdminRank rank,
             AdminPasswordHash passwordHash
     ) {
@@ -146,7 +136,6 @@ public class AdminAccount extends BaseTimeEntity {
                 email,
                 name,
                 organization,
-                department,
                 rank,
                 passwordHash
         );
@@ -213,10 +202,6 @@ public class AdminAccount extends BaseTimeEntity {
 
     public String getOrganizationValue() {
         return organization.getValue();
-    }
-
-    public String getDepartmentValue() {
-        return department.getValue();
     }
 
     public String getRankValue() {

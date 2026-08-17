@@ -110,13 +110,13 @@ DB enum 값은 대부분 소문자이므로 Java enum의 대문자 이름과 단
 | `password_hash` | VARCHAR(255) | N | 암호화 비밀번호 |
 | `name` | VARCHAR(50) | N | 이름 |
 | `birth_date` | DATE | Y | 생년월일 |
-| `department` | VARCHAR(100) | Y | 부서 |
+| `department` | VARCHAR(100) | Y | 소속(행정기관) |
 | `joined_at` | TIMESTAMPTZ | N | 가입 시각 |
 | `is_withdrawn` | BOOLEAN | N | 탈퇴 여부 |
 | `withdrawn_at` | TIMESTAMPTZ | Y | 탈퇴 시각 |
 | `updated_at` | TIMESTAMPTZ | N | 수정 시각, DB 트리거 갱신 |
 
-현재 관리자 JPA의 `admin_accounts`와 구조가 다르다. UUID, 조직, 직급, 상태를 유지하려면 SQL 보완이 필요하다.
+현재 관리자 JPA의 `admin_accounts`와 구조가 다르다. UUID, 과·팀(`organization`), 직급, 상태를 유지하려면 SQL 보완이 필요하다.
 
 ## 6.2 `admin_email_verification`
 

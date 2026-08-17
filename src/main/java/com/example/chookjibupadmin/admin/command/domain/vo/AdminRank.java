@@ -9,7 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 관리자의 조직 내 직급을 표현하는 값 객체이다.
+ * 관리자 직급을 표현하는 값 객체이다.
+ * 예: 과장, 주무관
  */
 @Getter
 @Embeddable
