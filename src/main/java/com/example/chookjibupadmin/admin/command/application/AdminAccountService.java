@@ -4,6 +4,9 @@ import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccountRepository;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
+import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.util.Collection;
@@ -93,6 +96,19 @@ public class AdminAccountService {
             AdminPasswordHash passwordHash
     ) {
         adminAccount.changePassword(passwordHash);
+        adminAccountRepository.save(adminAccount);
+    }
+
+    /** 관리자 본인의 이름, 부서, 직급 변경 결과를 저장한다. */
+    @Transactional
+    public void updateProfile(
+            Long adminAccountId,
+            AdminName name,
+            AdminDepartment department,
+            AdminRank rank
+    ) {
+        AdminAccount adminAccount = getById(adminAccountId);
+        adminAccount.updateProfile(name, department, rank);
         adminAccountRepository.save(adminAccount);
     }
 
