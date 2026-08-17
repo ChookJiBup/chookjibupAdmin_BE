@@ -9,7 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 관리자 소속 조직을 표현하는 값 객체이다.
+ * 관리자 소속 기관 내부의 과·팀을 표현하는 값 객체이다.
+ * 예: 토목과, 관광정책과
  */
 @Getter
 @Embeddable
@@ -24,7 +25,7 @@ public class AdminOrganization {
     }
 
     /**
-     * 문자열 조직명을 검증한 뒤 값 객체로 변환한다.
+     * 과·팀명을 검증한 뒤 값 객체로 변환한다.
      */
     public static AdminOrganization of(String value) {
         return new AdminOrganization(value);

@@ -20,17 +20,12 @@ public record AdminSignupRequest(
         @Size(min = 2, max = 100)
         String name,
 
-        @Schema(description = "소속 조직", example = "마포구청 소속")
+        @Schema(description = "과·팀", example = "관광정책과")
         @NotBlank
         @Size(min = 2, max = 255)
         String organization,
 
-        @Schema(description = "소속 부서", example = "관광정책과")
-        @NotBlank
-        @Size(min = 2, max = 100)
-        String department,
-
-        @Schema(description = "직급", example = "주무관")
+        @Schema(description = "직급", example = "과장")
         @NotBlank
         @Size(max = 50)
         String rank,

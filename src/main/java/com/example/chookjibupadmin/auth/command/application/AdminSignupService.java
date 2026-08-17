@@ -3,7 +3,6 @@ package com.example.chookjibupadmin.auth.command.application;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
-import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
@@ -40,7 +39,6 @@ public class AdminSignupService {
         AdminEmail email = AdminEmail.of(request.email());
         AdminName name = AdminName.of(request.name());
         AdminOrganization organization = AdminOrganization.of(request.organization());
-        AdminDepartment department = AdminDepartment.of(request.department());
         AdminRank rank = AdminRank.of(request.rank());
 
         if (adminAccountService.existsByEmail(email)) {
@@ -51,7 +49,6 @@ public class AdminSignupService {
                 email,
                 name,
                 organization,
-                department,
                 rank,
                 AdminPasswordHash.of(passwordEncoder.encode(request.password()))
         );

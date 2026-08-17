@@ -23,13 +23,10 @@ public record AdminSignupResponse(
         @Schema(description = "관리자 이름", example = "홍길동")
         String name,
 
-        @Schema(description = "소속 조직", example = "마포구청 소속")
+        @Schema(description = "과·팀", example = "관광정책과")
         String organization,
 
-        @Schema(description = "소속 부서", example = "관광정책과")
-        String department,
-
-        @Schema(description = "직급", example = "주무관")
+        @Schema(description = "직급", example = "과장")
         String rank,
 
         @Schema(description = "관리자 역할. 축제 생성 전에는 null", example = "FESTIVAL_OWNER")
@@ -49,7 +46,6 @@ public record AdminSignupResponse(
                 adminAccount.getEmailValue(),
                 adminAccount.getNameValue(),
                 adminAccount.getOrganizationValue(),
-                adminAccount.getDepartmentValue(),
                 adminAccount.getRankValue(),
                 null,
                 adminAccount.getStatus()

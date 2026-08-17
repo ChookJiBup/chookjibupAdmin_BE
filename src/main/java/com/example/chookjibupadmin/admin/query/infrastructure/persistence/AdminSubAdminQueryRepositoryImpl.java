@@ -36,7 +36,6 @@ public class AdminSubAdminQueryRepositoryImpl
                         adminAccount.email.value,
                         adminAccount.name.value,
                         adminAccount.organization.value,
-                        adminAccount.department.value,
                         adminAccount.rank.value,
                         adminAccount.status
                 ))
@@ -68,7 +67,6 @@ public class AdminSubAdminQueryRepositoryImpl
                         adminAccount.email.value,
                         adminAccount.name.value,
                         adminAccount.organization.value,
-                        adminAccount.department.value,
                         adminAccount.rank.value,
                         adminAccount.status
                 ))

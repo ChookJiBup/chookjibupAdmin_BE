@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
-import com.example.chookjibupadmin.admin.command.domain.vo.AdminDepartment;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -69,7 +68,7 @@ class AdminSubAdminQueryRepositoryTest {
             persistSubAdminWithEmployeeInfo(
                     "sub1@mapo.go.kr",
                     "김검색",
-                    "마포구청 소속",
+                    "마포구청",
                     1L,
                     invitedByAdminId
             );
@@ -83,7 +82,6 @@ class AdminSubAdminQueryRepositoryTest {
             assertThat(result).singleElement().satisfies(subAdmin -> {
                 assertThat(subAdmin.name()).isEqualTo("김검색");
                 assertThat(subAdmin.email()).isEqualTo("sub1@mapo.go.kr");
-                assertThat(subAdmin.department()).isEqualTo("관광정책과");
                 assertThat(subAdmin.rank()).isEqualTo("주무관");
             });
         }
@@ -182,13 +180,12 @@ class AdminSubAdminQueryRepositoryTest {
     private AdminAccount persistAdmin(
             String email,
             String name,
-            String organization
+            String department
     ) {
         AdminAccount adminAccount = AdminAccount.createAdmin(
                 AdminEmail.of(email),
                 AdminName.of(name),
-                AdminOrganization.of(organization),
-                AdminDepartment.of("관광정책과"),
+                AdminOrganization.of("관광정책과"),
                 AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );
@@ -198,7 +195,7 @@ class AdminSubAdminQueryRepositoryTest {
     }
 
     private AdminAccount owner(String email, Long festivalId) {
-        AdminAccount adminAccount = persistAdmin(email, "홍길동", "마포구청 소속");
+        AdminAccount adminAccount = persistAdmin(email, "홍길동", "마포구청");
         entityManager.persist(AdminFestivalRole.createFestivalOwner(
                 adminAccount.getId(),
                 festivalId
@@ -215,7 +212,7 @@ class AdminSubAdminQueryRepositoryTest {
         return subAdmin(
                 email,
                 "김관리",
-                "마포구청 소속",
+                "마포구청",
                 festivalId,
                 invitedByAdminId
         );
@@ -224,11 +221,11 @@ class AdminSubAdminQueryRepositoryTest {
     private AdminAccount subAdmin(
             String email,
             String name,
-            String organization,
+            String department,
             Long festivalId,
             Long invitedByAdminId
     ) {
-        AdminAccount adminAccount = persistAdmin(email, name, organization);
+        AdminAccount adminAccount = persistAdmin(email, name, department);
         entityManager.persist(AdminFestivalRole.createSubAdmin(
                 adminAccount.getId(),
                 festivalId,
@@ -249,7 +246,6 @@ class AdminSubAdminQueryRepositoryTest {
                 AdminEmail.of(email),
                 AdminName.of(name),
                 AdminOrganization.of(organization),
-                AdminDepartment.of("관광정책과"),
                 AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );

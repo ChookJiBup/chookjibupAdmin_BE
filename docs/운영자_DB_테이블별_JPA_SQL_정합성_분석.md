@@ -91,9 +91,8 @@ Application Service
 | PK | `admin_id` | `id` |
 | 공개 UUID | 없음 | `public_id` |
 | 이름 길이 | 50 | 100 |
-| 조직 | 없음 | 필수 `organization` |
-| 부서 | nullable | 필수 `department` |
-| 직급 | 없음 | 필수 `job_rank` |
+| 과·팀 | 없음 | 필수 `organization` (토목과 등) |
+| 직급 | 없음 | 필수 `job_rank` (과장 등) |
 | 생년월일 | 선택 | 없음 |
 | 상태 | `is_withdrawn` | ACTIVE/SUSPENDED/DELETED |
 | 생성 시각 | `joined_at` | `created_at` |
@@ -101,7 +100,7 @@ Application Service
 
 ### 판정: 혼합, JPA 업무 필드 우선
 
-다른 SQL 테이블이 모두 `admins.admin_id`를 참조하므로 테이블명과 PK는 SQL을 따른다. 반면 관리자 가입 API가 조직·부서·직급을 필수로 받고 UUID와 정지 상태도 사용하므로 해당 JPA 필드는 SQL에 반영한다.
+다른 SQL 테이블이 모두 `admins.admin_id`를 참조하므로 테이블명과 PK는 SQL을 따른다. 반면 관리자 가입 API가 과·팀·직급을 필수로 받고 UUID와 정지 상태도 사용하므로 해당 JPA 필드는 SQL에 반영한다.
 
 ### 1단계: 현재 SQL에 맞출 JPA 수정
 
@@ -121,7 +120,6 @@ status VARCHAR(30) NOT NULL
 ```
 
 - `name`을 VARCHAR(100)으로 확장
-- `department`를 NOT NULL로 변경
 - `status='DELETED'`와 `withdrawn_at` 일관성 CHECK 추가
 - `is_withdrawn`과 status가 중복되므로 최종적으로 status 하나로 통일
 
