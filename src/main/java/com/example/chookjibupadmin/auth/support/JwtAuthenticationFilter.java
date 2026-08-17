@@ -33,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final AdminAccountService adminAccountService;
+    private final AdminAuthCookieService authCookieService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -48,13 +49,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
-        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        String accessToken = resolveAccessToken(request);
 
-        if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
+        if (accessToken != null) {
             try {
-                AdminPrincipal principal = jwtTokenProvider.parse(
-                        authorization.substring(BEARER_PREFIX.length())
-                );
+                AdminPrincipal principal = jwtTokenProvider.parse(accessToken);
                 if (!adminAccountService.isAuthenticationValid(
                         principal.adminId(),
                         principal.authVersion()
@@ -78,5 +77,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String resolveAccessToken(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (var cookie : request.getCookies()) {
+                if (authCookieService.cookieName().equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
+            return authorization.substring(BEARER_PREFIX.length());
+        }
+        return null;
     }
 }

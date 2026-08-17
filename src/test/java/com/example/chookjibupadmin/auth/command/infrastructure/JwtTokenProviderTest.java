@@ -21,7 +21,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 class JwtTokenProviderTest {
 
     private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(
-            new JwtProperties("test-secret-key", 1800)
+            new JwtProperties(
+                    "test-secret-key",
+                    1800,
+                    "chookjibup_admin_access",
+                    false,
+                    "Strict"
+            )
     );
 
     @Nested

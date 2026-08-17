@@ -139,7 +139,13 @@ class FieldStaffTokenProviderTest {
             );
             ReflectionTestUtils.setField(adminAccount, "id", 1L);
             String adminToken = new JwtTokenProvider(
-                    new JwtProperties(SECRET, 1800)
+                    new JwtProperties(
+                            SECRET,
+                            1800,
+                            "chookjibup_admin_access",
+                            false,
+                            "Strict"
+                    )
             ).createAccessToken(adminAccount);
 
             // when & then
