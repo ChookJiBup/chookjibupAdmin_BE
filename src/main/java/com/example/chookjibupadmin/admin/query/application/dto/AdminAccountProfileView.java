@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.admin.query.application.dto;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.AdminStatus;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ public record AdminAccountProfileView(
         String name,
         String organization,
         String rank,
+        AccountKind accountKind,
         AdminStatus status
 ) {
 }

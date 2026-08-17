@@ -47,7 +47,7 @@ public class AdminAccountCommandController {
                 principal.adminId(),
                 AdminName.of(request.name()),
                 AdminOrganization.of(request.organization()),
-                AdminRank.of(request.rank())
+                AdminRank.ofNullable(request.rank())
         );
         return ApiResponse.success(SuccessCode.ADMIN_ACCOUNT_UPDATE_SUCCESS);
     }

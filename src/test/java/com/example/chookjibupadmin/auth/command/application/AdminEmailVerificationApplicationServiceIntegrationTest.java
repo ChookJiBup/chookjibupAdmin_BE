@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.auth.command.application;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.api.auth.dto.AdminEmailVerificationRequest;
@@ -57,7 +58,7 @@ class AdminEmailVerificationApplicationServiceIntegrationTest {
 
             // when
             emailVerificationService.request(
-                    new AdminEmailVerificationRequest(email)
+                    new AdminEmailVerificationRequest(email, AccountKind.GOVERNMENT)
             );
 
             // then

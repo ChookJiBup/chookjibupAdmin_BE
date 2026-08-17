@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.api.auth.dto;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.domain.AdminStatus;
@@ -26,8 +27,11 @@ public record AdminSignupResponse(
         @Schema(description = "과·팀", example = "관광정책과")
         String organization,
 
-        @Schema(description = "직급", example = "과장")
+        @Schema(description = "직급. 외부업자는 null", example = "과장")
         String rank,
+
+        @Schema(description = "계정 종류", example = "GOVERNMENT")
+        AccountKind accountKind,
 
         @Schema(description = "관리자 역할. 축제 생성 전에는 null", example = "FESTIVAL_OWNER")
         AdminRole role,
@@ -47,6 +51,7 @@ public record AdminSignupResponse(
                 adminAccount.getNameValue(),
                 adminAccount.getOrganizationValue(),
                 adminAccount.getRankValue(),
+                adminAccount.getAccountKind(),
                 null,
                 adminAccount.getStatus()
         );

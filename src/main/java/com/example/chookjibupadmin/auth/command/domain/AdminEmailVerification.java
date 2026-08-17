@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.auth.command.domain;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
@@ -15,6 +16,7 @@ public class AdminEmailVerification {
     private static final int MAX_FAILED_ATTEMPTS = 5;
 
     private final AdminEmail email;
+    private final AccountKind accountKind;
     private final String code;
     private final LocalDateTime expiresAt;
     private boolean verified;
@@ -22,12 +24,14 @@ public class AdminEmailVerification {
 
     private AdminEmailVerification(
             AdminEmail email,
+            AccountKind accountKind,
             String code,
             LocalDateTime expiresAt,
             boolean verified,
             int failedAttempts
     ) {
         this.email = email;
+        this.accountKind = accountKind;
         this.code = code;
         this.expiresAt = expiresAt;
         this.verified = verified;
@@ -35,14 +39,22 @@ public class AdminEmailVerification {
     }
 
     /**
-     * 지정한 이메일과 코드로 새 인증 요청을 생성한다.
+     * 지정한 이메일·계정 종류와 코드로 새 인증 요청을 생성한다.
      */
     public static AdminEmailVerification issue(
             AdminEmail email,
+            AccountKind accountKind,
             String code,
             LocalDateTime expiresAt
     ) {
-        return new AdminEmailVerification(email, code, expiresAt, false, 0);
+        return new AdminEmailVerification(
+                email,
+                accountKind,
+                code,
+                expiresAt,
+                false,
+                0
+        );
     }
 
     /**
@@ -50,11 +62,12 @@ public class AdminEmailVerification {
      */
     public static AdminEmailVerification restore(
             AdminEmail email,
+            AccountKind accountKind,
             String code,
             LocalDateTime expiresAt,
             boolean verified
     ) {
-        return restore(email, code, expiresAt, verified, 0);
+        return restore(email, accountKind, code, expiresAt, verified, 0);
     }
 
     /**
@@ -62,6 +75,7 @@ public class AdminEmailVerification {
      */
     public static AdminEmailVerification restore(
             AdminEmail email,
+            AccountKind accountKind,
             String code,
             LocalDateTime expiresAt,
             boolean verified,
@@ -69,6 +83,7 @@ public class AdminEmailVerification {
     ) {
         return new AdminEmailVerification(
                 email,
+                accountKind,
                 code,
                 expiresAt,
                 verified,
@@ -98,6 +113,13 @@ public class AdminEmailVerification {
      */
     public AdminEmail getEmail() {
         return email;
+    }
+
+    /**
+     * 인증 대상 계정 종류를 반환한다.
+     */
+    public AccountKind getAccountKind() {
+        return accountKind;
     }
 
     /**

@@ -99,7 +99,7 @@ public class AdminAccountService {
         adminAccountRepository.save(adminAccount);
     }
 
-    /** 관리자 본인의 이름, 과·팀, 직급 변경 결과를 저장한다. */
+    /** 관리자 본인의 이름, 소속, 직급 변경 결과를 저장한다. */
     @Transactional
     public void updateProfile(
             Long adminAccountId,
@@ -108,7 +108,14 @@ public class AdminAccountService {
             AdminRank rank
     ) {
         AdminAccount adminAccount = getById(adminAccountId);
-        adminAccount.updateProfile(name, organization, rank);
+        if (adminAccount.isContractor()) {
+            adminAccount.updateContractorProfile(name, organization);
+        } else {
+            if (rank == null) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+            adminAccount.updateGovernmentProfile(name, organization, rank);
+        }
         adminAccountRepository.save(adminAccount);
     }
 

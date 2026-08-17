@@ -66,6 +66,10 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/admin/auth/signup").permitAll()
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/admin/auth/signup/contractor"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/admin/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/admin/auth/logout").permitAll()
                         .requestMatchers(

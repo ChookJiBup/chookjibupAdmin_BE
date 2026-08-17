@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.auth.command.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
@@ -27,6 +28,7 @@ class AdminEmailVerificationTest {
             // when
             AdminEmailVerification verification = AdminEmailVerification.issue(
                     email,
+                    AccountKind.GOVERNMENT,
                     "123456",
                     expiresAt
             );
@@ -53,6 +55,7 @@ class AdminEmailVerificationTest {
             // when
             AdminEmailVerification verification = AdminEmailVerification.restore(
                     email,
+                    AccountKind.GOVERNMENT,
                     "123456",
                     expiresAt,
                     true
@@ -148,6 +151,7 @@ class AdminEmailVerificationTest {
     private AdminEmailVerification verification(LocalDateTime expiresAt) {
         return AdminEmailVerification.issue(
                 AdminEmail.of("admin@mapo.go.kr"),
+                AccountKind.GOVERNMENT,
                 "123456",
                 expiresAt
         );

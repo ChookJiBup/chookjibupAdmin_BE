@@ -12,11 +12,11 @@ public record UpdateAdminProfileRequest(
         String name,
 
         @NotBlank @Size(min = 2, max = 255)
-        @Schema(description = "과·팀", example = "문화예술과")
+        @Schema(description = "과·팀 또는 업체명", example = "문화예술과")
         String organization,
 
-        @NotBlank @Size(max = 50)
-        @Schema(description = "직급", example = "주무관")
+        @Size(max = 50)
+        @Schema(description = "직급. 외부업자는 생략", example = "주무관")
         String rank
 ) {
 }

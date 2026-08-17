@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.auth.command.application;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerification;
 import com.example.chookjibupadmin.auth.command.domain.AdminEmailVerificationRepository;
@@ -42,16 +43,17 @@ public class AdminEmailVerificationService {
     }
 
     /**
-     * 회원가입 가능 여부 판단을 위해 인증 완료 상태인지 확인한다.
+     * 회원가입 가능 여부 판단을 위해 인증 완료 상태와 계정 종류를 확인한다.
      */
-    public void ensureVerified(AdminEmail email) {
+    public void ensureVerified(AdminEmail email, AccountKind accountKind) {
         AdminEmailVerification verification = verificationRepository
                 .findByEmail(email)
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.AUTH_EMAIL_NOT_VERIFIED
                 ));
 
-        if (!verification.isVerified()) {
+        if (!verification.isVerified()
+                || verification.getAccountKind() != accountKind) {
             throw new CustomException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
         }
     }
@@ -59,7 +61,16 @@ public class AdminEmailVerificationService {
     /**
      * 인증 완료 상태를 한 번만 사용하고 제거한다.
      */
-    public void consumeVerified(AdminEmail email) {
+    public void consumeVerified(AdminEmail email, AccountKind accountKind) {
+        AdminEmailVerification verification = verificationRepository
+                .findByEmail(email)
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.AUTH_EMAIL_NOT_VERIFIED
+                ));
+        if (!verification.isVerified()
+                || verification.getAccountKind() != accountKind) {
+            throw new CustomException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
+        }
         if (!verificationRepository.consumeVerified(email)) {
             throw new CustomException(ErrorCode.AUTH_EMAIL_NOT_VERIFIED);
         }
