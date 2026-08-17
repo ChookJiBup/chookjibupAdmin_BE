@@ -76,7 +76,7 @@ public class RoadmapDraftApplicationService {
                 node.getPublicId(),
                 node
         ));
-        validateChanges(command.nodes(), currentNodeById);
+        validateChanges(command.nodes(), currentNodeById, map.geometrySchemaVersion());
         long editRevision = roadmap.applyAdminEdit(command.baseRevision());
 
         List<RoadmapNode> changedNodes = new ArrayList<>();
@@ -89,7 +89,8 @@ public class RoadmapDraftApplicationService {
                         roadmap,
                         map,
                         change,
-                        authorized.adminId()
+                        authorized.adminId(),
+                        map.geometrySchemaVersion()
                 ));
             } else {
                 RoadmapNode node = currentNodeById.get(change.nodeId());
@@ -151,7 +152,8 @@ public class RoadmapDraftApplicationService {
 
     private void validateChanges(
             List<RoadmapNodeChangeCommand> changes,
-            Map<UUID, RoadmapNode> currentNodeById
+            Map<UUID, RoadmapNode> currentNodeById,
+            String geometrySchemaVersion
     ) {
         Set<UUID> requestedNodeIds = new HashSet<>();
         for (RoadmapNodeChangeCommand change : changes) {
@@ -179,6 +181,7 @@ public class RoadmapDraftApplicationService {
                     || change.sortOrder() == null
                     || change.sortOrder() < 0
                     || !geometryValidator.isValid(
+                            geometrySchemaVersion,
                             change.geometryType(),
                             change.geometry()
                     )) {
@@ -191,7 +194,8 @@ public class RoadmapDraftApplicationService {
             FestivalRoadmap roadmap,
             FestivalMap map,
             RoadmapNodeChangeCommand change,
-            Long adminId
+            Long adminId,
+            String geometrySchemaVersion
     ) {
         return RoadmapNode.admin(
                 roadmap.getId(),
@@ -201,7 +205,8 @@ public class RoadmapDraftApplicationService {
                 change.geometryType(),
                 geometryJson(change),
                 change.sortOrder(),
-                adminId
+                adminId,
+                geometrySchemaVersion
         );
     }
 

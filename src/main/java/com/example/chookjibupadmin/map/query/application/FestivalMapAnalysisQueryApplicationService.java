@@ -6,6 +6,8 @@ import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.analysis.application.MapAnalysisJobService;
@@ -15,6 +17,7 @@ import com.example.chookjibupadmin.map.command.application.dto.MapImageReadUrl;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.query.application.dto.MapAnalysisStatusView;
+import com.example.chookjibupadmin.map.query.application.dto.MapCenterView;
 import com.example.chookjibupadmin.map.query.application.dto.MapEditorView;
 import com.example.chookjibupadmin.map.query.application.dto.RoadmapNodeView;
 import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
@@ -23,6 +26,7 @@ import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNode;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -42,6 +46,7 @@ public class FestivalMapAnalysisQueryApplicationService {
     private final AdminAccountService adminAccountService;
     private final AdminFestivalRoleService roleService;
     private final FestivalService festivalService;
+    private final FestivalLocationService festivalLocationService;
     private final FestivalMapService mapService;
     private final MapAnalysisJobService jobService;
     private final FestivalRoadmapService roadmapService;
@@ -75,14 +80,32 @@ public class FestivalMapAnalysisQueryApplicationService {
             );
         }
 
-        MapAnalysisJob job = jobService.getLatestByMapId(map.getId());
-        MapImageReadUrl url = storagePort.createReadUrl(
-                map.getDisplayImageKey().getValue()
-        );
         List<RoadmapNodeView> nodes = nodeService.findAll(
                 roadmap.getId(),
                 map.getId()
         ).stream().map(this::view).toList();
+
+        MapCenterView center = resolveCenter(map.getFestivalId(), nodes);
+
+        if (map.isCoordinateMap()) {
+            return new MapEditorView(
+                    map.getPublicId(),
+                    null,
+                    null,
+                    0,
+                    0,
+                    roadmap.getEditRevision(),
+                    roadmap.getStatus().name(),
+                    null,
+                    nodes,
+                    center
+            );
+        }
+
+        MapAnalysisJob job = jobService.getLatestByMapId(map.getId());
+        MapImageReadUrl url = storagePort.createReadUrl(
+                map.getDisplayImageKey().getValue()
+        );
 
         return new MapEditorView(
                 map.getPublicId(),
@@ -93,7 +116,38 @@ public class FestivalMapAnalysisQueryApplicationService {
                 roadmap.getEditRevision(),
                 roadmap.getStatus().name(),
                 status(job),
-                nodes
+                nodes,
+                center
+        );
+    }
+
+    private MapCenterView resolveCenter(Long festivalId, List<RoadmapNodeView> nodes) {
+        return festivalLocationService.findAllByFestivalId(festivalId).stream()
+                .filter(FestivalLocation::isPrimary)
+                .filter(location -> location.getLatitude() != null && location.getLongitude() != null)
+                .findFirst()
+                .map(location -> new MapCenterView(location.getLatitude(), location.getLongitude()))
+                .orElseGet(() -> averageNodeCenter(nodes));
+    }
+
+    private MapCenterView averageNodeCenter(List<RoadmapNodeView> nodes) {
+        List<RoadmapNodeView> points = nodes.stream()
+                .filter(node -> "POINT".equals(node.geometryType()))
+                .filter(node -> node.geometry().get("lat") instanceof Number number
+                        && node.geometry().get("lng") instanceof Number)
+                .toList();
+        if (points.isEmpty()) {
+            return null;
+        }
+        double latSum = 0;
+        double lngSum = 0;
+        for (RoadmapNodeView node : points) {
+            latSum += ((Number) node.geometry().get("lat")).doubleValue();
+            lngSum += ((Number) node.geometry().get("lng")).doubleValue();
+        }
+        return new MapCenterView(
+                BigDecimal.valueOf(latSum / points.size()),
+                BigDecimal.valueOf(lngSum / points.size())
         );
     }
 
@@ -157,7 +211,8 @@ public class FestivalMapAnalysisQueryApplicationService {
                     node.getRecognizedText(),
                     node.getSource().name(),
                     node.getReviewStatus().name(),
-                    node.getSortOrder()
+                    node.getSortOrder(),
+                    node.getGeometrySchemaVersion()
             );
         } catch (Exception exception) {
             throw new IllegalStateException(
