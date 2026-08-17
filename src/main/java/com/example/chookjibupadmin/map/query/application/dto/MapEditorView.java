@@ -1,9 +1,11 @@
 package com.example.chookjibupadmin.map.query.application.dto;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+
 public record MapEditorView(
         UUID mapId,
         URI displayImageUrl,
@@ -13,6 +15,7 @@ public record MapEditorView(
         long editRevision,
         String roadmapStatus,
         MapAnalysisStatusView analysis,
-        List<RoadmapNodeView> nodes
+        List<RoadmapNodeView> nodes,
+        MapCenterView center
 ) {
 }

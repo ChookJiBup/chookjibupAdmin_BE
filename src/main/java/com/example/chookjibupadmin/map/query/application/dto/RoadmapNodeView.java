@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.map.query.application.dto;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
+
 public record RoadmapNodeView(
         UUID nodeId,
         String nodeType,
@@ -13,6 +14,7 @@ public record RoadmapNodeView(
         String recognizedText,
         String source,
         String reviewStatus,
-        int sortOrder
+        int sortOrder,
+        String geometrySchemaVersion
 ) {
 }
