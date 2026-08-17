@@ -60,6 +60,7 @@ class AdminSubAdminAssignServiceTest {
         given(accountService.findByPublicId(targetId)).willReturn(Optional.of(target));
         given(target.isActive()).willReturn(true);
         given(target.getId()).willReturn(2L);
+        given(target.isContractor()).willReturn(true);
         given(roleService.assignSubAdmin(2L, 10L, 1L)).willReturn(assignedRole);
         AdminSubAdminAssignService service = new AdminSubAdminAssignService(
                 accountService,

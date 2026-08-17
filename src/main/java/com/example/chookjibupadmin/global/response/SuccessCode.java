@@ -17,6 +17,7 @@ public enum SuccessCode {
     ADMIN_PASSWORD_RESET_REQUEST_SUCCESS(21009, "비밀번호 재설정 안내 메일 요청이 처리되었습니다."),
     ADMIN_PASSWORD_RESET_CONFIRM_SUCCESS(21010, "관리자 비밀번호가 변경되었습니다."),
     ADMIN_SUB_ADMIN_ASSIGN_SUCCESS(21011, "제2관리자 권한이 부여되었습니다."),
+    ADMIN_OPERATOR_REGISTER_SUCCESS(21015, "운영자 등록이 완료되었습니다."),
     ADMIN_ACCOUNT_READ_SUCCESS(21012, "관리자 본인 정보 조회가 완료되었습니다."),
     ADMIN_LOGOUT_SUCCESS(21013, "관리자 로그아웃이 완료되었습니다."),
     ADMIN_ACCOUNT_UPDATE_SUCCESS(21014, "관리자 본인 정보가 수정되었습니다."),
