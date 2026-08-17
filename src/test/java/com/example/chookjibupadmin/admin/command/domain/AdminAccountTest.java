@@ -49,6 +49,46 @@ class AdminAccountTest {
         }
     }
 
+    @Nested
+    @DisplayName("updateProfile")
+    class UpdateProfile {
+
+        @Test
+        @DisplayName("관리자 본인의 이름, 과·팀, 직급을 변경한다")
+        void success_UpdateProfile() {
+            // given
+            AdminAccount adminAccount = adminAccount();
+
+            // when
+            adminAccount.updateProfile(
+                    AdminName.of("김철수"),
+                    AdminOrganization.of("문화예술과"),
+                    AdminRank.of("과장")
+            );
+
+            // then
+            assertThat(adminAccount.getNameValue()).isEqualTo("김철수");
+            assertThat(adminAccount.getOrganizationValue()).isEqualTo("문화예술과");
+            assertThat(adminAccount.getRankValue()).isEqualTo("과장");
+        }
+
+        @Test
+        @DisplayName("과·팀이 null이면 프로필을 변경할 수 없다")
+        void fail_UpdateProfile_NullOrganization_CustomException() {
+            // given
+            AdminAccount adminAccount = adminAccount();
+
+            // when & then
+            assertThatThrownBy(() -> adminAccount.updateProfile(
+                    AdminName.of("김철수"),
+                    null,
+                    AdminRank.of("과장")
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+        }
+    }
+
     private AdminAccount adminAccount() {
         return AdminAccount.createAdmin(
                 AdminEmail.of("owner@mapo.go.kr"),
