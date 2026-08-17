@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.api.auth.dto;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
@@ -8,11 +9,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Schema(description = "관리자 로그인 응답")
 public record AdminLoginResponse(
-        @Schema(description = "JWT Access Token")
+        @JsonIgnore
+        @Schema(hidden = true)
         String accessToken,
-
-        @Schema(description = "토큰 타입", example = "Bearer")
-        String tokenType,
 
         @Schema(description = "Access Token 만료 시간 초", example = "1800")
         long expiresIn,
@@ -31,10 +30,8 @@ public record AdminLoginResponse(
     ) {
         return new AdminLoginResponse(
                 accessToken,
-                "Bearer",
                 expiresIn,
                 AdminSummaryResponse.from(adminAccount)
         );
     }
 }
-
