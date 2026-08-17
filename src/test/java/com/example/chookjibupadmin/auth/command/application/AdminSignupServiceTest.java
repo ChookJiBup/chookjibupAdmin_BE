@@ -138,6 +138,20 @@ class AdminSignupServiceTest {
             assertThat(response.accountKind()).isEqualTo(AccountKind.CONTRACTOR);
             assertThat(response.rank()).isNull();
         }
+
+        @Test
+        @DisplayName("외부업자 가입에 정부 이메일이면 거절한다")
+        void fail_SignupContractor_GovernmentEmail() {
+            // given
+            AdminContractorSignupRequest request = contractorSignupRequest("admin@mapo.go.kr");
+
+            // when & then
+            assertThatThrownBy(() -> adminSignupService.signupContractor(request))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(
+                            ErrorCode.AUTH_CONTRACTOR_GOVERNMENT_EMAIL_NOT_ALLOWED.getMessage()
+                    );
+        }
     }
 
     private AdminSignupRequest governmentSignupRequest(String email) {
