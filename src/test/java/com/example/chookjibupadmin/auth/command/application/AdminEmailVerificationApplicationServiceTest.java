@@ -100,6 +100,59 @@ class AdminEmailVerificationApplicationServiceTest {
         }
 
         @Test
+        @DisplayName("외부업자 일반 이메일이면 인증 코드를 발급한다")
+        void success_Request_ContractorEmail() {
+            // given
+            String email = "vendor@gmail.com";
+            given(adminAccountService.existsByEmail(AdminEmail.of(email)))
+                    .willReturn(false);
+
+            // when
+            verificationService.request(
+                    new AdminEmailVerificationRequest(email, AccountKind.CONTRACTOR)
+            );
+
+            // then
+            assertThat(verificationSender.email).isEqualTo(email);
+            assertThat(verificationSender.code).matches("^\\d{6}$");
+            assertThat(verificationRepository.findByEmail(AdminEmail.of(email)))
+                    .isPresent()
+                    .get()
+                    .extracting(AdminEmailVerification::getAccountKind)
+                    .isEqualTo(AccountKind.CONTRACTOR);
+        }
+
+        @Test
+        @DisplayName("외부업자 인증에 정부 이메일이면 거절한다")
+        void fail_Request_ContractorGovernmentEmail() {
+            // given
+            String email = "admin@mapo.go.kr";
+
+            // when & then
+            assertThatThrownBy(() -> verificationService.request(
+                    new AdminEmailVerificationRequest(email, AccountKind.CONTRACTOR)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(
+                            ErrorCode.AUTH_CONTRACTOR_GOVERNMENT_EMAIL_NOT_ALLOWED.getMessage()
+                    );
+        }
+
+        @Test
+        @DisplayName("공무원 인증에 일반 이메일이면 거절한다")
+        void fail_Request_GovernmentGeneralEmail() {
+            // given
+            String email = "vendor@gmail.com";
+
+            // when & then
+            assertThatThrownBy(() -> verificationService.request(
+                    new AdminEmailVerificationRequest(email, AccountKind.GOVERNMENT)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.AUTH_GOVERNMENT_EMAIL_REQUIRED.getMessage());
+        }
+
+        @Test
         @DisplayName("이미 가입된 이메일이면 인증 코드를 발급할 수 없다")
         void fail_Request_DuplicatedEmail_CustomException() {
             // given

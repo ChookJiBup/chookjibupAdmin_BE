@@ -181,6 +181,34 @@ class AdminPasswordResetApplicationServiceTest {
         }
 
         @Test
+        @DisplayName("외부업자 일반 이메일이면 비밀번호 재설정 링크를 발송한다")
+        void success_Request_ContractorEmail() {
+            // given
+            AdminAccount account = contractorAccount();
+            AdminEmail email = account.getEmail();
+            given(requestLimiter.tryAcquire(any(), any(), any(Integer.class), any(), any()))
+                    .willReturn(true);
+            given(adminAccountService.findByEmail(email))
+                    .willReturn(Optional.of(account));
+            given(tokenManager.generate()).willReturn("raw-token");
+            given(tokenManager.hash("raw-token")).willReturn("token-hash");
+
+            // when
+            service.request(new AdminPasswordResetRequest(email.getValue()));
+
+            // then
+            then(tokenService).should().save(
+                    2L,
+                    "token-hash",
+                    Duration.ofMinutes(30)
+            );
+            then(emailSender).should().send(
+                    email,
+                    "https://admin.chookjibup.store/reset-password?token=raw-token"
+            );
+        }
+
+        @Test
         @DisplayName("등록되지 않은 이메일도 성공 처리하되 메일은 발송하지 않는다")
         void success_Request_UnknownAccountBoundary() {
             // given
@@ -298,6 +326,17 @@ class AdminPasswordResetApplicationServiceTest {
                 AdminPasswordHash.of("old-password-hash")
         );
         ReflectionTestUtils.setField(account, "id", 1L);
+        return account;
+    }
+
+    private AdminAccount contractorAccount() {
+        AdminAccount account = AdminAccount.createContractor(
+                AdminEmail.of("vendor@gmail.com"),
+                AdminName.of("김업체"),
+                AdminOrganization.of("축제기획(주)"),
+                AdminPasswordHash.of("old-password-hash")
+        );
+        ReflectionTestUtils.setField(account, "id", 2L);
         return account;
     }
 }

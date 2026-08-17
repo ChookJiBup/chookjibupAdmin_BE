@@ -157,6 +157,39 @@ class AdminOperatorRegistrationServiceTest {
                 );
     }
 
+    @Test
+    @DisplayName("운영자는 운영자를 등록할 수 없다")
+    void fail_Register_SubAdminForbidden() {
+        // given
+        UUID festivalId = UUID.randomUUID();
+        AdminAccount operator = AdminAccount.createContractor(
+                AdminEmail.of("operator@gmail.com"),
+                AdminName.of("김운영"),
+                AdminOrganization.of("축제기획(주)"),
+                AdminPasswordHash.of("encoded")
+        );
+        ReflectionTestUtils.setField(operator, "id", 3L);
+        Festival festival = festival(festivalId, 10L);
+        AdminFestivalRole operatorRole = org.mockito.Mockito.mock(AdminFestivalRole.class);
+
+        given(adminAccountService.getById(3L)).willReturn(operator);
+        given(festivalService.getByPublicId(festivalId)).willReturn(festival);
+        given(roleService.getByAdminAccountIdAndFestivalId(3L, 10L)).willReturn(operatorRole);
+        given(operatorRole.canInviteSubAdmin()).willReturn(false);
+
+        // when & then
+        assertThatThrownBy(() -> service.register(
+                festivalId,
+                "vendor@gmail.com",
+                "다른업체",
+                "다른기획(주)",
+                new AdminPrincipal(3L, operator.getEmailValue())
+        ))
+                .isInstanceOf(CustomException.class)
+                .hasMessage(ErrorCode.FORBIDDEN.getMessage());
+        then(adminAccountService).should(org.mockito.Mockito.never()).save(any());
+    }
+
     private AdminAccount governmentOwner() {
         AdminAccount owner = AdminAccount.createGovernment(
                 AdminEmail.of("owner@mapo.go.kr"),

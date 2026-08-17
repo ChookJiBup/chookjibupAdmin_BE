@@ -83,6 +83,28 @@ class AdminEmailVerificationServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("ensureVerified")
+    class EnsureVerified {
+
+        @Test
+        @DisplayName("인증 종류가 다르면 가입할 수 없다")
+        void fail_EnsureVerified_AccountKindMismatch() {
+            // given
+            AdminEmail email = AdminEmail.of("admin@mapo.go.kr");
+            given(verificationRepository.findByEmail(email))
+                    .willReturn(Optional.of(verified(AccountKind.GOVERNMENT)));
+
+            // when & then
+            assertThatThrownBy(() -> verificationService.ensureVerified(
+                    email,
+                    AccountKind.CONTRACTOR
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.AUTH_EMAIL_NOT_VERIFIED.getMessage());
+        }
+    }
+
     private AdminEmailVerification verification() {
         return AdminEmailVerification.issue(
                 AdminEmail.of("admin@mapo.go.kr"),
@@ -90,5 +112,16 @@ class AdminEmailVerificationServiceTest {
                 "123456",
                 LocalDateTime.now().plusMinutes(5)
         );
+    }
+
+    private AdminEmailVerification verified(AccountKind accountKind) {
+        AdminEmailVerification verification = AdminEmailVerification.issue(
+                AdminEmail.of("admin@mapo.go.kr"),
+                accountKind,
+                "123456",
+                LocalDateTime.now().plusMinutes(5)
+        );
+        verification.verify("123456", LocalDateTime.now());
+        return verification;
     }
 }

@@ -22,6 +22,7 @@ import com.example.chookjibupadmin.festival.location.application.FestivalLocatio
 import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
 import com.example.chookjibupadmin.festival.location.domain.FestivalLocationType;
 import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -128,6 +129,26 @@ class FestivalApplicationServiceIntegrationTest {
             );
             assertThatThrownBy(() -> festivalApplicationService.create(invalid, principal(admin)))
                     .isInstanceOf(CustomException.class);
+        }
+
+        @Test
+        @DisplayName("외부업자 계정은 축제를 생성할 수 없다")
+        void fail_Create_ContractorForbidden() {
+            // given
+            AdminAccount contractor = adminAccountService.save(AdminAccount.createContractor(
+                    AdminEmail.of("vendor@gmail.com"),
+                    AdminName.of("김업체"),
+                    AdminOrganization.of("축제기획(주)"),
+                    AdminPasswordHash.of("encoded-password")
+            ));
+
+            // when & then
+            assertThatThrownBy(() -> festivalApplicationService.create(
+                    createCommand(),
+                    principal(contractor)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.AUTH_FESTIVAL_CREATE_FORBIDDEN.getMessage());
         }
     }
 

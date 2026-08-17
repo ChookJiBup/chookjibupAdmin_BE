@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminStatus;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
@@ -49,6 +50,7 @@ class AdminAccountQueryApplicationServiceTest {
         assertThat(result.name()).isEqualTo("홍길동");
         assertThat(result.organization()).isEqualTo("문화예술과");
         assertThat(result.rank()).isEqualTo("주무관");
+        assertThat(result.accountKind()).isEqualTo(AccountKind.GOVERNMENT);
         assertThat(result.status()).isEqualTo(AdminStatus.ACTIVE);
     }
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
@@ -56,8 +57,35 @@ class AdminLoginServiceIntegrationTest {
             // then
             assertThat(response.accessToken()).isNotBlank();
             assertThat(response.admin().email()).isEqualTo(request.email());
+            assertThat(response.admin().accountKind()).isEqualTo(AccountKind.GOVERNMENT);
             assertThat(response.admin().festivalId()).isNull();
             assertThat(response.admin().role()).isNull();
+        }
+
+        @Test
+        @DisplayName("외부업자 일반 이메일로 로그인한다")
+        void success_Login_ContractorEmail() {
+            // given
+            AdminAccount adminAccount = AdminAccount.createContractor(
+                    AdminEmail.of("vendor@gmail.com"),
+                    AdminName.of("김업체"),
+                    AdminOrganization.of("축제기획(주)"),
+                    AdminPasswordHash.of(passwordEncoder.encode("Password!123"))
+            );
+            adminAccountService.save(adminAccount);
+            AdminLoginRequest request = new AdminLoginRequest(
+                    "vendor@gmail.com",
+                    "Password!123"
+            );
+
+            // when
+            AdminLoginResponse response = adminLoginService.login(request);
+
+            // then
+            assertThat(response.accessToken()).isNotBlank();
+            assertThat(response.admin().email()).isEqualTo("vendor@gmail.com");
+            assertThat(response.admin().accountKind()).isEqualTo(AccountKind.CONTRACTOR);
+            assertThat(response.admin().rank()).isNull();
         }
 
         @Test
