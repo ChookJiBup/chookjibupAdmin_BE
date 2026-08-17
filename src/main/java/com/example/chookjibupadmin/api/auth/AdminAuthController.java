@@ -12,13 +12,16 @@ import com.example.chookjibupadmin.auth.command.application.AdminEmailVerificati
 import com.example.chookjibupadmin.auth.command.application.AdminLoginService;
 import com.example.chookjibupadmin.auth.command.application.AdminPasswordResetApplicationService;
 import com.example.chookjibupadmin.auth.command.application.AdminSignupService;
+import com.example.chookjibupadmin.auth.support.AdminAuthCookieService;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +41,7 @@ public class AdminAuthController {
     private final AdminLoginService adminLoginService;
     private final AdminEmailVerificationApplicationService emailVerificationService;
     private final AdminPasswordResetApplicationService passwordResetService;
+    private final AdminAuthCookieService authCookieService;
 
     /**
      * 정부 공식 이메일로 회원가입 인증 코드를 발송한다.
@@ -87,13 +91,24 @@ public class AdminAuthController {
      */
     @Operation(summary = "관리자 로그인")
     @PostMapping("/auth/login")
-    public ApiResponse<AdminLoginResponse> login(
+    public ResponseEntity<ApiResponse<AdminLoginResponse>> login(
             @Valid @RequestBody AdminLoginRequest request
     ) {
-        return ApiResponse.success(
-                SuccessCode.ADMIN_LOGIN_SUCCESS,
-                adminLoginService.login(request)
-        );
+        AdminLoginResponse response = adminLoginService.login(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, authCookieService.create(
+                        response.accessToken(), response.expiresIn()
+                ).toString())
+                .body(ApiResponse.success(SuccessCode.ADMIN_LOGIN_SUCCESS, response));
+    }
+
+    /** 관리자 인증 쿠키를 만료한다. */
+    @Operation(summary = "관리자 로그아웃")
+    @PostMapping("/auth/logout")
+    public ResponseEntity<ApiResponse<Void>> logout() {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, authCookieService.expire().toString())
+                .body(ApiResponse.success(SuccessCode.ADMIN_LOGOUT_SUCCESS));
     }
 
     /**

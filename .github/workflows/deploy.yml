@@ -131,7 +131,7 @@ jobs:
               "case \"$SERVICE_UNIT\" in *.service) ;; *) SERVICE_UNIT=\"${SERVICE_UNIT}.service\" ;; esac",
               "DROPIN_DIR=\"/etc/systemd/system/${SERVICE_UNIT}.d\"",
               "install -d -m 755 \"$DROPIN_DIR\"",
-              "printf \"[Service]\\nEnvironment=\\\"SPRING_CONFIG_IMPORT=file:%s\\\"\\n\" \"$SECRET_FILE\" > \"$DROPIN_DIR/application-secret.conf\"",
+              "printf \"[Service]\\nEnvironment=\\\"SPRING_CONFIG_IMPORT=file:%s\\\"\\nEnvironment=\\\"APP_JWT_COOKIE_SECURE=true\\\"\\n\" \"$SECRET_FILE\" > \"$DROPIN_DIR/application-secret.conf\"",
               "chmod 644 \"$DROPIN_DIR/application-secret.conf\"",
               "systemctl daemon-reload",
               "DEPLOY_STARTED_AT=$(date \"+%Y-%m-%d %H:%M:%S\")",
