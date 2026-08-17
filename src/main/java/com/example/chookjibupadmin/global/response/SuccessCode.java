@@ -18,6 +18,8 @@ public enum SuccessCode {
     ADMIN_PASSWORD_RESET_CONFIRM_SUCCESS(21010, "관리자 비밀번호가 변경되었습니다."),
     ADMIN_SUB_ADMIN_ASSIGN_SUCCESS(21011, "제2관리자 권한이 부여되었습니다."),
     ADMIN_ACCOUNT_READ_SUCCESS(21012, "관리자 본인 정보 조회가 완료되었습니다."),
+    ADMIN_LOGOUT_SUCCESS(21013, "관리자 로그아웃이 완료되었습니다."),
+    ADMIN_ACCOUNT_UPDATE_SUCCESS(21014, "관리자 본인 정보가 수정되었습니다."),
     FESTIVAL_CREATE_SUCCESS(22000, "축제 기본 정보가 저장되었습니다."),
     FESTIVAL_UPDATE_SUCCESS(22001, "축제 기본 정보가 수정되었습니다."),
     FIELD_STAFF_CREATE_SUCCESS(22002, "현장 스태프 계정이 생성되었습니다."),

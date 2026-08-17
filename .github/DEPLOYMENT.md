@@ -90,6 +90,11 @@ Environment Variable로 관리한다.
 관리자 JWT secret을 fallback으로 사용하지만 서명키 노출 범위를 분리할 수 없으므로
 운영 설정으로 권장하지 않는다.
 
+관리자 로그인 JWT는 `HttpOnly` 쿠키로 전달한다. 운영용
+`ADMIN_APPLICATION_SECRET_YML`의 `app.jwt.cookie-secure`는 반드시 `true`로
+설정한다. 프론트엔드가 같은 출처의 `/api` 프록시를 사용하므로 별도의 쿠키
+도메인 설정은 필요하지 않다.
+
 ## 배포 실행
 
 - `main` push의 CI가 성공하면 검증된 커밋을 자동 배포한다.
