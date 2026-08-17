@@ -1,11 +1,14 @@
 package com.example.chookjibupadmin.api.map;
 
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalMapResponse;
+import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapRequest;
+import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapResponse;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftRequest;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
+import com.example.chookjibupadmin.map.command.application.FestivalMapCoordinateRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapManagementApplicationService;
 import com.example.chookjibupadmin.map.command.application.RoadmapDraftApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
@@ -38,8 +41,27 @@ import org.springframework.web.multipart.MultipartFile;
 public class FestivalMapCommandController {
 
     private final FestivalMapManagementApplicationService managementService;
+    private final FestivalMapCoordinateRegistrationApplicationService coordinateRegistrationService;
     private final RoadmapDraftApplicationService roadmapDraftService;
     private final ObjectMapper objectMapper;
+
+    @Operation(summary = "좌표 전용 축제 지도 준비")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping
+    public ApiResponse<CreateCoordinateMapResponse> createCoordinateMap(
+            @PathVariable UUID festivalId,
+            @Valid @RequestBody CreateCoordinateMapRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_CREATE_SUCCESS,
+                CreateCoordinateMapResponse.from(coordinateRegistrationService.ensureCoordinateMap(
+                        festivalId,
+                        request.mapName(),
+                        principal
+                ))
+        );
+    }
 
     @Operation(summary = "축제 지도 노드 편집 내용 일괄 저장")
     @SecurityRequirement(name = "bearerAuth")

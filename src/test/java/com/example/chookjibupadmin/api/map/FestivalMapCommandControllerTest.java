@@ -6,12 +6,16 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalMapResponse;
+import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapRequest;
+import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapResponse;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftRequest;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
+import com.example.chookjibupadmin.map.command.application.FestivalMapCoordinateRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapManagementApplicationService;
 import com.example.chookjibupadmin.map.command.application.RoadmapDraftApplicationService;
+import com.example.chookjibupadmin.map.command.application.dto.CoordinateMapView;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SavedRoadmapDraft;
@@ -25,7 +29,9 @@ import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
 import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
 import com.example.chookjibupadmin.map.roadmap.domain.GeometryType;
 import com.example.chookjibupadmin.map.roadmap.domain.NodeType;
+import com.example.chookjibupadmin.map.query.application.dto.MapCenterView;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,10 +55,42 @@ class FestivalMapCommandControllerTest {
     private FestivalMapManagementApplicationService managementService;
 
     @Mock
+    private FestivalMapCoordinateRegistrationApplicationService coordinateRegistrationService;
+
+    @Mock
     private RoadmapDraftApplicationService roadmapDraftService;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    @DisplayName("좌표 전용 지도 준비 요청을 등록 서비스로 전달한다")
+    void success_CreateCoordinateMap() {
+        UUID festivalId = UUID.randomUUID();
+        UUID mapId = UUID.randomUUID();
+        AdminPrincipal principal = new AdminPrincipal(1L, "owner@mapo.go.kr");
+        given(coordinateRegistrationService.ensureCoordinateMap(
+                festivalId, "본행사 배치", principal
+        )).willReturn(new CoordinateMapView(
+                mapId,
+                "본행사 배치",
+                0L,
+                "EDITING",
+                new MapCenterView(new BigDecimal("37.5665"), new BigDecimal("126.9780"))
+        ));
+
+        ApiResponse<CreateCoordinateMapResponse> response = controller.createCoordinateMap(
+                festivalId,
+                new CreateCoordinateMapRequest("본행사 배치"),
+                principal
+        );
+
+        assertThat(response.data().mapId()).isEqualTo(mapId);
+        assertThat(response.data().center().lat()).isEqualByComparingTo("37.5665");
+        then(coordinateRegistrationService).should().ensureCoordinateMap(
+                festivalId, "본행사 배치", principal
+        );
+    }
 
     @Test
     @DisplayName("지도 편집 요청을 애플리케이션 Command로 변환한다")

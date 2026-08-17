@@ -11,6 +11,7 @@ import com.example.chookjibupadmin.map.command.application.FestivalMapReadUrlApp
 import com.example.chookjibupadmin.map.command.application.dto.MapImageReadUrl;
 import com.example.chookjibupadmin.map.query.application.FestivalMapAnalysisQueryApplicationService;
 import com.example.chookjibupadmin.map.query.application.dto.MapAnalysisStatusView;
+import com.example.chookjibupadmin.map.query.application.dto.MapCenterView;
 import com.example.chookjibupadmin.map.query.application.dto.MapEditorView;
 import java.net.URI;
 import java.time.Instant;
@@ -76,7 +77,8 @@ class FestivalMapQueryControllerTest {
         MapAnalysisStatusView status=new MapAnalysisStatusView(UUID.randomUUID(),"COMPLETED",1,0,0,0,null,null,null,null);
         given(analysisQueryService.editor(festivalId,mapId,principal)).willReturn(new MapEditorView(mapId,
                 URI.create("https://example.com/display.jpg"),Instant.now().plusSeconds(600),
-                2000,1000,1,"REVIEW_REQUIRED",status,List.of()));
+                2000,1000,1,"REVIEW_REQUIRED",status,List.of(),
+                new MapCenterView(new java.math.BigDecimal("37.5665"), new java.math.BigDecimal("126.9780"))));
         var response=controller.editor(festivalId,mapId,principal);
         assertThat(response.data().imageWidth()).isEqualTo(2000);
         assertThat(response.data().analysis().status()).isEqualTo("COMPLETED");

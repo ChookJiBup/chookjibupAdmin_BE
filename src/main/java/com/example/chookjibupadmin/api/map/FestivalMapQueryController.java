@@ -1,11 +1,13 @@
 package com.example.chookjibupadmin.api.map;
 
+import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapResponse;
 import com.example.chookjibupadmin.api.map.dto.FestivalMapReadUrlResponse;
 import com.example.chookjibupadmin.api.map.dto.MapAnalysisStatusResponse;
 import com.example.chookjibupadmin.api.map.dto.MapEditorResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
+import com.example.chookjibupadmin.map.command.application.FestivalMapCoordinateRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapReadUrlApplicationService;
 import com.example.chookjibupadmin.map.query.application.FestivalMapAnalysisQueryApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,7 +28,26 @@ import org.springframework.web.bind.annotation.RestController;
 public class FestivalMapQueryController {
 
     private final FestivalMapReadUrlApplicationService readUrlService;
+    private final FestivalMapCoordinateRegistrationApplicationService coordinateRegistrationService;
     private final FestivalMapAnalysisQueryApplicationService analysisQueryService;
+
+    @Operation(summary = "현재 축제 좌표 지도 요약 조회")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/current")
+    public ApiResponse<CreateCoordinateMapResponse> currentMap(
+            @PathVariable UUID festivalId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_EDITOR_READ_SUCCESS,
+                CreateCoordinateMapResponse.from(
+                        coordinateRegistrationService.getCurrentCoordinateMap(
+                                festivalId,
+                                principal
+                        )
+                )
+        );
+    }
 
     @Operation(summary = "축제 도면 OpenAI 분석 상태 조회")
     @SecurityRequirement(name = "bearerAuth")
