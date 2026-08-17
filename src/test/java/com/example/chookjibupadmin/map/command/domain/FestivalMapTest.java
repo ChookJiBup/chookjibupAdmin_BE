@@ -20,6 +20,20 @@ import org.springframework.test.util.ReflectionTestUtils;
 class FestivalMapTest {
 
     @Test
+    @DisplayName("좌표 전용 지도는 이미지 없이도 조회 가능하다")
+    void success_CoordinateOnly_ValidateReadable() {
+        FestivalMap festivalMap = FestivalMap.coordinateOnly(
+                1L, 5L, FestivalMapName.of("본행사 배치"), 2L
+        );
+
+        festivalMap.validateReadable();
+
+        assertThat(festivalMap.isCoordinateMap()).isTrue();
+        assertThat(festivalMap.geometrySchemaVersion()).isEqualTo("2.0");
+        assertThat(festivalMap.isCurrent()).isTrue();
+    }
+
+    @Test
     @DisplayName("S3 저장이 완료된 최초 배치도를 현재 배치도로 생성한다")
     void success_Uploaded() {
         FestivalMap festivalMap = festivalMap();

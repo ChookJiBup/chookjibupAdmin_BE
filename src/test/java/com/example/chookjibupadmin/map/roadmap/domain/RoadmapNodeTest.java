@@ -37,6 +37,18 @@ class RoadmapNodeTest {
     }
 
     @Test
+    @DisplayName("관리자가 schema 2.0 노드를 생성하면 버전을 기록한다")
+    void success_Admin_SchemaTwo() {
+        RoadmapNode node = RoadmapNode.admin(
+                20L, 10L, NodeType.BOOTH, "부스",
+                GeometryType.POINT,
+                "{\"lat\":37.5665,\"lng\":126.9780}", 1, 2L, "2.0"
+        );
+
+        assertThat(node.getGeometrySchemaVersion()).isEqualTo("2.0");
+    }
+
+    @Test
     @DisplayName("관리자가 새 노드를 생성하면 확인 완료 상태로 저장한다")
     void success_Admin() {
         RoadmapNode node = RoadmapNode.admin(

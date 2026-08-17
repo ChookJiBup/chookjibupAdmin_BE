@@ -129,7 +129,8 @@ public class RoadmapNode extends BaseTimeEntity {
             GeometryType geometryType,
             String geometryData,
             int sortOrder,
-            Long adminId
+            Long adminId,
+            String geometrySchemaVersion
     ) {
         RoadmapNode node = new RoadmapNode();
         node.publicId = UUID.randomUUID();
@@ -139,13 +140,39 @@ public class RoadmapNode extends BaseTimeEntity {
         node.nodeName = name;
         node.geometryType = geometryType;
         node.geometryData = geometryData;
-        node.geometrySchemaVersion = "1.0";
+        node.geometrySchemaVersion = geometrySchemaVersion == null
+                ? "1.0"
+                : geometrySchemaVersion;
         node.source = NodeSource.ADMIN;
         node.reviewStatus = NodeReviewStatus.CONFIRMED;
         node.sortOrder = sortOrder;
         node.createdByAdminId = adminId;
         node.lastModifiedByAdminId = adminId;
         return node;
+    }
+
+    /** @deprecated {@link #admin(Long, Long, NodeType, String, GeometryType, String, int, Long, String)} 사용 */
+    public static RoadmapNode admin(
+            Long roadmapId,
+            Long mapId,
+            NodeType type,
+            String name,
+            GeometryType geometryType,
+            String geometryData,
+            int sortOrder,
+            Long adminId
+    ) {
+        return admin(
+                roadmapId,
+                mapId,
+                type,
+                name,
+                geometryType,
+                geometryData,
+                sortOrder,
+                adminId,
+                "1.0"
+        );
     }
 
     public void updateByAdmin(

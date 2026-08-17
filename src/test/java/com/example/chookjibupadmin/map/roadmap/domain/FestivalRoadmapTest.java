@@ -12,6 +12,16 @@ import org.junit.jupiter.api.Test;
 class FestivalRoadmapTest {
 
     @Test
+    @DisplayName("좌표 전용 지도 로드맵은 바로 편집 상태로 생성한다")
+    void success_CreateForCoordinateMap() {
+        FestivalRoadmap roadmap = FestivalRoadmap.createForCoordinateMap(1L, 10L, 2L);
+
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.EDITING);
+        assertThat(roadmap.getCurrentMapId()).isEqualTo(10L);
+        assertThat(roadmap.getEditRevision()).isZero();
+    }
+
+    @Test
     @DisplayName("최초 도면 분석을 기다리는 축제 로드맵을 생성한다")
     void success_Create() {
         // when
