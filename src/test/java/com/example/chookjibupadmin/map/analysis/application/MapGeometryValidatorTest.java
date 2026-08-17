@@ -17,6 +17,30 @@ class MapGeometryValidatorTest {
             new MapGeometryValidator();
 
     @Test
+    @DisplayName("WGS84 위경도 POINT를 허용한다")
+    void success_IsValid_Wgs84Point() throws Exception {
+        assertThat(validator.isValid(
+                "2.0",
+                GeometryType.POINT,
+                mapper.readTree("""
+                        {"lat":37.5665,"lng":126.9780}
+                        """)
+        )).isTrue();
+    }
+
+    @Test
+    @DisplayName("WGS84 RECTANGLE은 거부한다")
+    void fail_IsValid_Wgs84Rectangle() throws Exception {
+        assertThat(validator.isValid(
+                "2.0",
+                GeometryType.RECTANGLE,
+                mapper.readTree("""
+                        {"x":0.1,"y":0.2,"width":0.3,"height":0.4,"rotation":0}
+                        """)
+        )).isFalse();
+    }
+
+    @Test
     @DisplayName("이미지 안의 정규화된 사각형을 허용한다")
     void success_IsValid_NormalizedRectangle() throws Exception {
         assertThat(validator.isValid(node(

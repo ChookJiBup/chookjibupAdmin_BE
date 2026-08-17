@@ -9,6 +9,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class MapGeometryValidator {
+
+    private static final String SCHEMA_IMAGE = "1.0";
+    private static final String SCHEMA_WGS84 = "2.0";
+
     public boolean isValid(AnalyzedMapNode node) {
         if (node == null
                 || node.nodeType() == null
@@ -26,7 +30,17 @@ public class MapGeometryValidator {
             return false;
         }
 
-        return isValid(node.geometryType(), node.geometry());
+        return isValid(SCHEMA_IMAGE, node.geometryType(), node.geometry());
+    }
+
+    public boolean isValid(String schemaVersion, GeometryType geometryType, JsonNode geometry) {
+        if (geometryType == null || geometry == null || !geometry.isObject()) {
+            return false;
+        }
+        if (SCHEMA_WGS84.equals(schemaVersion)) {
+            return isValidWgs84(geometryType, geometry);
+        }
+        return isValid(geometryType, geometry);
     }
 
     public boolean isValid(GeometryType geometryType, JsonNode geometry) {
@@ -41,6 +55,53 @@ public class MapGeometryValidator {
             case POLYLINE -> points(geometry, 2);
         };
     }
+
+    private boolean isValidWgs84(GeometryType geometryType, JsonNode geometry) {
+        return switch (geometryType) {
+            case POINT -> wgs84Point(geometry);
+            case POLYGON -> wgs84Points(geometry, 3);
+            case POLYLINE -> wgs84Points(geometry, 2);
+            case RECTANGLE -> false;
+        };
+    }
+
+    private boolean wgs84Point(JsonNode value) {
+        return wgs84Latitude(value.get("lat")) && wgs84Longitude(value.get("lng"));
+    }
+
+    private boolean wgs84Points(JsonNode value, int minimum) {
+        JsonNode points = value.get("points");
+        if (points == null || !points.isArray() || points.size() < minimum) {
+            return false;
+        }
+        Iterator<JsonNode> iterator = points.elements();
+        JsonNode previous = null;
+        while (iterator.hasNext()) {
+            JsonNode point = iterator.next();
+            if (!wgs84Point(point)) {
+                return false;
+            }
+            if (previous != null && sameWgs84Point(previous, point)) {
+                return false;
+            }
+            previous = point;
+        }
+        return true;
+    }
+
+    private boolean sameWgs84Point(JsonNode left, JsonNode right) {
+        return left.get("lat").doubleValue() == right.get("lat").doubleValue()
+                && left.get("lng").doubleValue() == right.get("lng").doubleValue();
+    }
+
+    private boolean wgs84Latitude(JsonNode value) {
+        return finite(value) && value.doubleValue() >= -90 && value.doubleValue() <= 90;
+    }
+
+    private boolean wgs84Longitude(JsonNode value) {
+        return finite(value) && value.doubleValue() >= -180 && value.doubleValue() <= 180;
+    }
+
     private boolean point(JsonNode value) {
         return normalized(value.get("x"))
                 && normalized(value.get("y"));
