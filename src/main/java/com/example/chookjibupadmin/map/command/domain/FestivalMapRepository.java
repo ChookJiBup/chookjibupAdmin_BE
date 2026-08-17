@@ -18,6 +18,8 @@ public interface FestivalMapRepository {
 
     Optional<FestivalMap> findByPublicIdForUpdate(UUID publicId);
 
+    Optional<FestivalMap> findCurrentByFestivalId(Long festivalId);
+
     List<FestivalMap> findAllByFestivalIdForUpdate(Long festivalId);
 
     boolean existsByLocationId(Long locationId);

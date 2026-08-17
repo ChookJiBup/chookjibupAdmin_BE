@@ -36,6 +36,11 @@ public class FestivalMapRepositoryImpl implements FestivalMapRepository {
     }
 
     @Override
+    public Optional<FestivalMap> findCurrentByFestivalId(Long festivalId) {
+        return jpaRepository.findCurrentByFestivalId(festivalId);
+    }
+
+    @Override
     public List<FestivalMap> findAllByFestivalIdForUpdate(Long festivalId) {
         return jpaRepository.findAllByFestivalIdForUpdate(festivalId);
     }

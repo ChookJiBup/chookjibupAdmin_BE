@@ -83,6 +83,22 @@ public class FestivalRoadmap extends BaseTimeEntity {
         editRevision++;
     }
 
+    /** 카카오맵 위경도 편집용 roadmap을 EDITING 상태로 생성한다. */
+    public static FestivalRoadmap createForCoordinateMap(
+            Long festivalId,
+            Long mapId,
+            Long adminId
+    ) {
+        FestivalRoadmap roadmap = new FestivalRoadmap();
+        roadmap.publicId = UUID.randomUUID();
+        roadmap.festivalId = festivalId;
+        roadmap.currentMapId = mapId;
+        roadmap.createdByAdminId = adminId;
+        roadmap.status = RoadmapStatus.EDITING;
+        roadmap.editRevision = 0;
+        return roadmap;
+    }
+
     public long applyAdminEdit(long baseRevision) {
         if (editRevision != baseRevision) {
             throw new CustomException(ErrorCode.ROADMAP_REVISION_CONFLICT);

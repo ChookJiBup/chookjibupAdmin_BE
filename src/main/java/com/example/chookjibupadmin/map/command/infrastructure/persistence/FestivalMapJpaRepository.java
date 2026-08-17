@@ -22,6 +22,14 @@ interface FestivalMapJpaRepository extends JpaRepository<FestivalMap, Long> {
             @Param("publicId") UUID publicId
     );
 
+    @Query("""
+            select fm from FestivalMap fm
+            where fm.festivalId = :festivalId
+              and fm.current = true
+              and fm.storageStatus <> 'DELETED'
+            """)
+    Optional<FestivalMap> findCurrentByFestivalId(@Param("festivalId") Long festivalId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select fm from FestivalMap fm where fm.festivalId = :festivalId order by fm.id")
     List<FestivalMap> findAllByFestivalIdForUpdate(

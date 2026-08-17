@@ -199,6 +199,10 @@ public class FestivalMap extends BaseTimeEntity {
     @Column(name = "storage_status", nullable = false, length = 30)
     private FestivalMapStorageStatus storageStatus;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "map_kind", nullable = false, length = 20)
+    private MapKind mapKind;
+
     @Column(name = "is_current", nullable = false)
     private boolean current;
 
@@ -236,7 +240,8 @@ public class FestivalMap extends BaseTimeEntity {
             Sha256Checksum originalChecksumSha256,
             Sha256Checksum displayChecksumSha256,
             Sha256Checksum analysisChecksumSha256,
-            Long createdByAdminId
+            Long createdByAdminId,
+            MapKind mapKind
     ) {
         this.publicId = publicId;
         this.festivalId = festivalId;
@@ -257,6 +262,7 @@ public class FestivalMap extends BaseTimeEntity {
         this.displayChecksumSha256 = displayChecksumSha256;
         this.analysisChecksumSha256 = analysisChecksumSha256;
         this.storageStatus = FestivalMapStorageStatus.UPLOADED;
+        this.mapKind = mapKind == null ? MapKind.IMAGE : mapKind;
         this.current = true;
         this.createdByAdminId = createdByAdminId;
     }
@@ -314,8 +320,57 @@ public class FestivalMap extends BaseTimeEntity {
                 originalChecksumSha256,
                 displayChecksumSha256,
                 analysisChecksumSha256,
-                createdByAdminId
+                createdByAdminId,
+                MapKind.IMAGE
         );
+    }
+
+    /** 이미지 없이 카카오맵 위경도 노드만 저장하는 지도 버전을 생성한다. */
+    public static FestivalMap coordinateOnly(
+            Long festivalId,
+            Long locationId,
+            FestivalMapName mapName,
+            Long createdByAdminId
+    ) {
+        if (festivalId == null || locationId == null || mapName == null || createdByAdminId == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        UUID publicId = UUID.randomUUID();
+        String keyPrefix = "coordinate/" + publicId;
+        String zeroChecksum = "0".repeat(64);
+        FestivalMap map = new FestivalMap(
+                publicId,
+                festivalId,
+                mapName,
+                MapImageFileName.of("coordinate-only"),
+                MapImageObjectKey.of(keyPrefix + "/source"),
+                MapImageObjectKey.of(keyPrefix + "/display"),
+                MapImageObjectKey.of(keyPrefix + "/analysis"),
+                MapImageContentType.of("image/png"),
+                MapImageContentType.of("image/png"),
+                MapImageContentType.of("image/png"),
+                MapImageFileSize.of(1L),
+                MapImageFileSize.of(1L),
+                MapImageFileSize.of(1L),
+                MapImageDimensions.of(1, 1),
+                MapImageDimensions.of(1, 1),
+                Sha256Checksum.of(zeroChecksum),
+                Sha256Checksum.of(zeroChecksum),
+                Sha256Checksum.of(zeroChecksum),
+                createdByAdminId,
+                MapKind.COORDINATE
+        );
+        map.locationId = locationId;
+        return map;
+    }
+
+    /** 지도 버전이 저장하는 geometry schema 버전을 반환한다. */
+    public String geometrySchemaVersion() {
+        return mapKind == MapKind.COORDINATE ? "2.0" : "1.0";
+    }
+
+    public boolean isCoordinateMap() {
+        return mapKind == MapKind.COORDINATE;
     }
 
     /**
@@ -326,6 +381,8 @@ public class FestivalMap extends BaseTimeEntity {
                 || replacement == this || id == null || replacement.id != null
                 || publicId.equals(replacement.publicId)
                 || !festivalId.equals(replacement.festivalId)
+                || mapKind != MapKind.IMAGE
+                || replacement.mapKind != MapKind.IMAGE
                 || storageStatus != FestivalMapStorageStatus.UPLOADED
                 || !current
                 || replacement.storageStatus
@@ -386,7 +443,17 @@ public class FestivalMap extends BaseTimeEntity {
      * 현재 화면에 표시할 수 있는 배치도인지 검증한다.
      */
     public void validateReadable() {
-        if (storageStatus != FestivalMapStorageStatus.UPLOADED || !current) {
+        if (!current) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
+        }
+        if (mapKind == MapKind.COORDINATE) {
+            if (storageStatus == FestivalMapStorageStatus.DELETED
+                    || storageStatus == FestivalMapStorageStatus.DELETING) {
+                throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
+            }
+            return;
+        }
+        if (storageStatus != FestivalMapStorageStatus.UPLOADED) {
             throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
         }
     }
