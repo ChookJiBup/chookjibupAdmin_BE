@@ -6,6 +6,7 @@ import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMapRepository;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,10 @@ public class FestivalMapService {
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.FESTIVAL_MAP_NOT_FOUND
                 ));
+    }
+
+    public Optional<FestivalMap> findCurrentByFestivalId(Long festivalId) {
+        return festivalMapRepository.findCurrentByFestivalId(festivalId);
     }
 
     public List<FestivalMap> getAllByFestivalIdForUpdate(Long festivalId) {
