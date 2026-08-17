@@ -53,6 +53,10 @@ public class AdminAccount extends BaseTimeEntity {
     @Column(name = "public_id", nullable = false, updatable = false)
     private UUID publicId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_kind", nullable = false, length = 50)
+    private AccountKind accountKind;
+
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -67,7 +71,7 @@ public class AdminAccount extends BaseTimeEntity {
     )
     private AdminName name;
 
-    /** 과·팀 (예: 토목과, 관광정책과) */
+    /** 과·팀 또는 외부업자 업체명 */
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -75,11 +79,11 @@ public class AdminAccount extends BaseTimeEntity {
     )
     private AdminOrganization organization;
 
-    /** 직급 (예: 과장, 주무관) */
+    /** 직급 (예: 과장, 주무관). 외부업자는 null */
     @Embedded
     @AttributeOverride(
             name = "value",
-            column = @Column(name = "job_rank", nullable = false, length = 50)
+            column = @Column(name = "job_rank", length = 50)
     )
     private AdminRank rank;
 
@@ -102,17 +106,22 @@ public class AdminAccount extends BaseTimeEntity {
     private AdminStatus status;
 
     private AdminAccount(
+            AccountKind accountKind,
             AdminEmail email,
             AdminName name,
             AdminOrganization organization,
             AdminRank rank,
             AdminPasswordHash passwordHash
     ) {
-        if (rank == null) {
+        if (accountKind == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        if (accountKind == AccountKind.GOVERNMENT && rank == null) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
 
         this.publicId = UUID.randomUUID();
+        this.accountKind = accountKind;
         this.email = email;
         this.name = name;
         this.organization = organization;
@@ -123,9 +132,9 @@ public class AdminAccount extends BaseTimeEntity {
     }
 
     /**
-     * 아직 축제를 만들거나 초대받지 않은 일반 관리자 계정을 생성한다.
+     * 공무원 관리자 계정을 생성한다.
      */
-    public static AdminAccount createAdmin(
+    public static AdminAccount createGovernment(
             AdminEmail email,
             AdminName name,
             AdminOrganization organization,
@@ -133,12 +142,60 @@ public class AdminAccount extends BaseTimeEntity {
             AdminPasswordHash passwordHash
     ) {
         return new AdminAccount(
+                AccountKind.GOVERNMENT,
                 email,
                 name,
                 organization,
                 rank,
                 passwordHash
         );
+    }
+
+    /**
+     * 외부업자 관리자 계정을 생성한다.
+     */
+    public static AdminAccount createContractor(
+            AdminEmail email,
+            AdminName name,
+            AdminOrganization companyName,
+            AdminPasswordHash passwordHash
+    ) {
+        return new AdminAccount(
+                AccountKind.CONTRACTOR,
+                email,
+                name,
+                companyName,
+                null,
+                passwordHash
+        );
+    }
+
+    /**
+     * @deprecated {@link #createGovernment} 사용
+     */
+    @Deprecated
+    public static AdminAccount createAdmin(
+            AdminEmail email,
+            AdminName name,
+            AdminOrganization organization,
+            AdminRank rank,
+            AdminPasswordHash passwordHash
+    ) {
+        return createGovernment(email, name, organization, rank, passwordHash);
+    }
+
+    /**
+     * 축제를 새로 생성할 수 있는 계정인지 확인한다.
+     */
+    public boolean canCreateFestival() {
+        return accountKind == AccountKind.GOVERNMENT;
+    }
+
+    /**
+     * 외부업자(운영자) 계정인지 확인한다.
+     */
+    public boolean isContractor() {
+        return accountKind == AccountKind.CONTRACTOR;
     }
 
     /**
@@ -178,18 +235,48 @@ public class AdminAccount extends BaseTimeEntity {
         this.authVersion++;
     }
 
-    /** 관리자 본인의 프로필 정보를 변경한다. */
-    public void updateProfile(
+    /** 공무원 본인의 프로필 정보를 변경한다. */
+    public void updateGovernmentProfile(
             AdminName name,
             AdminOrganization organization,
             AdminRank rank
     ) {
+        if (accountKind != AccountKind.GOVERNMENT) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
         if (name == null || organization == null || rank == null) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
         this.name = name;
         this.organization = organization;
         this.rank = rank;
+    }
+
+    /** 외부업자 본인의 프로필 정보를 변경한다. */
+    public void updateContractorProfile(
+            AdminName name,
+            AdminOrganization companyName
+    ) {
+        if (accountKind != AccountKind.CONTRACTOR) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        if (name == null || companyName == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        this.name = name;
+        this.organization = companyName;
+    }
+
+    /**
+     * @deprecated {@link #updateGovernmentProfile} 또는 {@link #updateContractorProfile} 사용
+     */
+    @Deprecated
+    public void updateProfile(
+            AdminName name,
+            AdminOrganization organization,
+            AdminRank rank
+    ) {
+        updateGovernmentProfile(name, organization, rank);
     }
 
     public String getEmailValue() {
@@ -205,7 +292,7 @@ public class AdminAccount extends BaseTimeEntity {
     }
 
     public String getRankValue() {
-        return rank.getValue();
+        return rank == null ? null : rank.getValue();
     }
 
     public String getPasswordHashValue() {

@@ -31,6 +31,16 @@ public class AdminRank {
         return new AdminRank(value);
     }
 
+    /**
+     * 외부업자 등 직급이 없는 계정용으로 null-safe 변환한다.
+     */
+    public static AdminRank ofNullable(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return new AdminRank(value);
+    }
+
     private String normalize(String value) {
         if (value == null || value.isBlank()) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);

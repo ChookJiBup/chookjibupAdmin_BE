@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.admin.command.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -60,7 +61,7 @@ class AdminAccountTest {
             AdminAccount adminAccount = adminAccount();
 
             // when
-            adminAccount.updateProfile(
+            adminAccount.updateGovernmentProfile(
                     AdminName.of("김철수"),
                     AdminOrganization.of("문화예술과"),
                     AdminRank.of("과장")
@@ -79,7 +80,7 @@ class AdminAccountTest {
             AdminAccount adminAccount = adminAccount();
 
             // when & then
-            assertThatThrownBy(() -> adminAccount.updateProfile(
+            assertThatThrownBy(() -> adminAccount.updateGovernmentProfile(
                     AdminName.of("김철수"),
                     null,
                     AdminRank.of("과장")
@@ -90,13 +91,59 @@ class AdminAccountTest {
     }
 
     private AdminAccount adminAccount() {
-        return AdminAccount.createAdmin(
+        return AdminAccount.createGovernment(
                 AdminEmail.of("owner@mapo.go.kr"),
                 AdminName.of("홍길동"),
                 AdminOrganization.of("관광정책과"),
                 AdminRank.of("주무관"),
                 AdminPasswordHash.of("encoded-password")
         );
+    }
+
+    @Nested
+    @DisplayName("createContractor")
+    class CreateContractor {
+
+        @Test
+        @DisplayName("외부업자 계정은 직급 없이 생성된다")
+        void success_CreateContractor() {
+            // given
+
+            // when
+            AdminAccount adminAccount = AdminAccount.createContractor(
+                    AdminEmail.of("vendor@gmail.com"),
+                    AdminName.of("김업체"),
+                    AdminOrganization.of("축제기획(주)"),
+                    AdminPasswordHash.of("encoded-password")
+            );
+
+            // then
+            assertThat(adminAccount.getAccountKind()).isEqualTo(AccountKind.CONTRACTOR);
+            assertThat(adminAccount.getRankValue()).isNull();
+            assertThat(adminAccount.canCreateFestival()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("canCreateFestival")
+    class CanCreateFestival {
+
+        @Test
+        @DisplayName("공무원 계정만 축제를 생성할 수 있다")
+        void success_CanCreateFestival_GovernmentOnly() {
+            // given
+            AdminAccount government = adminAccount();
+            AdminAccount contractor = AdminAccount.createContractor(
+                    AdminEmail.of("vendor@gmail.com"),
+                    AdminName.of("김업체"),
+                    AdminOrganization.of("축제기획(주)"),
+                    AdminPasswordHash.of("encoded-password")
+            );
+
+            // when & then
+            assertThat(government.canCreateFestival()).isTrue();
+            assertThat(contractor.canCreateFestival()).isFalse();
+        }
     }
 
     @Nested
@@ -113,6 +160,7 @@ class AdminAccountTest {
 
             // then
             assertThat(adminAccount.getPublicId()).isNotNull();
+            assertThat(adminAccount.getAccountKind()).isEqualTo(AccountKind.GOVERNMENT);
             assertThat(adminAccount.getOrganizationValue()).isEqualTo("관광정책과");
             assertThat(adminAccount.getRankValue()).isEqualTo("주무관");
         }
@@ -137,7 +185,7 @@ class AdminAccountTest {
             AdminRank rank = null;
 
             // when & then
-            assertThatThrownBy(() -> AdminAccount.createAdmin(
+            assertThatThrownBy(() -> AdminAccount.createGovernment(
                     AdminEmail.of("owner@mapo.go.kr"),
                     AdminName.of("홍길동"),
                     AdminOrganization.of("관광정책과"),

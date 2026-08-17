@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.admin.command.domain.vo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -46,42 +47,16 @@ class AdminEmailTest {
         }
 
         @Test
-        @DisplayName("공직자 통합메일 도메인이면 생성한다")
-        void success_Of_KoreaDomain() {
+        @DisplayName("일반 이메일 형식이면 도메인 제한 없이 생성한다")
+        void success_Of_GeneralEmail() {
             // given
-            String value = "admin@korea.kr";
+            String value = "vendor@example.com";
 
             // when
             AdminEmail email = AdminEmail.of(value);
 
             // then
-            assertThat(email.getValue()).isEqualTo("admin@korea.kr");
-        }
-
-        @Test
-        @DisplayName("정부 도메인 최소 경계값이면 생성한다")
-        void success_Of_GoKrBoundary() {
-            // given
-            String value = "a@go.kr";
-
-            // when
-            AdminEmail email = AdminEmail.of(value);
-
-            // then
-            assertThat(email.getValue()).isEqualTo("a@go.kr");
-        }
-
-        @Test
-        @DisplayName("로컬 테스트용 네이버 도메인이면 임시로 생성한다")
-        void success_Of_TemporaryNaverDomain() {
-            // given
-            String value = "dlgkrwns213@naver.com";
-
-            // when
-            AdminEmail email = AdminEmail.of(value);
-
-            // then
-            assertThat(email.getValue()).isEqualTo("dlgkrwns213@naver.com");
+            assertThat(email.getValue()).isEqualTo("vendor@example.com");
         }
 
         @Test
@@ -89,18 +64,6 @@ class AdminEmailTest {
         void fail_Of_Null_CustomException() {
             // given
             String value = null;
-
-            // when & then
-            assertThatThrownBy(() -> AdminEmail.of(value))
-                    .isInstanceOf(CustomException.class)
-                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
-        }
-
-        @Test
-        @DisplayName("관리자 이메일이 빈 값이면 생성할 수 없다")
-        void fail_Of_Blank_CustomException() {
-            // given
-            String value = " ";
 
             // when & then
             assertThatThrownBy(() -> AdminEmail.of(value))
@@ -119,17 +82,97 @@ class AdminEmailTest {
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
         }
+    }
+
+    @Nested
+    @DisplayName("isGovernmentDomain")
+    class IsGovernmentDomain {
 
         @Test
-        @DisplayName("정부 공식 이메일 도메인이 아니면 생성할 수 없다")
-        void fail_Of_NotGovernmentDomain_CustomException() {
+        @DisplayName("go.kr 도메인이면 true이다")
+        void success_IsGovernmentDomain_GoKr() {
             // given
-            String value = "admin@example.com";
+            AdminEmail email = AdminEmail.of("admin@mapo.go.kr");
 
             // when & then
-            assertThatThrownBy(() -> AdminEmail.of(value))
+            assertThat(email.isGovernmentDomain()).isTrue();
+        }
+
+        @Test
+        @DisplayName("korea.kr 도메인이면 true이다")
+        void success_IsGovernmentDomain_KoreaKr() {
+            // given
+            AdminEmail email = AdminEmail.of("admin@korea.kr");
+
+            // when & then
+            assertThat(email.isGovernmentDomain()).isTrue();
+        }
+
+        @Test
+        @DisplayName("일반 이메일이면 false이다")
+        void success_IsGovernmentDomain_GeneralEmail() {
+            // given
+            AdminEmail email = AdminEmail.of("vendor@gmail.com");
+
+            // when & then
+            assertThat(email.isGovernmentDomain()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("of with AccountKind")
+    class OfWithAccountKind {
+
+        @Test
+        @DisplayName("공무원 가입은 정부 이메일만 허용한다")
+        void success_Of_GovernmentAccountKind() {
+            // given
+            String value = "admin@mapo.go.kr";
+
+            // when
+            AdminEmail email = AdminEmail.of(value, AccountKind.GOVERNMENT);
+
+            // then
+            assertThat(email.getValue()).isEqualTo("admin@mapo.go.kr");
+        }
+
+        @Test
+        @DisplayName("공무원 가입에 일반 이메일이면 거절한다")
+        void fail_Of_GovernmentAccountKind_GeneralEmail() {
+            // given
+            String value = "vendor@gmail.com";
+
+            // when & then
+            assertThatThrownBy(() -> AdminEmail.of(value, AccountKind.GOVERNMENT))
                     .isInstanceOf(CustomException.class)
-                    .hasMessage(ErrorCode.AUTH_EMAIL_DOMAIN_NOT_ALLOWED.getMessage());
+                    .hasMessage(ErrorCode.AUTH_GOVERNMENT_EMAIL_REQUIRED.getMessage());
+        }
+
+        @Test
+        @DisplayName("외부업자 가입은 일반 이메일을 허용한다")
+        void success_Of_ContractorAccountKind() {
+            // given
+            String value = "vendor@gmail.com";
+
+            // when
+            AdminEmail email = AdminEmail.of(value, AccountKind.CONTRACTOR);
+
+            // then
+            assertThat(email.getValue()).isEqualTo("vendor@gmail.com");
+        }
+
+        @Test
+        @DisplayName("외부업자 가입에 정부 이메일이면 거절한다")
+        void fail_Of_ContractorAccountKind_GovernmentEmail() {
+            // given
+            String value = "admin@mapo.go.kr";
+
+            // when & then
+            assertThatThrownBy(() -> AdminEmail.of(value, AccountKind.CONTRACTOR))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(
+                            ErrorCode.AUTH_CONTRACTOR_GOVERNMENT_EMAIL_NOT_ALLOWED.getMessage()
+                    );
         }
     }
 }
