@@ -23,6 +23,8 @@ public interface AdminFestivalRoleRepository {
             Long festivalId
     );
 
+    boolean existsByAdminAccountIdAndRole(Long adminAccountId, AdminRole role);
+
     List<AdminFestivalRole> findAllByAdminAccountIdInAndFestivalId(
             Collection<Long> adminAccountIds,
             Long festivalId

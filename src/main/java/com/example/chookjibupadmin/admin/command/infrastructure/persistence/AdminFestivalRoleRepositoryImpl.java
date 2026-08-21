@@ -49,6 +49,11 @@ public class AdminFestivalRoleRepositoryImpl
     }
 
     @Override
+    public boolean existsByAdminAccountIdAndRole(Long adminAccountId, AdminRole role) {
+        return jpaRepository.existsByAdminAccountIdAndRole(adminAccountId, role);
+    }
+
+    @Override
     public List<AdminFestivalRole> findAllByAdminAccountIdInAndFestivalId(
             Collection<Long> adminAccountIds,
             Long festivalId

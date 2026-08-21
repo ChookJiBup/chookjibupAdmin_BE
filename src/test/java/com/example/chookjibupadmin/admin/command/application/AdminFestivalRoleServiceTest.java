@@ -6,6 +6,7 @@ import static org.mockito.BDDMockito.then;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRoleRepository;
+import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -68,6 +69,25 @@ class AdminFestivalRoleServiceTest {
 
             // then
             then(repository).should().deleteAll(roles);
+        }
+    }
+
+    @Nested
+    @DisplayName("hasFestivalOwnerRole")
+    class HasFestivalOwnerRole {
+
+        @Test
+        @DisplayName("총괄 역할이 있으면 true를 반환한다")
+        void success_HasFestivalOwnerRole() {
+            // given
+            given(repository.existsByAdminAccountIdAndRole(1L, AdminRole.FESTIVAL_OWNER))
+                    .willReturn(true);
+
+            // when
+            boolean exists = service.hasFestivalOwnerRole(1L);
+
+            // then
+            assertThat(exists).isTrue();
         }
     }
 }

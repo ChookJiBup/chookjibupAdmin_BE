@@ -89,4 +89,41 @@ class AdminFestivalRoleRepositoryTest {
             assertThat(exists).isTrue();
         }
     }
+
+    @Nested
+    @DisplayName("existsByAdminAccountIdAndRole")
+    class ExistsByAdminAccountIdAndRole {
+
+        @Test
+        @DisplayName("총괄 역할이 있으면 true를 반환한다")
+        void success_ExistsByAdminAccountIdAndRole_Owner() {
+            // given
+            adminFestivalRoleRepository.save(AdminFestivalRole.createFestivalOwner(1L, 1L));
+
+            // when
+            boolean exists = adminFestivalRoleRepository.existsByAdminAccountIdAndRole(
+                    1L,
+                    AdminRole.FESTIVAL_OWNER
+            );
+
+            // then
+            assertThat(exists).isTrue();
+        }
+
+        @Test
+        @DisplayName("운영자 역할만 있으면 총괄 조회는 false이다")
+        void success_ExistsByAdminAccountIdAndRole_SubAdminOnly() {
+            // given
+            adminFestivalRoleRepository.save(AdminFestivalRole.createSubAdmin(2L, 1L, 1L));
+
+            // when
+            boolean exists = adminFestivalRoleRepository.existsByAdminAccountIdAndRole(
+                    2L,
+                    AdminRole.FESTIVAL_OWNER
+            );
+
+            // then
+            assertThat(exists).isFalse();
+        }
+    }
 }

@@ -34,6 +34,7 @@ public enum ErrorCode {
     AUTH_FESTIVAL_OWNER_ALREADY_EXISTS(40902, HttpStatus.CONFLICT, "해당 축제에는 이미 1관리자가 존재합니다."),
     AUTH_ADMIN_ALREADY_ASSIGNED(40903, HttpStatus.CONFLICT, "이미 관리 중인 축제가 있는 관리자입니다."),
     AUTH_ADMIN_ALREADY_WITHDRAWN(40907, HttpStatus.CONFLICT, "이미 탈퇴한 관리자 계정입니다."),
+    AUTH_ADMIN_WITHDRAW_HAS_OWNER_ROLE(40912, HttpStatus.CONFLICT, "총괄 관리자로 등록된 축제가 있으면 탈퇴할 수 없습니다."),
 
     FESTIVAL_NOT_FOUND(40401, HttpStatus.NOT_FOUND, "축제를 찾을 수 없습니다."),
     FESTIVAL_SERIES_NOT_FOUND(40402, HttpStatus.NOT_FOUND, "축제 묶음을 찾을 수 없습니다."),
@@ -65,6 +66,13 @@ public enum ErrorCode {
     FIELD_STAFF_INVALID_CREDENTIALS(40105, HttpStatus.UNAUTHORIZED, "현장 스태프 아이디 또는 비밀번호가 올바르지 않습니다."),
     FIELD_STAFF_NOT_ACTIVE(40302, HttpStatus.FORBIDDEN, "사용할 수 없는 현장 스태프 계정입니다."),
     FIELD_STAFF_VALID_PERIOD_EXPIRED(40303, HttpStatus.FORBIDDEN, "현장 스태프 계정 유효기간이 아닙니다."),
+
+    FESTIVAL_REPORT_JOB_NOT_FOUND(40409, HttpStatus.NOT_FOUND, "축제 결과 보고서 작업을 찾을 수 없습니다."),
+    FESTIVAL_REPORT_RESULT_NOT_FOUND(40410, HttpStatus.NOT_FOUND, "축제 결과 보고서를 찾을 수 없습니다."),
+    FESTIVAL_REPORT_VISITOR_INPUT_INCOMPLETE(40913, HttpStatus.CONFLICT, "모든 일자 방문 인원을 입력한 뒤에 결과 보고서를 생성할 수 있습니다."),
+    FESTIVAL_REPORT_GENERATION_IN_PROGRESS(40914, HttpStatus.CONFLICT, "이미 결과 보고서 생성이 진행 중입니다."),
+    FESTIVAL_REPORT_ANALYSIS_FAILED(50206, HttpStatus.BAD_GATEWAY, "축제 결과 보고서 분석에 실패했습니다."),
+    FESTIVAL_REPORT_ANALYSIS_NOT_CONFIGURED(50302, HttpStatus.SERVICE_UNAVAILABLE, "축제 결과 보고서 분석 설정이 필요합니다."),
 
     ROAD_ADDRESS_SEARCH_FAILED(50200, HttpStatus.BAD_GATEWAY, "도로명주소 검색에 실패했습니다."),
     AUTH_EMAIL_SEND_FAILED(50205, HttpStatus.BAD_GATEWAY, "이메일 발송에 실패했습니다."),
