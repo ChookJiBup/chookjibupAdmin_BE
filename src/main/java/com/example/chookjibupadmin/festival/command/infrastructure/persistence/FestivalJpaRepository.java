@@ -22,4 +22,6 @@ interface FestivalJpaRepository extends JpaRepository<Festival, Long> {
     Optional<Festival> findByIdForUpdate(@Param("festivalId") Long festivalId);
 
     boolean existsBySeriesIdAndYear(Long seriesId, int year);
+
+    Optional<Festival> findBySeriesIdAndYear(Long seriesId, int year);
 }
