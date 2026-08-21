@@ -101,6 +101,16 @@ public class AdminFestivalRoleService {
     }
 
     /**
+     * 관리자가 어떤 축제에서든 총괄 역할을 갖고 있는지 확인한다.
+     */
+    public boolean hasFestivalOwnerRole(Long adminAccountId) {
+        return adminFestivalRoleRepository.existsByAdminAccountIdAndRole(
+                adminAccountId,
+                AdminRole.FESTIVAL_OWNER
+        );
+    }
+
+    /**
      * 축제 관리자 역할 관계를 일괄 삭제한다.
      */
     @Transactional

@@ -24,6 +24,8 @@ interface AdminFestivalRoleJpaRepository
             Long festivalId
     );
 
+    boolean existsByAdminAccountIdAndRole(Long adminAccountId, AdminRole role);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<AdminFestivalRole> findAllByAdminAccountIdInAndFestivalId(
             Collection<Long> adminAccountIds,
