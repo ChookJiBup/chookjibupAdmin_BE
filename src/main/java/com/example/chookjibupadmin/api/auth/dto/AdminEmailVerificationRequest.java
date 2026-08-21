@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
  */
 @Schema(description = "관리자 이메일 인증 코드 요청")
 public record AdminEmailVerificationRequest(
-        @Schema(description = "가입 이메일", example = "admin@mapo.go.kr")
+        @Schema(description = "가입 이메일. 공무원은 정부 공식 이메일, 외부업자는 일반 이메일", example = "admin@mapo.go.kr")
         @Email
         @NotBlank
         String email,

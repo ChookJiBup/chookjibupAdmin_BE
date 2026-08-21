@@ -192,6 +192,47 @@ class FestivalApplicationServiceIntegrationTest {
                     .extracting(FestivalLocation::getRoadAddress)
                     .containsExactly("서울특별시 마포구 새 주소 1", "서울특별시 마포구 새 주소 2");
         }
+
+        @Test
+        @DisplayName("외부업자 운영자는 축제 기본정보를 수정할 수 없다")
+        void fail_Update_ContractorSubAdminForbidden() {
+            AdminAccount owner = adminAccountService.save(unassignedAdmin());
+            Festival festival =
+                    festivalApplicationService.create(createCommand(), principal(owner));
+            AdminAccount contractor = adminAccountService.save(AdminAccount.createContractor(
+                    AdminEmail.of("vendor@gmail.com"),
+                    AdminName.of("김업체"),
+                    AdminOrganization.of("축제기획(주)"),
+                    AdminPasswordHash.of("encoded-password")
+            ));
+            adminFestivalRoleService.assignSubAdmin(
+                    contractor.getId(),
+                    festival.getId(),
+                    owner.getId()
+            );
+            List<FestivalLocation> locations =
+                    festivalLocationService.findAllByFestivalId(festival.getId());
+            UpdateFestivalCommand command = new UpdateFestivalCommand(
+                    festival.getNameValue(),
+                    "운영자가 바꾸려는 설명",
+                    List.of(
+                            locationCommand(locations.get(0), locations.get(0).getRoadAddress()),
+                            locationCommand(locations.get(1), locations.get(1).getRoadAddress())
+                    ),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+
+            assertThatThrownBy(() -> festivalApplicationService.update(
+                    festival.getPublicId(),
+                    command,
+                    principal(contractor)
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FORBIDDEN.getMessage());
+        }
     }
 
     private CreateFestivalCommand createCommand() {

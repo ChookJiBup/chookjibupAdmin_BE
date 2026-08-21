@@ -78,6 +78,35 @@ class FieldStaffManagementServiceIntegrationTest {
             assertThat(found.getValidFrom()).isEqualTo(festival.getStartDate().minusDays(7).atStartOfDay());
             assertThat(found.getValidUntil()).isEqualTo(festival.getEndDate().atTime(LocalTime.MAX));
         }
+
+        @Test
+        @DisplayName("외부업자 운영자도 현장 스태프를 생성할 수 있다")
+        void success_Create_ContractorSubAdmin() {
+            Festival festival = festivalService.save(festival());
+            AdminAccount owner = persistOwner(festival);
+            AdminAccount operator = adminAccountService.save(AdminAccount.createContractor(
+                    AdminEmail.of("vendor@gmail.com"),
+                    AdminName.of("김업체"),
+                    AdminOrganization.of("축제기획(주)"),
+                    AdminPasswordHash.of("encoded-password")
+            ));
+            adminFestivalRoleService.assignSubAdmin(
+                    operator.getId(),
+                    festival.getId(),
+                    owner.getId()
+            );
+
+            CreateFieldStaffResult result = managementService.create(
+                    festival.getPublicId(),
+                    createCommand("staff-op"),
+                    principal(operator)
+            );
+
+            FieldStaffAccount found = fieldStaffAccountService.getById(
+                    result.fieldStaffAccount().getId()
+            );
+            assertThat(found.getLoginIdValue()).isEqualTo("staff-op");
+        }
     }
 
     @Nested
