@@ -20,4 +20,6 @@ interface FestivalTotalVisitorCountJpaRepository
     Optional<FestivalTotalVisitorCount> findByFestivalIdForUpdate(
             @Param("festivalId") Long festivalId
     );
+
+    Optional<FestivalTotalVisitorCount> findByFestivalId(Long festivalId);
 }

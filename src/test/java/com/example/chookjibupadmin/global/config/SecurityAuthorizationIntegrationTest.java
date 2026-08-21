@@ -117,6 +117,24 @@ class SecurityAuthorizationIntegrationTest {
     }
 
     @Test
+    void success_AdminAuthentication_VisitorOperationApi() throws Exception {
+        mockMvc.perform(get(
+                        "/api/festivals/festival-id/operations/visitors/security-probe"
+                ).with(authentication(adminAuthentication())))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void fail_FieldStaffAuthentication_VisitorOperationApi_Forbidden()
+            throws Exception {
+        mockMvc.perform(get(
+                        "/api/festivals/festival-id/operations/visitors/security-probe"
+                ).with(authentication(fieldStaffAuthentication())))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(40300));
+    }
+
+    @Test
     void fail_MissingAuthentication_ProtectedApi_Unauthorized() throws Exception {
         mockMvc.perform(get("/api/security-probe/admin"))
                 .andExpect(status().isUnauthorized())
@@ -255,6 +273,13 @@ class SecurityAuthorizationIntegrationTest {
         @GetMapping("/api/festivals/{festivalId}/operations/security-probe")
         String operation() {
             return "operation";
+        }
+
+        @GetMapping(
+                "/api/festivals/{festivalId}/operations/visitors/security-probe"
+        )
+        String visitorOperation() {
+            return "visitor-operation";
         }
 
         @GetMapping("/internal/api/security-probe")

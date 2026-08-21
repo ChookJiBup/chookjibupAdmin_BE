@@ -95,6 +95,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/field-staff/**")
                         .hasRole("FIELD_STAFF")
                         .requestMatchers(
+                                "/api/festivals/*/operations/visitors",
+                                "/api/festivals/*/operations/visitors/**"
+                        )
+                        .hasRole("ADMIN")
+                        .requestMatchers(
                                 "/api/festivals/*/operations",
                                 "/api/festivals/*/operations/**"
                         )

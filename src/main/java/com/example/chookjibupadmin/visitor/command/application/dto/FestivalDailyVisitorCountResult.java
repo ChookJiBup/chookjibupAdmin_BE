@@ -4,11 +4,13 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * 일자별 방문 인원 수 입력 결과이다.
+ * 일자별 방문 인원 수 저장 결과이다.
  */
 public record FestivalDailyVisitorCountResult(
         UUID festivalId,
         LocalDate visitDate,
-        int visitorCount
+        int visitorCount,
+        boolean allDaysFilled,
+        boolean reportReadyToGenerate
 ) {
 }

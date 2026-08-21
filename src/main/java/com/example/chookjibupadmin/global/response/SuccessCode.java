@@ -43,8 +43,13 @@ public enum SuccessCode {
     FESTIVAL_MAP_EDITOR_SAVE_SUCCESS(22014, "축제 지도 편집 내용이 저장되었습니다."),
     FESTIVAL_DAILY_VISITOR_COUNT_UPDATE_SUCCESS(22019, "축제 일자별 방문 인원 수가 저장되었습니다."),
     FESTIVAL_TOTAL_VISITOR_COUNT_UPDATE_SUCCESS(22020, "축제 총 방문 인원 수가 저장되었습니다."),
+    FESTIVAL_VISITOR_COUNT_READ_SUCCESS(22021, "축제 방문 인원 수 조회가 완료되었습니다."),
     FESTIVAL_DASHBOARD_READ_SUCCESS(23000, "축제 대시보드 조회가 완료되었습니다."),
     FESTIVAL_REPORT_SUMMARY_READ_SUCCESS(24000, "축제 결과 보고서 요약 조회가 완료되었습니다."),
+    FESTIVAL_REPORT_STATUS_READ_SUCCESS(24001, "축제 결과 보고서 상태 조회가 완료되었습니다."),
+    FESTIVAL_REPORT_GENERATE_SUCCESS(24002, "축제 결과 보고서 생성이 시작되었습니다."),
+    FESTIVAL_REPORT_PERFORMANCE_READ_SUCCESS(24003, "축제 성과 보고서 조회가 완료되었습니다."),
+    FESTIVAL_REPORT_EVALUATION_READ_SUCCESS(24004, "축제 방문객 평가 보고서 조회가 완료되었습니다."),
     FIELD_STAFF_LOGIN_SUCCESS(25000, "현장 스태프 로그인에 성공했습니다."),
     INTERNAL_FESTIVAL_READ_SUCCESS(26000, "사용자 서버용 축제 목록 조회가 완료되었습니다."),
     INTERNAL_FESTIVAL_LOCATION_READ_SUCCESS(26001, "사용자 서버용 축제 장소 조회가 완료되었습니다.");

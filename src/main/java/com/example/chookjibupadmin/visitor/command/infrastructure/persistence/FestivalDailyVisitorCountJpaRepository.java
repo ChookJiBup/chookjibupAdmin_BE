@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.visitor.command.infrastructure.persistence;
 import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCount;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -22,5 +23,9 @@ interface FestivalDailyVisitorCountJpaRepository
     Optional<FestivalDailyVisitorCount> findByFestivalIdAndVisitDateForUpdate(
             @Param("festivalId") Long festivalId,
             @Param("visitDate") LocalDate visitDate
+    );
+
+    List<FestivalDailyVisitorCount> findByFestivalIdOrderByVisitDateAsc(
+            Long festivalId
     );
 }
