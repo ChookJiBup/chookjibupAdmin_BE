@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.visitor.command.domain;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -17,6 +18,10 @@ public interface FestivalVisitorCountRepository {
             LocalDate visitDate
     );
 
+    List<FestivalDailyVisitorCount> findDailyByFestivalIdOrderByVisitDateAsc(
+            Long festivalId
+    );
+
     FestivalTotalVisitorCount saveTotal(
             FestivalTotalVisitorCount totalVisitorCount
     );
@@ -24,4 +29,6 @@ public interface FestivalVisitorCountRepository {
     Optional<FestivalTotalVisitorCount> findTotalByFestivalIdForUpdate(
             Long festivalId
     );
+
+    Optional<FestivalTotalVisitorCount> findTotalByFestivalId(Long festivalId);
 }

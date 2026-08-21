@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCo
 import com.example.chookjibupadmin.visitor.command.domain.FestivalTotalVisitorCount;
 import com.example.chookjibupadmin.visitor.command.domain.FestivalVisitorCountRepository;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,12 @@ public class FestivalVisitorCountService {
         );
     }
 
+    public List<FestivalDailyVisitorCount> findDailyByFestivalIdOrderByVisitDateAsc(
+            Long festivalId
+    ) {
+        return repository.findDailyByFestivalIdOrderByVisitDateAsc(festivalId);
+    }
+
     @Transactional
     public FestivalTotalVisitorCount saveTotal(
             FestivalTotalVisitorCount totalVisitorCount
@@ -47,5 +54,11 @@ public class FestivalVisitorCountService {
             Long festivalId
     ) {
         return repository.findTotalByFestivalIdForUpdate(festivalId);
+    }
+
+    public Optional<FestivalTotalVisitorCount> findTotalByFestivalId(
+            Long festivalId
+    ) {
+        return repository.findTotalByFestivalId(festivalId);
     }
 }
