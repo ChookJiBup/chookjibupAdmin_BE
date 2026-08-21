@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalRepository;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -75,5 +76,15 @@ public class FestivalService {
             int year
     ) {
         return festivalRepository.existsBySeriesIdAndYear(seriesId, year);
+    }
+
+    /**
+     * 축제 묶음과 개최 연도로 축제를 조회한다.
+     */
+    public Optional<Festival> findBySeriesIdAndYear(
+            Long seriesId,
+            int year
+    ) {
+        return festivalRepository.findBySeriesIdAndYear(seriesId, year);
     }
 }

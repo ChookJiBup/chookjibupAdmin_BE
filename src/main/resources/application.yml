@@ -106,3 +106,13 @@ app:
       connect-timeout: ${APP_MAP_STORAGE_CONNECT_TIMEOUT:3s}
       api-call-timeout: ${APP_MAP_STORAGE_API_CALL_TIMEOUT:30s}
       read-url-ttl: ${APP_MAP_STORAGE_READ_URL_TTL:10m}
+  report:
+    analysis:
+      provider: ${APP_REPORT_ANALYSIS_PROVIDER:disabled}
+      base-url: ${APP_OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${APP_OPENAI_API_KEY:}
+      model: ${APP_OPENAI_REPORT_MODEL:gpt-5.6}
+      connect-timeout: ${APP_OPENAI_CONNECT_TIMEOUT:5s}
+      read-timeout: ${APP_OPENAI_READ_TIMEOUT:90s}
+      max-attempts: ${APP_REPORT_ANALYSIS_MAX_ATTEMPTS:3}
+      poll-delay-millis: ${APP_REPORT_ANALYSIS_POLL_DELAY_MILLIS:3000}
