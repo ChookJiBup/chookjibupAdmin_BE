@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Size;
  */
 @Schema(description = "외부업자 관리자 회원가입 요청")
 public record AdminContractorSignupRequest(
-        @Schema(description = "로그인 이메일", example = "vendor@example.com")
+        @Schema(description = "외부업자 로그인 이메일", example = "vendor@gmail.com")
         @Email
         @NotBlank
         String email,
