@@ -5,11 +5,28 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 class FestivalRoadmapTest {
+
+    @Test
+    @DisplayName("부스 구역을 안정 식별자와 멤버십으로 교체한다")
+    void success_ReplaceZones() {
+        FestivalRoadmap roadmap = FestivalRoadmap.createForCoordinateMap(1L, 2L, 3L);
+        UUID zoneId = UUID.randomUUID();
+        UUID boothId = UUID.randomUUID();
+
+        roadmap.replaceZones(List.of(new RoadmapZone(zoneId, "이벤트 구역", 0, List.of(boothId))));
+
+        assertThat(roadmap.getZones()).containsExactly(
+                new RoadmapZone(zoneId, "이벤트 구역", 0, List.of(boothId)));
+        assertThatThrownBy(() -> roadmap.getZones().clear())
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
 
     @Test
     @DisplayName("좌표 전용 지도 로드맵은 바로 편집 상태로 생성한다")

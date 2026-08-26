@@ -20,6 +20,7 @@ import com.example.chookjibupadmin.map.query.application.dto.MapAnalysisStatusVi
 import com.example.chookjibupadmin.map.query.application.dto.MapCenterView;
 import com.example.chookjibupadmin.map.query.application.dto.MapEditorView;
 import com.example.chookjibupadmin.map.query.application.dto.RoadmapNodeView;
+import com.example.chookjibupadmin.map.query.application.dto.RoadmapZoneView;
 import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
 import com.example.chookjibupadmin.map.roadmap.application.RoadmapNodeService;
 import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
@@ -98,6 +99,7 @@ public class FestivalMapAnalysisQueryApplicationService {
                     roadmap.getStatus().name(),
                     null,
                     nodes,
+                    zoneViews(roadmap),
                     center
             );
         }
@@ -117,8 +119,16 @@ public class FestivalMapAnalysisQueryApplicationService {
                 roadmap.getStatus().name(),
                 status(job),
                 nodes,
+                zoneViews(roadmap),
                 center
         );
+    }
+
+    private List<RoadmapZoneView> zoneViews(FestivalRoadmap roadmap) {
+        return roadmap.getZones().stream()
+                .map(zone -> new RoadmapZoneView(
+                        zone.zoneId(), zone.name(), zone.sortOrder(), zone.boothNodeIds()))
+                .toList();
     }
 
     private MapCenterView resolveCenter(Long festivalId, List<RoadmapNodeView> nodes) {
