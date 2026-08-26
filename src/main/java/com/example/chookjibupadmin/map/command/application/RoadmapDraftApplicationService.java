@@ -13,12 +13,14 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.analysis.application.MapGeometryValidator;
 import com.example.chookjibupadmin.map.command.application.dto.RoadmapNodeChangeCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
+import com.example.chookjibupadmin.map.command.application.dto.RoadmapZoneCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SavedRoadmapDraft;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
 import com.example.chookjibupadmin.map.roadmap.application.RoadmapNodeService;
 import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNode;
+import com.example.chookjibupadmin.map.roadmap.domain.RoadmapZone;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
@@ -112,6 +114,11 @@ public class RoadmapDraftApplicationService {
         if (!deletedNodes.isEmpty()) {
             nodeService.deleteAll(deletedNodes);
         }
+        if (command.zones() != null) {
+            roadmap.replaceZones(resolveZones(command.zones(), currentNodes, changedNodes, deletedNodes));
+        } else if (!deletedNodes.isEmpty()) {
+            pruneDeletedZoneMembers(roadmap, deletedNodes);
+        }
         return new SavedRoadmapDraft(editRevision);
     }
 
@@ -156,6 +163,7 @@ public class RoadmapDraftApplicationService {
             String geometrySchemaVersion
     ) {
         Set<UUID> requestedNodeIds = new HashSet<>();
+        Set<UUID> clientNodeIds = new HashSet<>();
         for (RoadmapNodeChangeCommand change : changes) {
             if (change == null) {
                 throw new CustomException(ErrorCode.ROADMAP_NODE_INVALID);
@@ -167,6 +175,12 @@ public class RoadmapDraftApplicationService {
             if (change.nodeId() != null
                     && !currentNodeById.containsKey(change.nodeId())) {
                 throw new CustomException(ErrorCode.ROADMAP_NODE_NOT_FOUND);
+            }
+            if (change.clientNodeId() != null
+                    && (change.nodeId() != null
+                    || currentNodeById.containsKey(change.clientNodeId())
+                    || !clientNodeIds.add(change.clientNodeId()))) {
+                throw new CustomException(ErrorCode.ROADMAP_NODE_INVALID);
             }
             if (change.deleted()) {
                 if (change.nodeId() == null) {
@@ -198,6 +212,7 @@ public class RoadmapDraftApplicationService {
             String geometrySchemaVersion
     ) {
         return RoadmapNode.admin(
+                change.clientNodeId(),
                 roadmap.getId(),
                 map.getId(),
                 change.nodeType(),
@@ -208,6 +223,66 @@ public class RoadmapDraftApplicationService {
                 adminId,
                 geometrySchemaVersion
         );
+    }
+
+    private List<RoadmapZone> resolveZones(
+            List<RoadmapZoneCommand> zones,
+            List<RoadmapNode> currentNodes,
+            List<RoadmapNode> changedNodes,
+            List<RoadmapNode> deletedNodes
+    ) {
+        if (zones.size() > 200) {
+            throw new CustomException(ErrorCode.ROADMAP_NODE_INVALID);
+        }
+        Set<UUID> deletedIds = deletedNodes.stream()
+                .map(RoadmapNode::getPublicId)
+                .collect(java.util.stream.Collectors.toSet());
+        Map<UUID, RoadmapNode> available = new HashMap<>();
+        currentNodes.stream().filter(node -> !deletedIds.contains(node.getPublicId()))
+                .forEach(node -> available.put(node.getPublicId(), node));
+        changedNodes.forEach(node -> available.put(node.getPublicId(), node));
+
+        Set<UUID> zoneIds = new HashSet<>();
+        Set<UUID> assignedBooths = new HashSet<>();
+        List<RoadmapZone> resolved = new ArrayList<>();
+        for (RoadmapZoneCommand zone : zones) {
+            UUID zoneId = zone.zoneId() == null ? UUID.randomUUID() : zone.zoneId();
+            if (!zoneIds.add(zoneId)
+                    || zone.name() == null || zone.name().isBlank()
+                    || zone.name().trim().length() > 100
+                    || zone.sortOrder() == null || zone.sortOrder() < 0
+                    || zone.boothNodeIds() == null || zone.boothNodeIds().isEmpty()) {
+                throw new CustomException(ErrorCode.ROADMAP_NODE_INVALID);
+            }
+            for (UUID boothId : zone.boothNodeIds()) {
+                RoadmapNode booth = available.get(boothId);
+                if (booth == null || booth.getNodeType() != com.example.chookjibupadmin.map.roadmap.domain.NodeType.BOOTH
+                        || !assignedBooths.add(boothId)) {
+                    throw new CustomException(ErrorCode.ROADMAP_NODE_INVALID);
+                }
+            }
+            resolved.add(new RoadmapZone(zoneId, zone.name().trim(), zone.sortOrder(), zone.boothNodeIds()));
+        }
+        return resolved;
+    }
+
+    private void pruneDeletedZoneMembers(
+            FestivalRoadmap roadmap,
+            List<RoadmapNode> deletedNodes
+    ) {
+        Set<UUID> deletedIds = deletedNodes.stream()
+                .map(RoadmapNode::getPublicId)
+                .collect(java.util.stream.Collectors.toSet());
+        roadmap.replaceZones(roadmap.getZones().stream()
+                .map(zone -> new RoadmapZone(
+                        zone.zoneId(),
+                        zone.name(),
+                        zone.sortOrder(),
+                        zone.boothNodeIds().stream()
+                                .filter(id -> !deletedIds.contains(id))
+                                .toList()))
+                .filter(zone -> !zone.boothNodeIds().isEmpty())
+                .toList());
     }
 
     private String geometryJson(RoadmapNodeChangeCommand change) {

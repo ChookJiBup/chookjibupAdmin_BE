@@ -21,6 +21,7 @@ public record MapEditorResponse(
         String roadmapStatus,
         MapAnalysisStatusResponse analysis,
         List<NodeResponse> nodes,
+        List<ZoneResponse> zones,
         Center center
 ) {
 
@@ -39,6 +40,8 @@ public record MapEditorResponse(
                 view.nodes().stream()
                         .map(NodeResponse::from)
                         .toList(),
+                view.zones().stream().map(zone -> new ZoneResponse(
+                        zone.zoneId(), zone.name(), zone.sortOrder(), zone.boothNodeIds())).toList(),
                 view.center() == null
                         ? null
                         : new Center(view.center().lat(), view.center().lng())
@@ -48,6 +51,14 @@ public record MapEditorResponse(
     public record Center(
             BigDecimal lat,
             BigDecimal lng
+    ) {
+    }
+
+    public record ZoneResponse(
+            UUID zoneId,
+            String name,
+            int sortOrder,
+            List<UUID> boothNodeIds
     ) {
     }
 

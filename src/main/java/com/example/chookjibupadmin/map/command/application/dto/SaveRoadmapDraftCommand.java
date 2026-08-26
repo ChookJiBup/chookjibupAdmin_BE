@@ -4,6 +4,11 @@ import java.util.List;
 
 public record SaveRoadmapDraftCommand(
         long baseRevision,
-        List<RoadmapNodeChangeCommand> nodes
+        List<RoadmapNodeChangeCommand> nodes,
+        List<RoadmapZoneCommand> zones
 ) {
+
+    public SaveRoadmapDraftCommand(long baseRevision, List<RoadmapNodeChangeCommand> nodes) {
+        this(baseRevision, nodes, null);
+    }
 }

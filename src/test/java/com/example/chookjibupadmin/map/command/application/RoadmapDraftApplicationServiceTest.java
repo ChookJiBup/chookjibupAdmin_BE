@@ -29,6 +29,7 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.analysis.application.MapGeometryValidator;
 import com.example.chookjibupadmin.map.command.application.dto.RoadmapNodeChangeCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
+import com.example.chookjibupadmin.map.command.application.dto.RoadmapZoneCommand;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
@@ -117,6 +118,30 @@ class RoadmapDraftApplicationServiceTest {
         given(mapService.getByPublicId(mapPublicId)).willReturn(map);
         given(roadmapService.getByFestivalIdForUpdate(20L)).willReturn(roadmap);
         given(nodeService.findAll(30L, 10L)).willReturn(List.of(existingNode));
+    }
+
+    @Test
+    @DisplayName("신규 부스의 clientNodeId를 구역 멤버십으로 함께 저장한다")
+    void success_Save_ZonesWithNewBooth() {
+        UUID clientNodeId = UUID.randomUUID();
+        UUID zoneId = UUID.randomUUID();
+        RoadmapNodeChangeCommand newBooth = new RoadmapNodeChangeCommand(
+                null, clientNodeId, NodeType.BOOTH, "신규 부스",
+                GeometryType.RECTANGLE,
+                objectMapper.valueToTree(java.util.Map.of(
+                        "x", 0.2, "y", 0.2, "width", 0.1,
+                        "height", 0.1, "rotation", 0
+                )), false, 1
+        );
+
+        service.save(festivalPublicId, mapPublicId,
+                new SaveRoadmapDraftCommand(1L, List.of(newBooth), List.of(
+                        new RoadmapZoneCommand(zoneId, "판매 구역", 0, List.of(clientNodeId))
+                )), principal);
+
+        assertThat(roadmap.getZones()).hasSize(1);
+        assertThat(roadmap.getZones().getFirst().zoneId()).isEqualTo(zoneId);
+        assertThat(roadmap.getZones().getFirst().boothNodeIds()).containsExactly(clientNodeId);
     }
 
     @Test

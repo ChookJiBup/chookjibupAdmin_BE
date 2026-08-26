@@ -42,7 +42,7 @@ public class FestivalMapCoordinateRegistrationApplicationService {
             String mapName,
             AdminPrincipal principal
     ) {
-        AuthorizedEdit authorized = authorize(festivalPublicId, principal);
+        AuthorizedEdit authorized = authorize(festivalPublicId, principal, true);
         return mapService.findCurrentByFestivalId(authorized.festivalId())
                 .map(map -> toView(map, authorized.festivalId()))
                 .orElseGet(() -> createCoordinateMap(
@@ -57,7 +57,7 @@ public class FestivalMapCoordinateRegistrationApplicationService {
             UUID festivalPublicId,
             AdminPrincipal principal
     ) {
-        AuthorizedEdit authorized = authorize(festivalPublicId, principal);
+        AuthorizedEdit authorized = authorize(festivalPublicId, principal, false);
         FestivalMap map = mapService.findCurrentByFestivalId(authorized.festivalId())
                 .orElseThrow(() -> new CustomException(ErrorCode.FESTIVAL_MAP_NOT_FOUND));
         return toView(map, authorized.festivalId());
@@ -120,7 +120,11 @@ public class FestivalMapCoordinateRegistrationApplicationService {
                 .orElseThrow(() -> new CustomException(ErrorCode.FESTIVAL_MAP_LOCATION_REQUIRED));
     }
 
-    private AuthorizedEdit authorize(UUID festivalPublicId, AdminPrincipal principal) {
+    private AuthorizedEdit authorize(
+            UUID festivalPublicId,
+            AdminPrincipal principal,
+            boolean requireDraft
+    ) {
         if (principal == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
@@ -129,7 +133,7 @@ public class FestivalMapCoordinateRegistrationApplicationService {
             throw new CustomException(ErrorCode.AUTH_ADMIN_INACTIVE);
         }
         Festival festival = festivalService.getByPublicId(festivalPublicId);
-        if (festival.getStatus() != FestivalStatus.DRAFT) {
+        if (requireDraft && festival.getStatus() != FestivalStatus.DRAFT) {
             throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
         }
         AdminFestivalRole role = roleService.getByAdminAccountIdAndFestivalId(
