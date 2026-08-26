@@ -122,6 +122,7 @@ public class RoadmapNode extends BaseTimeEntity {
     }
 
     public static RoadmapNode admin(
+            UUID publicId,
             Long roadmapId,
             Long mapId,
             NodeType type,
@@ -133,7 +134,7 @@ public class RoadmapNode extends BaseTimeEntity {
             String geometrySchemaVersion
     ) {
         RoadmapNode node = new RoadmapNode();
-        node.publicId = UUID.randomUUID();
+        node.publicId = publicId == null ? UUID.randomUUID() : publicId;
         node.roadmapId = roadmapId;
         node.mapId = mapId;
         node.nodeType = type;
@@ -151,6 +152,21 @@ public class RoadmapNode extends BaseTimeEntity {
         return node;
     }
 
+    public static RoadmapNode admin(
+            Long roadmapId,
+            Long mapId,
+            NodeType type,
+            String name,
+            GeometryType geometryType,
+            String geometryData,
+            int sortOrder,
+            Long adminId,
+            String geometrySchemaVersion
+    ) {
+        return admin(null, roadmapId, mapId, type, name, geometryType, geometryData,
+                sortOrder, adminId, geometrySchemaVersion);
+    }
+
     /** @deprecated {@link #admin(Long, Long, NodeType, String, GeometryType, String, int, Long, String)} 사용 */
     public static RoadmapNode admin(
             Long roadmapId,
@@ -163,6 +179,7 @@ public class RoadmapNode extends BaseTimeEntity {
             Long adminId
     ) {
         return admin(
+                null,
                 roadmapId,
                 mapId,
                 type,

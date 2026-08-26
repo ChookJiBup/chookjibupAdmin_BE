@@ -16,6 +16,22 @@ public record MapEditorView(
         String roadmapStatus,
         MapAnalysisStatusView analysis,
         List<RoadmapNodeView> nodes,
+        List<RoadmapZoneView> zones,
         MapCenterView center
 ) {
+    public MapEditorView(
+            UUID mapId,
+            URI displayImageUrl,
+            Instant displayImageUrlExpiresAt,
+            int imageWidth,
+            int imageHeight,
+            long editRevision,
+            String roadmapStatus,
+            MapAnalysisStatusView analysis,
+            List<RoadmapNodeView> nodes,
+            MapCenterView center
+    ) {
+        this(mapId, displayImageUrl, displayImageUrlExpiresAt, imageWidth, imageHeight,
+                editRevision, roadmapStatus, analysis, nodes, List.of(), center);
+    }
 }
