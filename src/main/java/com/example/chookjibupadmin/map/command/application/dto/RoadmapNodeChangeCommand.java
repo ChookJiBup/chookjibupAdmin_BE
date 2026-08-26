@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record RoadmapNodeChangeCommand(
         UUID nodeId,
+        UUID clientNodeId,
         NodeType nodeType,
         String name,
         GeometryType geometryType,
@@ -14,4 +15,15 @@ public record RoadmapNodeChangeCommand(
         boolean deleted,
         Integer sortOrder
 ) {
+    public RoadmapNodeChangeCommand(
+            UUID nodeId,
+            NodeType nodeType,
+            String name,
+            GeometryType geometryType,
+            JsonNode geometry,
+            boolean deleted,
+            Integer sortOrder
+    ) {
+        this(nodeId, null, nodeType, name, geometryType, geometry, deleted, sortOrder);
+    }
 }

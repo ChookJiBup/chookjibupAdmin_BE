@@ -14,9 +14,14 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Getter
@@ -55,6 +60,10 @@ public class FestivalRoadmap extends BaseTimeEntity {
 
     @Column(name = "published_version", nullable = false)
     private long publishedVersion;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "zones", nullable = false, columnDefinition = "jsonb")
+    private List<RoadmapZone> zones = new ArrayList<>();
 
     @Column(name = "created_by_admin_id", nullable = false, updatable = false)
     private Long createdByAdminId;
@@ -109,5 +118,13 @@ public class FestivalRoadmap extends BaseTimeEntity {
 
         status = RoadmapStatus.EDITING;
         return ++editRevision;
+    }
+
+    public void replaceZones(List<RoadmapZone> zones) {
+        this.zones = new ArrayList<>(zones == null ? List.of() : zones);
+    }
+
+    public List<RoadmapZone> getZones() {
+        return Collections.unmodifiableList(zones == null ? List.of() : zones);
     }
 }
