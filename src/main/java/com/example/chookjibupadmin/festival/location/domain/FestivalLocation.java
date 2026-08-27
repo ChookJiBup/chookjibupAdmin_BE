@@ -144,7 +144,7 @@ public class FestivalLocation extends BaseTimeEntity {
     private BigDecimal longitude;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "boundary_geometry")
+    @Column(name = "boundary_geometry", columnDefinition = "jsonb")
     private Map<String, Object> boundaryGeometry;
 
     @Enumerated(EnumType.STRING)

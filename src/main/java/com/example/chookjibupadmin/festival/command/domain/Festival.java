@@ -73,7 +73,7 @@ public class Festival extends BaseTimeEntity {
     @Column(name = "series_public_id", updatable = false)
     private UUID seriesPublicId;
 
-    @Column(name = "festival_year")
+    @Column(name = "festival_year", nullable = false)
     private Integer year;
 
     @Embedded
@@ -134,6 +134,10 @@ public class Festival extends BaseTimeEntity {
     @Column(name = "publication_status", nullable = false, length = 30)
     private FestivalStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visitor_count_input_mode", nullable = false, length = 20)
+    private FestivalVisitorCountInputMode visitorCountInputMode;
+
     private Festival(
             UUID publicId,
             Long seriesId,
@@ -144,7 +148,8 @@ public class Festival extends BaseTimeEntity {
             FestivalAddress address,
             FestivalDetailAddress detailAddress,
             FestivalPeriod period,
-            FestivalOperationTime operationTime
+            FestivalOperationTime operationTime,
+            FestivalVisitorCountInputMode visitorCountInputMode
     ) {
         this.publicId = publicId;
         this.seriesId = seriesId;
@@ -157,6 +162,9 @@ public class Festival extends BaseTimeEntity {
         this.period = period;
         this.operationTime = operationTime;
         this.status = FestivalStatus.DRAFT;
+        this.visitorCountInputMode = visitorCountInputMode == null
+                ? FestivalVisitorCountInputMode.UNSET
+                : visitorCountInputMode;
     }
 
     /**
@@ -185,7 +193,8 @@ public class Festival extends BaseTimeEntity {
                 address,
                 detailAddress,
                 period,
-                operationTime
+                operationTime,
+                FestivalVisitorCountInputMode.UNSET
         );
     }
 
@@ -203,6 +212,35 @@ public class Festival extends BaseTimeEntity {
             FestivalPeriod period,
             FestivalOperationTime operationTime
     ) {
+        return create(
+                publicId,
+                seriesId,
+                seriesPublicId,
+                name,
+                description,
+                address,
+                detailAddress,
+                period,
+                operationTime,
+                FestivalVisitorCountInputMode.UNSET
+        );
+    }
+
+    /**
+     * 방문 인원 입력 모드를 지정해 축제를 생성한다.
+     */
+    public static Festival create(
+            UUID publicId,
+            Long seriesId,
+            UUID seriesPublicId,
+            FestivalName name,
+            FestivalDescription description,
+            FestivalAddress address,
+            FestivalDetailAddress detailAddress,
+            FestivalPeriod period,
+            FestivalOperationTime operationTime,
+            FestivalVisitorCountInputMode visitorCountInputMode
+    ) {
         if (publicId == null) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
@@ -218,7 +256,8 @@ public class Festival extends BaseTimeEntity {
                 address,
                 detailAddress,
                 period,
-                operationTime
+                operationTime,
+                visitorCountInputMode
         );
     }
 
@@ -305,6 +344,32 @@ public class Festival extends BaseTimeEntity {
     private void validateSameYear(FestivalPeriod period) {
         if (year == null || year != period.getStartDate().getYear()) {
             throw new CustomException(ErrorCode.FESTIVAL_YEAR_CANNOT_BE_CHANGED);
+        }
+    }
+
+    /**
+     * 방문 인원 입력 모드를 변경한다.
+     */
+    public void changeVisitorCountInputMode(
+            FestivalVisitorCountInputMode mode
+    ) {
+        if (mode == null || mode == FestivalVisitorCountInputMode.UNSET) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        this.visitorCountInputMode = mode;
+    }
+
+    /**
+     * UNSET일 때만 첫 입력 트랙으로 모드를 잠근다.
+     */
+    public void lockVisitorCountInputModeIfUnset(
+            FestivalVisitorCountInputMode mode
+    ) {
+        if (mode == null || mode == FestivalVisitorCountInputMode.UNSET) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        if (this.visitorCountInputMode == FestivalVisitorCountInputMode.UNSET) {
+            this.visitorCountInputMode = mode;
         }
     }
 

@@ -81,6 +81,22 @@ class FestivalJpaRepositoryTest {
         }
 
         @Test
+        @DisplayName("festival_year를 NOT NULL 컬럼으로 저장한다")
+        void success_Save_FestivalYearRequired() {
+            Festival saved = festivalJpaRepository.saveAndFlush(festival());
+            Object year = entityManager.createNativeQuery("""
+                            select festival_year
+                            from festivals
+                            where festival_id = :festivalId
+                            """)
+                    .setParameter("festivalId", saved.getId())
+                    .getSingleResult();
+
+            assertThat(year).isEqualTo(2026);
+            assertThat(saved.getYear()).isEqualTo(2026);
+        }
+
+        @Test
         @DisplayName("최소 축제 기간 경계값으로 DB에 저장한다")
         void success_Save_SameDateBoundary() {
             // given

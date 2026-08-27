@@ -71,6 +71,10 @@ class FestivalApplicationServiceWithMapTest {
     @Mock
     private FestivalLocationService festivalLocationService;
 
+    @Mock
+    private com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService
+            visitorCountService;
+
     @Test
     @DisplayName("축제와 S3 저장 완료 배치도 메타데이터를 함께 저장한다")
     void success_CreateWithMap() {

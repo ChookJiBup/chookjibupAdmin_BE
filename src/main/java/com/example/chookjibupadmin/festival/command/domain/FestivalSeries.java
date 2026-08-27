@@ -40,16 +40,16 @@ public class FestivalSeries extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "series_id")
     private Long id;
 
-    // TODO(festival): 운영 DB 반영 전 기존 festival_series 데이터의 public_id 백필 마이그레이션을 작성한다.
     @Column(name = "public_id", nullable = false, updatable = false)
     private UUID publicId;
 
     @Embedded
     @AttributeOverride(
             name = "value",
-            column = @Column(name = "name", nullable = false, length = 100)
+            column = @Column(name = "series_name", nullable = false, length = 100)
     )
     private FestivalName name;
 
