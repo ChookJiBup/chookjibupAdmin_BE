@@ -64,7 +64,8 @@ class FestivalDashboardQueryApplicationServiceIntegrationTest {
 
             // then
             assertThat(view.festivalId()).isEqualTo(festival.getPublicId());
-            assertThat(view.currentVisitorCount()).isZero();
+            assertThat(view.currentVisitorCount()).isNull();
+            assertThat(view.visitorAvailable()).isFalse();
         }
     }
 

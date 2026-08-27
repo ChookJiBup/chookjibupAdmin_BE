@@ -104,6 +104,16 @@ public class SecurityConfig {
                                 "/api/festivals/*/operations/**"
                         )
                         .hasAnyRole("ADMIN", "FIELD_STAFF")
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/festivals/*/dashboard"
+                        )
+                        .hasAnyRole("ADMIN", "FIELD_STAFF")
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/festivals/*/booths/*/congestion"
+                        )
+                        .hasAnyRole("ADMIN", "FIELD_STAFF")
                         .anyRequest().hasRole("ADMIN")
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))

@@ -125,4 +125,12 @@ public class AdminFestivalRole extends BaseTimeEntity {
     public boolean canViewOperationReport() {
         return role.canViewOperationReport();
     }
+
+    public boolean canManageQueueDesign() {
+        return role.canManageQueueDesign();
+    }
+
+    public boolean canUpdateQueueTail() {
+        return role.canUpdateQueueTail();
+    }
 }

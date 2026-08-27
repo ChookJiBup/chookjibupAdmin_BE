@@ -5,12 +5,16 @@ import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleSe
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
+import com.example.chookjibupadmin.auth.support.FestivalActorPrincipal;
+import com.example.chookjibupadmin.dashboard.query.application.dto.DashboardBoothView;
 import com.example.chookjibupadmin.dashboard.query.application.dto.FestivalDashboardView;
 import com.example.chookjibupadmin.dashboard.query.application.port.FestivalDashboardMetricProvider;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,40 +33,87 @@ public class FestivalDashboardQueryApplicationService {
     private final FestivalService festivalService;
     private final FestivalDashboardMetricProvider metricProvider;
 
-    /**
-     * 담당 축제의 진행 중 대시보드 요약 정보를 조회한다.
-     */
     public FestivalDashboardView getDashboard(
             UUID festivalId,
-            AdminPrincipal principal
+            FestivalActorPrincipal principal
     ) {
-        AdminAccount adminAccount = findAuthenticatedAdmin(principal);
         Festival festival = festivalService.getByPublicId(festivalId);
-        validateReportAccess(festival, adminAccount);
+        authorize(festival, principal);
 
         return metricProvider.findCurrent(festival.getId())
-                .map(metric -> new FestivalDashboardView(
-                        festival.getPublicId(), true, metric.operatingStatus(),
-                        metric.currentVisitorCount(), metric.activeQueueCount(),
-                        metric.averageWaitMinutes(), metric.updatedAt()
-                ))
-                .orElseGet(() -> new FestivalDashboardView(
-                        festival.getPublicId(), false, "DATA_UNAVAILABLE",
-                        0L, 0L, 0L, null
-                ));
+                .map(metric -> toView(festival.getPublicId(), metric))
+                .orElseGet(() -> emptyView(festival.getPublicId()));
     }
 
-    private void validateReportAccess(
-            Festival festival,
-            AdminAccount adminAccount
+    private FestivalDashboardView toView(
+            UUID festivalPublicId,
+            FestivalDashboardMetricProvider.Snapshot metric
     ) {
-        AdminFestivalRole role = adminFestivalRoleService
-                .getByAdminAccountIdAndFestivalId(
-                        adminAccount.getId(),
-                        festival.getId()
-                );
-        if (!role.canViewOperationReport()) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
+        boolean dataAvailable = metric.visitorAvailable()
+                || metric.boothAvailable()
+                || metric.congestionAvailable()
+                || metric.summaryAvailable();
+        List<DashboardBoothView> booths = metric.booths().stream()
+                .map(b -> new DashboardBoothView(
+                        b.boothId(),
+                        b.boothName(),
+                        b.congestionLevel(),
+                        b.waitMinutes(),
+                        b.congestionCreatedAt()
+                ))
+                .toList();
+        return new FestivalDashboardView(
+                festivalPublicId,
+                dataAvailable,
+                metric.visitorAvailable(),
+                metric.boothAvailable(),
+                metric.congestionAvailable(),
+                metric.summaryAvailable(),
+                metric.operatingStatus(),
+                metric.currentVisitorCount(),
+                metric.activeQueueCount(),
+                metric.averageWaitMinutes(),
+                metric.updatedAt(),
+                booths
+        );
+    }
+
+    private FestivalDashboardView emptyView(UUID festivalPublicId) {
+        return new FestivalDashboardView(
+                festivalPublicId,
+                false,
+                false,
+                false,
+                false,
+                false,
+                "DATA_UNAVAILABLE",
+                null,
+                null,
+                null,
+                null,
+                List.of()
+        );
+    }
+
+    private void authorize(Festival festival, FestivalActorPrincipal principal) {
+        switch (principal) {
+            case AdminPrincipal adminPrincipal -> {
+                AdminAccount adminAccount = findAuthenticatedAdmin(adminPrincipal);
+                AdminFestivalRole role = adminFestivalRoleService
+                        .getByAdminAccountIdAndFestivalId(
+                                adminAccount.getId(),
+                                festival.getId()
+                        );
+                if (!role.canViewOperationReport()) {
+                    throw new CustomException(ErrorCode.FORBIDDEN);
+                }
+            }
+            case FieldStaffPrincipal staffPrincipal -> {
+                if (!festival.getId().equals(staffPrincipal.festivalId())) {
+                    throw new CustomException(ErrorCode.FORBIDDEN);
+                }
+            }
+            default -> throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
     }
 
@@ -70,7 +121,6 @@ public class FestivalDashboardQueryApplicationService {
         if (principal == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
-
         return adminAccountService.getById(principal.adminId());
     }
 }
