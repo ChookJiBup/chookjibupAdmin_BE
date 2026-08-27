@@ -21,7 +21,8 @@ spring:
     password: ${DB_PASSWORD:chookjibup_admin}
   jpa:
     hibernate:
-      ddl-auto: update
+      # 스키마는 Flyway가 소유. 로컬에서만 필요 시 SPRING_JPA_HIBERNATE_DDL_AUTO=update.
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
     open-in-view: false
     properties:
       hibernate:
