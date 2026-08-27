@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 축제 기간의 일자별 방문 인원 입력 완료 여부를 계산한다.
@@ -21,12 +22,31 @@ public final class FestivalVisitorDaySupport {
         return (int) (end.toEpochDay() - start.toEpochDay() + 1);
     }
 
+    /**
+     * 축제 기간(시작일~종료일)에 속하는 일자별 행만 남긴다.
+     */
+    public static List<FestivalDailyVisitorCount> withinFestivalPeriod(
+            Festival festival,
+            List<FestivalDailyVisitorCount> dailyCounts
+    ) {
+        LocalDate start = festival.getStartDate();
+        LocalDate end = festival.getEndDate();
+        return dailyCounts.stream()
+                .filter(daily -> {
+                    LocalDate visitDate = daily.getVisitDate();
+                    return visitDate != null
+                            && !visitDate.isBefore(start)
+                            && !visitDate.isAfter(end);
+                })
+                .collect(Collectors.toList());
+    }
+
     public static boolean isAllDaysFilled(
             Festival festival,
             List<FestivalDailyVisitorCount> dailyCounts
     ) {
         Set<LocalDate> savedDates = new HashSet<>();
-        for (FestivalDailyVisitorCount daily : dailyCounts) {
+        for (FestivalDailyVisitorCount daily : withinFestivalPeriod(festival, dailyCounts)) {
             savedDates.add(daily.getVisitDate());
         }
 

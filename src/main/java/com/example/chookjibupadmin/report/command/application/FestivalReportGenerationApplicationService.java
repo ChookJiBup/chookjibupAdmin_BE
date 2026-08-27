@@ -13,7 +13,9 @@ import com.example.chookjibupadmin.report.analysis.infrastructure.openai.ReportA
 import com.example.chookjibupadmin.report.command.application.dto.FestivalReportGenerateResult;
 import com.example.chookjibupadmin.report.command.domain.FestivalReportJob;
 import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService;
-import com.example.chookjibupadmin.visitor.support.FestivalVisitorDaySupport;
+import com.example.chookjibupadmin.visitor.command.domain.FestivalTotalVisitorCount;
+import com.example.chookjibupadmin.visitor.support.FestivalVisitorInputStatus;
+import com.example.chookjibupadmin.visitor.support.FestivalVisitorInputSupport;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -87,7 +89,13 @@ public class FestivalReportGenerationApplicationService {
     }
 
     private void ensureVisitorInputCompleted(Festival festival) {
-        if (!isVisitorInputReady(festival)) {
+        var snapshot = resolveSnapshot(festival);
+        if (snapshot.status() == FestivalVisitorInputStatus.CONFLICT) {
+            throw new CustomException(
+                    ErrorCode.FESTIVAL_REPORT_VISITOR_INPUT_CONFLICT
+            );
+        }
+        if (!FestivalVisitorInputSupport.isReportReady(snapshot)) {
             throw new CustomException(
                     ErrorCode.FESTIVAL_REPORT_VISITOR_INPUT_INCOMPLETE
             );
@@ -95,15 +103,19 @@ public class FestivalReportGenerationApplicationService {
     }
 
     private boolean isVisitorInputReady(Festival festival) {
-        boolean totalEntered = visitorCountService
-                .findTotalByFestivalId(festival.getId())
-                .isPresent();
-        return FestivalVisitorDaySupport.isVisitorInputReady(
+        return FestivalVisitorInputSupport.isReportReady(resolveSnapshot(festival));
+    }
+
+    private FestivalVisitorInputSupport.FestivalVisitorInputSnapshot resolveSnapshot(
+            Festival festival
+    ) {
+        return FestivalVisitorInputSupport.resolve(
                 festival,
                 visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(
                         festival.getId()
                 ),
-                totalEntered
+                visitorCountService.findTotalByFestivalId(festival.getId())
+                        .map(FestivalTotalVisitorCount::getVisitorCountValue)
         );
     }
 

@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.report.support;
 
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.report.support.dto.FestivalDailyVisitorTrendPoint;
 import com.example.chookjibupadmin.report.support.dto.FestivalEconomicEffectMetric;
 import com.example.chookjibupadmin.report.support.dto.FestivalOperationEfficiencyMetric;
@@ -13,6 +14,8 @@ import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCo
 import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCount;
 import com.example.chookjibupadmin.visitor.command.domain.FestivalTotalVisitorCount;
 import com.example.chookjibupadmin.visitor.support.FestivalVisitorDaySupport;
+import com.example.chookjibupadmin.visitor.support.FestivalVisitorEffectiveSource;
+import com.example.chookjibupadmin.visitor.support.FestivalVisitorInputSupport;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -37,33 +40,69 @@ public class FestivalReportMetricAssembler {
     public FestivalReportMetrics assemble(Festival festival) {
         List<FestivalDailyVisitorCount> currentDaily = visitorCountService
                 .findDailyByFestivalIdOrderByVisitDateAsc(festival.getId());
-        Map<LocalDate, Integer> currentByDate = toCountMap(currentDaily);
-        Optional<FestivalTotalVisitorCount> currentTotalEntity =
-                visitorCountService.findTotalByFestivalId(festival.getId());
-        boolean completed = FestivalVisitorDaySupport.isVisitorInputReady(
+        Optional<Integer> currentTotal = visitorCountService
+                .findTotalByFestivalId(festival.getId())
+                .map(FestivalTotalVisitorCount::getVisitorCountValue);
+        var snapshot = FestivalVisitorInputSupport.resolve(
                 festival,
                 currentDaily,
-                currentTotalEntity.isPresent()
+                currentTotal
         );
 
         Optional<Festival> previous = findPreviousFestival(festival);
+        long previousTotal = previous
+                .map(this::resolveEffectiveTotal)
+                .orElse(0L);
+
+        List<FestivalDailyVisitorTrendPoint> dailyTrend =
+                buildDailyTrend(festival, currentDaily, previous, snapshot);
+
+        long currentEffective = snapshot.effectiveVisitorCount() == null
+                ? 0L
+                : snapshot.effectiveVisitorCount();
+
+        return new FestivalReportMetrics(
+                festival.getPublicId(),
+                festival.getNameValue(),
+                festival.getYear() == null ? 0 : festival.getYear(),
+                FestivalVisitorDaySupport.totalDayCount(festival),
+                FestivalVisitorInputSupport.isReportReady(snapshot),
+                buildTotalVisitors(
+                        currentEffective,
+                        previous.isPresent(),
+                        previousTotal
+                ),
+                dailyTrend,
+                FestivalEconomicEffectMetric.unavailable(),
+                FestivalOperationEfficiencyMetric.unavailable(),
+                List.of(),
+                List.of(),
+                FestivalVisitPatternMetric.unavailable()
+        );
+    }
+
+    private List<FestivalDailyVisitorTrendPoint> buildDailyTrend(
+            Festival festival,
+            List<FestivalDailyVisitorCount> currentDaily,
+            Optional<Festival> previous,
+            FestivalVisitorInputSupport.FestivalVisitorInputSnapshot snapshot
+    ) {
+        if (snapshot.inputMode() == FestivalVisitorCountInputMode.TOTAL
+                || snapshot.source() == FestivalVisitorEffectiveSource.TOTAL) {
+            return List.of();
+        }
+
+        Map<LocalDate, Integer> currentByDate = toCountMap(currentDaily);
         Map<Integer, Integer> previousByDayIndex = previous
                 .map(this::dailyCountsByDayIndex)
                 .orElse(Map.of());
-        long previousTotal = previous
-                .map(this::resolveTotalVisitorCount)
-                .orElse(0L);
 
         List<FestivalDailyVisitorTrendPoint> dailyTrend = new ArrayList<>();
-        long dailySum = 0L;
         int dayIndex = 1;
         LocalDate cursor = festival.getStartDate();
         LocalDate end = festival.getEndDate();
         while (!cursor.isAfter(end)) {
             Integer currentCount = currentByDate.get(cursor);
-            if (currentCount != null) {
-                dailySum += currentCount;
-            }
             Integer previousCount = previousByDayIndex.get(dayIndex);
             dailyTrend.add(new FestivalDailyVisitorTrendPoint(
                     dayIndex,
@@ -74,38 +113,21 @@ public class FestivalReportMetricAssembler {
             dayIndex++;
             cursor = cursor.plusDays(1);
         }
-
-        long currentTotal = currentTotalEntity
-                .map(value -> (long) value.getVisitorCountValue())
-                .orElse(dailySum);
-
-        return new FestivalReportMetrics(
-                festival.getPublicId(),
-                festival.getNameValue(),
-                festival.getYear() == null ? 0 : festival.getYear(),
-                FestivalVisitorDaySupport.totalDayCount(festival),
-                completed,
-                buildTotalVisitors(currentTotal, previous.isPresent(), previousTotal),
-                dailyTrend,
-                FestivalEconomicEffectMetric.unavailable(),
-                FestivalOperationEfficiencyMetric.unavailable(),
-                List.of(),
-                List.of(),
-                FestivalVisitPatternMetric.unavailable()
-        );
+        return dailyTrend;
     }
 
-    private long resolveTotalVisitorCount(Festival festival) {
-        Optional<FestivalTotalVisitorCount> total = visitorCountService
-                .findTotalByFestivalId(festival.getId());
-        if (total.isPresent()) {
-            return total.get().getVisitorCountValue();
-        }
-        return visitorCountService
-                .findDailyByFestivalIdOrderByVisitDateAsc(festival.getId())
-                .stream()
-                .mapToLong(FestivalDailyVisitorCount::getVisitorCountValue)
-                .sum();
+    private long resolveEffectiveTotal(Festival festival) {
+        var snapshot = FestivalVisitorInputSupport.resolve(
+                festival,
+                visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(
+                        festival.getId()
+                ),
+                visitorCountService.findTotalByFestivalId(festival.getId())
+                        .map(FestivalTotalVisitorCount::getVisitorCountValue)
+        );
+        return snapshot.effectiveVisitorCount() == null
+                ? 0L
+                : snapshot.effectiveVisitorCount();
     }
 
     private FestivalTotalVisitorMetric buildTotalVisitors(
