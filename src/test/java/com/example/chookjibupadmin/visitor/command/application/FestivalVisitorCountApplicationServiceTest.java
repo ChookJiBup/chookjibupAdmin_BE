@@ -19,6 +19,7 @@ import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescription;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
@@ -103,7 +104,7 @@ class FestivalVisitorCountApplicationServiceTest {
 
             givenClock(Instant.parse("2026-10-16T15:00:00Z"));
             given(adminAccountService.getById(1L)).willReturn(admin);
-            given(festivalService.getByPublicId(publicId)).willReturn(festival);
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
             given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
                     1L,
                     10L
@@ -135,6 +136,36 @@ class FestivalVisitorCountApplicationServiceTest {
             then(visitorCountService).should(never())
                     .saveTotal(any(FestivalTotalVisitorCount.class));
             then(reportGenerationService).should(never()).enqueueIfReady(10L);
+            assertThat(festival.getVisitorCountInputMode())
+                    .isEqualTo(FestivalVisitorCountInputMode.DAILY);
+        }
+
+        @Test
+        @DisplayName("TOTAL 모드에서는 일자별 입력을 거부한다")
+        void fail_UpdateDailyVisitorCount_TotalMode_CustomException() {
+            Festival festival = festival(10L);
+            festival.changeVisitorCountInputMode(FestivalVisitorCountInputMode.TOTAL);
+            UUID publicId = festival.getPublicId();
+            LocalDate visitDate = LocalDate.of(2026, 10, 16);
+            AdminPrincipal principal = new AdminPrincipal(1L, "admin@mapo.go.kr");
+            AdminAccount admin = adminAccount(1L);
+
+            givenClock(Instant.parse("2026-10-16T15:00:00Z"));
+            given(adminAccountService.getById(1L)).willReturn(admin);
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    1L,
+                    10L
+            )).willReturn(AdminFestivalRole.createFestivalOwner(1L, 10L));
+
+            assertThatThrownBy(() -> applicationService.updateDailyVisitorCount(
+                    publicId,
+                    visitDate,
+                    new UpdateVisitorCountCommand(100),
+                    principal
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_VISITOR_INPUT_MODE_MISMATCH.getMessage());
         }
 
         @Test
@@ -164,7 +195,7 @@ class FestivalVisitorCountApplicationServiceTest {
 
             givenClock(Instant.parse("2026-10-18T15:00:00Z"));
             given(adminAccountService.getById(1L)).willReturn(admin);
-            given(festivalService.getByPublicId(publicId)).willReturn(festival);
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
             given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
                     1L,
                     10L
@@ -206,7 +237,7 @@ class FestivalVisitorCountApplicationServiceTest {
 
             givenClock(Instant.parse("2026-10-16T15:00:00Z"));
             given(adminAccountService.getById(1L)).willReturn(admin);
-            given(festivalService.getByPublicId(publicId)).willReturn(festival);
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
             given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
                     1L,
                     10L
@@ -232,7 +263,7 @@ class FestivalVisitorCountApplicationServiceTest {
             AdminAccount admin = adminAccount(1L);
 
             given(adminAccountService.getById(1L)).willReturn(admin);
-            given(festivalService.getByPublicId(publicId)).willReturn(festival);
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
             given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
                     1L,
                     10L
@@ -267,7 +298,7 @@ class FestivalVisitorCountApplicationServiceTest {
             ReflectionTestUtils.setField(saved, "id", 200L);
 
             given(adminAccountService.getById(1L)).willReturn(admin);
-            given(festivalService.getByPublicId(publicId)).willReturn(festival);
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
             given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
                     1L,
                     10L

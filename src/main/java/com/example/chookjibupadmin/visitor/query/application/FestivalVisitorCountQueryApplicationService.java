@@ -14,11 +14,13 @@ import com.example.chookjibupadmin.visitor.command.domain.FestivalTotalVisitorCo
 import com.example.chookjibupadmin.visitor.query.application.dto.FestivalVisitorCountView;
 import com.example.chookjibupadmin.visitor.query.application.dto.FestivalVisitorDayView;
 import com.example.chookjibupadmin.visitor.support.FestivalVisitorDaySupport;
+import com.example.chookjibupadmin.visitor.support.FestivalVisitorInputSupport;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -85,11 +87,14 @@ public class FestivalVisitorCountQueryApplicationService {
             cursor = cursor.plusDays(1);
         }
 
-        Integer totalOverride = visitorCountService
+        Optional<Integer> totalOverride = visitorCountService
                 .findTotalByFestivalId(festival.getId())
-                .map(FestivalTotalVisitorCount::getVisitorCountValue)
-                .orElse(null);
-
+                .map(FestivalTotalVisitorCount::getVisitorCountValue);
+        var snapshot = FestivalVisitorInputSupport.resolve(
+                festival,
+                dailyCounts,
+                totalOverride
+        );
         int totalDayCount = FestivalVisitorDaySupport.totalDayCount(festival);
         boolean allDaysFilled = FestivalVisitorDaySupport.isAllDaysFilled(
                 festival,
@@ -100,12 +105,19 @@ public class FestivalVisitorCountQueryApplicationService {
                 festival.getPublicId(),
                 festival.getStartDate(),
                 festival.getEndDate(),
+                snapshot.inputMode(),
                 days,
                 filled,
                 totalDayCount,
                 allDaysFilled,
                 sum,
-                totalOverride
+                totalOverride.orElse(null),
+                snapshot.totalSaved(),
+                snapshot.effectiveVisitorCount(),
+                snapshot.source(),
+                snapshot.status(),
+                snapshot.difference(),
+                FestivalVisitorInputSupport.isReportReady(snapshot)
         );
     }
 

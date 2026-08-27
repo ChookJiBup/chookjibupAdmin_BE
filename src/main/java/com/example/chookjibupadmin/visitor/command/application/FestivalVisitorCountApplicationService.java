@@ -6,6 +6,7 @@ import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.report.command.application.FestivalReportGenerationApplicationService;
@@ -16,9 +17,11 @@ import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCo
 import com.example.chookjibupadmin.visitor.command.domain.FestivalTotalVisitorCount;
 import com.example.chookjibupadmin.visitor.command.domain.vo.VisitorCount;
 import com.example.chookjibupadmin.visitor.support.FestivalVisitorDaySupport;
+import com.example.chookjibupadmin.visitor.support.FestivalVisitorInputSupport;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -47,6 +50,15 @@ public class FestivalVisitorCountApplicationService {
     ) {
         Festival festival = authorizeFestival(festivalPublicId, principal);
         validateVisitDate(festival, visitDate);
+        if (festival.getVisitorCountInputMode()
+                == FestivalVisitorCountInputMode.TOTAL) {
+            throw new CustomException(
+                    ErrorCode.FESTIVAL_VISITOR_INPUT_MODE_MISMATCH
+            );
+        }
+        festival.lockVisitorCountInputModeIfUnset(
+                FestivalVisitorCountInputMode.DAILY
+        );
 
         VisitorCount visitorCount = VisitorCount.of(command.visitorCount());
         FestivalDailyVisitorCount dailyVisitorCount = visitorCountService
@@ -69,19 +81,19 @@ public class FestivalVisitorCountApplicationService {
 
         List<FestivalDailyVisitorCount> dailyCounts = visitorCountService
                 .findDailyByFestivalIdOrderByVisitDateAsc(festival.getId());
+        Optional<Integer> total = visitorCountService
+                .findTotalByFestivalId(festival.getId())
+                .map(FestivalTotalVisitorCount::getVisitorCountValue);
+        var snapshot = FestivalVisitorInputSupport.resolve(
+                festival,
+                dailyCounts,
+                total
+        );
         boolean allDaysFilled = FestivalVisitorDaySupport.isAllDaysFilled(
                 festival,
                 dailyCounts
         );
-        boolean totalEntered = visitorCountService
-                .findTotalByFestivalId(festival.getId())
-                .isPresent();
-        boolean reportReady = FestivalVisitorDaySupport.isVisitorInputReady(
-                festival,
-                dailyCounts,
-                totalEntered
-        );
-        if (reportReady) {
+        if (FestivalVisitorInputSupport.isReportReady(snapshot)) {
             reportGenerationService.enqueueIfReady(festival.getId());
         }
 
@@ -90,7 +102,7 @@ public class FestivalVisitorCountApplicationService {
                 saved.getVisitDate(),
                 saved.getVisitorCountValue(),
                 allDaysFilled,
-                reportReady
+                FestivalVisitorInputSupport.isReportReady(snapshot)
         );
     }
 
@@ -100,6 +112,14 @@ public class FestivalVisitorCountApplicationService {
             AdminPrincipal principal
     ) {
         Festival festival = authorizeFestival(festivalPublicId, principal);
+        // DAILY 모드에서는 보조 참고값으로만 저장한다.
+        if (festival.getVisitorCountInputMode()
+                == FestivalVisitorCountInputMode.UNSET) {
+            festival.lockVisitorCountInputModeIfUnset(
+                    FestivalVisitorCountInputMode.TOTAL
+            );
+        }
+
         VisitorCount visitorCount = VisitorCount.of(command.visitorCount());
         FestivalTotalVisitorCount totalVisitorCount = visitorCountService
                 .findTotalByFestivalIdForUpdate(festival.getId())
@@ -127,7 +147,7 @@ public class FestivalVisitorCountApplicationService {
             AdminPrincipal principal
     ) {
         AdminAccount adminAccount = findAuthenticatedAdmin(principal);
-        Festival festival = festivalService.getByPublicId(festivalPublicId);
+        Festival festival = festivalService.getByPublicIdForUpdate(festivalPublicId);
         adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
                 adminAccount.getId(),
                 festival.getId()
