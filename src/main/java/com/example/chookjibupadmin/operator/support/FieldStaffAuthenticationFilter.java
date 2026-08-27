@@ -32,6 +32,12 @@ public class FieldStaffAuthenticationFilter extends OncePerRequestFilter {
     private static final Pattern FESTIVAL_OPERATION_PATH = Pattern.compile(
             "^/api/festivals/[^/]+/operations(?:/.*)?$"
     );
+    private static final Pattern FESTIVAL_DASHBOARD_PATH = Pattern.compile(
+            "^/api/festivals/[^/]+/dashboard$"
+    );
+    private static final Pattern FESTIVAL_BOOTH_CONGESTION_PATH = Pattern.compile(
+            "^/api/festivals/[^/]+/booths/[^/]+/congestion$"
+    );
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String FIELD_STAFF_AUTHORITY = "ROLE_FIELD_STAFF";
@@ -47,7 +53,9 @@ public class FieldStaffAuthenticationFilter extends OncePerRequestFilter {
         boolean fieldStaffPath = requestUri.equals("/api/field-staff")
                 || requestUri.startsWith(FIELD_STAFF_API_PREFIX);
         return !fieldStaffPath
-                && !FESTIVAL_OPERATION_PATH.matcher(requestUri).matches();
+                && !FESTIVAL_OPERATION_PATH.matcher(requestUri).matches()
+                && !FESTIVAL_DASHBOARD_PATH.matcher(requestUri).matches()
+                && !FESTIVAL_BOOTH_CONGESTION_PATH.matcher(requestUri).matches();
     }
 
     @Override

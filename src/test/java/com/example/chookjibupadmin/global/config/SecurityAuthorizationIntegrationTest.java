@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.global.config;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -175,6 +176,35 @@ class SecurityAuthorizationIntegrationTest {
                         "/api/festivals/festival-id/operations/security-probe"
                 ).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void success_RealFieldStaffToken_DashboardAndCongestionAuth() throws Exception {
+        FieldStaffAccount account = fieldStaffAccountService.save(
+                fieldStaffAccount()
+        );
+        String token = fieldStaffTokenProvider.createAccessToken(account);
+
+        mockMvc.perform(get("/api/festivals/00000000-0000-0000-0000-000000000001/dashboard")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(put(
+                        "/api/festivals/00000000-0000-0000-0000-000000000001/booths/1/congestion"
+                )
+                        .contentType("application/json")
+                        .content("""
+                                {"waitMinutes":5,"congestionLevel":"LOW"}
+                                """)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void fail_MissingToken_Dashboard_Unauthorized() throws Exception {
+        mockMvc.perform(get(
+                        "/api/festivals/00000000-0000-0000-0000-000000000001/dashboard"
+                ))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
