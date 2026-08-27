@@ -1,24 +1,36 @@
 package com.example.chookjibupadmin.dashboard.query.application.port;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 /**
- * 축제의 현재 운영 지표를 제공하는 외부 데이터 계약이다.
+ * 축제의 현재 운영 지표를 제공하는 계약이다.
  */
 public interface FestivalDashboardMetricProvider {
 
-    /**
-     * 현재 운영 지표를 조회하며 연동 데이터가 없으면 빈 값을 반환한다.
-     */
     Optional<Snapshot> findCurrent(Long festivalId);
 
     record Snapshot(
+            boolean visitorAvailable,
+            boolean boothAvailable,
+            boolean congestionAvailable,
+            boolean summaryAvailable,
             String operatingStatus,
-            long currentVisitorCount,
-            long activeQueueCount,
-            long averageWaitMinutes,
-            LocalDateTime updatedAt
+            Long currentVisitorCount,
+            Long activeQueueCount,
+            Long averageWaitMinutes,
+            LocalDateTime updatedAt,
+            List<BoothMetric> booths
+    ) {
+    }
+
+    record BoothMetric(
+            Long boothId,
+            String boothName,
+            String congestionLevel,
+            Integer waitMinutes,
+            LocalDateTime congestionCreatedAt
     ) {
     }
 }

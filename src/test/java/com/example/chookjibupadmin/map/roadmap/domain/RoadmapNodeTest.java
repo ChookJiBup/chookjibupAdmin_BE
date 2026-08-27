@@ -87,4 +87,34 @@ class RoadmapNodeTest {
         assertThat(node.getReviewStatus()).isEqualTo(NodeReviewStatus.CONFIRMED);
         assertThat(node.getLastModifiedByAdminId()).isEqualTo(3L);
     }
+
+    @Test
+    @DisplayName("부스 노드를 승인하면 relatedBoothId를 연결한다")
+    void success_ApproveBooth() {
+        RoadmapNode node = RoadmapNode.ai(
+                20L, 10L, 30L, NodeType.BOOTH, "김밥부스",
+                GeometryType.RECTANGLE, "{\"x\":0.1,\"y\":0.2}",
+                new BigDecimal("0.9000"), "김밥부스", 0
+        );
+
+        node.ensureBoothApprovable();
+        node.approveBooth(77L, 2L);
+
+        assertThat(node.getRelatedBoothId()).isEqualTo(77L);
+        assertThat(node.getReviewStatus()).isEqualTo(NodeReviewStatus.CONFIRMED);
+        assertThat(node.getLastModifiedByAdminId()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("부스 유형이 아니면 승인을 거부한다")
+    void fail_ApproveBooth_NotBooth() {
+        RoadmapNode node = RoadmapNode.admin(
+                20L, 10L, NodeType.STAGE, "무대",
+                GeometryType.RECTANGLE,
+                "{\"x\":0.1,\"y\":0.2}", 1, 2L
+        );
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(node::ensureBoothApprovable)
+                .isInstanceOf(com.example.chookjibupadmin.global.response.CustomException.class);
+    }
 }

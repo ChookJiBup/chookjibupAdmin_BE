@@ -1,6 +1,8 @@
 package com.example.chookjibupadmin.map.roadmap.domain;
 
 import com.example.chookjibupadmin.common.domain.BaseTimeEntity;
+import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -46,6 +48,9 @@ public class RoadmapNode extends BaseTimeEntity {
 
     @Column(name = "analysis_job_id", updatable = false)
     private Long analysisJobId;
+
+    @Column(name = "related_booth_id")
+    private Long relatedBoothId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "node_type", nullable = false, length = 30)
@@ -205,6 +210,31 @@ public class RoadmapNode extends BaseTimeEntity {
         this.geometryType = geometryType;
         this.geometryData = geometryData;
         this.sortOrder = sortOrder;
+        reviewStatus = NodeReviewStatus.CONFIRMED;
+        lastModifiedByAdminId = adminId;
+    }
+
+    /**
+     * 부스 승인 가능 여부만 검증한다. booth_info 생성 전에 호출한다.
+     */
+    public void ensureBoothApprovable() {
+        if (nodeType != NodeType.BOOTH) {
+            throw new CustomException(ErrorCode.ROADMAP_NODE_NOT_BOOTH);
+        }
+        if (relatedBoothId != null) {
+            throw new CustomException(ErrorCode.ROADMAP_NODE_ALREADY_APPROVED);
+        }
+    }
+
+    /**
+     * 부스 유형 노드를 승인하고 booth_info와 연결한다.
+     */
+    public void approveBooth(Long boothId, Long adminId) {
+        ensureBoothApprovable();
+        if (boothId == null) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        relatedBoothId = boothId;
         reviewStatus = NodeReviewStatus.CONFIRMED;
         lastModifiedByAdminId = adminId;
     }

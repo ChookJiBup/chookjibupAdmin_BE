@@ -45,6 +45,8 @@ public enum SuccessCode {
     FESTIVAL_TOTAL_VISITOR_COUNT_UPDATE_SUCCESS(22020, "축제 총 방문 인원 수가 저장되었습니다."),
     FESTIVAL_VISITOR_COUNT_READ_SUCCESS(22021, "축제 방문 인원 수 조회가 완료되었습니다."),
     FESTIVAL_DASHBOARD_READ_SUCCESS(23000, "축제 대시보드 조회가 완료되었습니다."),
+    BOOTH_APPROVE_SUCCESS(23010, "지도 노드를 부스로 승인했습니다."),
+    BOOTH_CONGESTION_UPDATE_SUCCESS(23011, "부스 혼잡 정보를 저장했습니다."),
     FESTIVAL_REPORT_SUMMARY_READ_SUCCESS(24000, "축제 결과 보고서 요약 조회가 완료되었습니다."),
     FESTIVAL_REPORT_STATUS_READ_SUCCESS(24001, "축제 결과 보고서 상태 조회가 완료되었습니다."),
     FESTIVAL_REPORT_GENERATE_SUCCESS(24002, "축제 결과 보고서 생성이 시작되었습니다."),

@@ -25,8 +25,10 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationT
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -62,80 +64,72 @@ class FestivalDashboardQueryApplicationServiceTest {
         @Test
         @DisplayName("담당 축제의 진행 중 대시보드를 조회한다")
         void success_GetDashboard_FestivalOwner() {
-            // given
             Long festivalId = 1L;
             Festival festival = festival(festivalId);
             UUID publicId = festival.getPublicId();
             AdminPrincipal principal = principal();
-            given(festivalService.getByPublicId(publicId))
-                    .willReturn(festival);
+            given(festivalService.getByPublicId(publicId)).willReturn(festival);
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(unassignedAdmin());
-            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
-                    1L,
-                    festivalId
-            )).willReturn(AdminFestivalRole.createFestivalOwner(1L, festivalId));
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(1L, festivalId))
+                    .willReturn(AdminFestivalRole.createFestivalOwner(1L, festivalId));
+            given(metricProvider.findCurrent(festivalId)).willReturn(Optional.empty());
 
-            // when
             FestivalDashboardView view = dashboardQueryService.getDashboard(
                     publicId,
                     principal
             );
 
-            // then
             assertThat(view.festivalId()).isEqualTo(publicId);
             assertThat(view.dataAvailable()).isFalse();
+            assertThat(view.visitorAvailable()).isFalse();
+            assertThat(view.currentVisitorCount()).isNull();
             assertThat(view.operatingStatus()).isEqualTo("DATA_UNAVAILABLE");
-            assertThat(view.currentVisitorCount()).isZero();
-            assertThat(view.updatedAt()).isNull();
+            assertThat(view.booths()).isEmpty();
         }
 
         @Test
-        @DisplayName("다른 축제의 진행 중 대시보드는 조회할 수 없다")
-        void fail_GetDashboard_DifferentFestival_CustomException() {
-            // given
-            Festival festival = festival(1L);
+        @DisplayName("배정된 스태프는 대시보드를 조회할 수 있다")
+        void success_GetDashboard_FieldStaff() {
+            Festival festival = festival(10L);
             UUID publicId = festival.getPublicId();
-            AdminPrincipal principal = principal();
-            given(festivalService.getByPublicId(publicId))
-                    .willReturn(festival);
-            given(adminAccountService.getById(principal.adminId()))
-                    .willReturn(unassignedAdmin());
-            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
-                    1L,
-                    1L
-            )).willThrow(new CustomException(ErrorCode.FORBIDDEN));
+            FieldStaffPrincipal staff = new FieldStaffPrincipal(5L, 10L, "staff1", 0L);
+            given(festivalService.getByPublicId(publicId)).willReturn(festival);
+            given(metricProvider.findCurrent(10L)).willReturn(Optional.empty());
 
-            // when & then
-            assertThatThrownBy(() -> dashboardQueryService.getDashboard(
-                    publicId,
-                    principal
-            ))
+            FestivalDashboardView view = dashboardQueryService.getDashboard(publicId, staff);
+
+            assertThat(view.festivalId()).isEqualTo(publicId);
+            assertThat(view.visitorAvailable()).isFalse();
+            assertThat(view.currentVisitorCount()).isNull();
+        }
+
+        @Test
+        @DisplayName("다른 축제 스태프는 대시보드를 조회할 수 없다")
+        void fail_GetDashboard_DifferentFestivalStaff() {
+            Festival festival = festival(10L);
+            UUID publicId = festival.getPublicId();
+            FieldStaffPrincipal staff = new FieldStaffPrincipal(5L, 99L, "staff1", 0L);
+            given(festivalService.getByPublicId(publicId)).willReturn(festival);
+
+            assertThatThrownBy(() -> dashboardQueryService.getDashboard(publicId, staff))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FORBIDDEN.getMessage());
         }
 
         @Test
-        @DisplayName("축제에 배정되지 않은 관리자는 대시보드를 조회할 수 없다")
-        void fail_GetDashboard_UnassignedAdmin_CustomException() {
-            // given
+        @DisplayName("다른 축제의 진행 중 대시보드는 조회할 수 없다")
+        void fail_GetDashboard_DifferentFestival_CustomException() {
             Festival festival = festival(1L);
             UUID publicId = festival.getPublicId();
             AdminPrincipal principal = principal();
-            given(festivalService.getByPublicId(publicId))
-                    .willReturn(festival);
+            given(festivalService.getByPublicId(publicId)).willReturn(festival);
             given(adminAccountService.getById(principal.adminId()))
                     .willReturn(unassignedAdmin());
-            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
-                    1L,
-                    1L
-            )).willThrow(new CustomException(ErrorCode.FORBIDDEN));
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(1L, 1L))
+                    .willThrow(new CustomException(ErrorCode.FORBIDDEN));
 
-            // when & then
-            assertThatThrownBy(() -> dashboardQueryService.getDashboard(
-                    publicId,
-                    principal
-            ))
+            assertThatThrownBy(() -> dashboardQueryService.getDashboard(publicId, principal))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FORBIDDEN.getMessage());
         }
