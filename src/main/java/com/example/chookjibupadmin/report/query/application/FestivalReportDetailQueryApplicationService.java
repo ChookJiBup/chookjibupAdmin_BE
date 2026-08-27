@@ -13,6 +13,7 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.report.command.application.FestivalReportJobService;
 import com.example.chookjibupadmin.report.command.application.FestivalResultService;
 import com.example.chookjibupadmin.report.command.domain.FestivalReportJob;
+import com.example.chookjibupadmin.report.command.domain.FestivalReportJobStatus;
 import com.example.chookjibupadmin.report.command.domain.FestivalResult;
 import com.example.chookjibupadmin.report.query.application.dto.FestivalReportEvaluationView;
 import com.example.chookjibupadmin.report.query.application.dto.FestivalReportPerformanceView;
@@ -22,10 +23,12 @@ import com.example.chookjibupadmin.report.support.FestivalReportMetricAssembler;
 import com.example.chookjibupadmin.report.support.dto.FestivalReportAiResult;
 import com.example.chookjibupadmin.report.support.dto.FestivalReportEvaluationAi;
 import com.example.chookjibupadmin.report.support.dto.FestivalReportMetrics;
+import com.example.chookjibupadmin.report.support.dto.FestivalReportTextSummary;
 import com.example.chookjibupadmin.report.support.dto.FestivalReviewMetrics;
 import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService;
 import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCount;
-import com.example.chookjibupadmin.visitor.support.FestivalVisitorDaySupport;
+import com.example.chookjibupadmin.visitor.command.domain.FestivalTotalVisitorCount;
+import com.example.chookjibupadmin.visitor.support.FestivalVisitorInputSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -62,18 +65,19 @@ public class FestivalReportDetailQueryApplicationService {
         Festival festival = authorize(festivalPublicId, principal);
         List<FestivalDailyVisitorCount> dailyCounts = visitorCountService
                 .findDailyByFestivalIdOrderByVisitDateAsc(festival.getId());
-        boolean totalEntered = visitorCountService
-                .findTotalByFestivalId(festival.getId())
-                .isPresent();
-        boolean visitorReady = FestivalVisitorDaySupport.isVisitorInputReady(
+        var snapshot = FestivalVisitorInputSupport.resolve(
                 festival,
                 dailyCounts,
-                totalEntered
+                visitorCountService.findTotalByFestivalId(festival.getId())
+                        .map(FestivalTotalVisitorCount::getVisitorCountValue)
         );
-        int filled = dailyCounts.size();
-        String visitorInput = visitorReady
-                ? "COMPLETE"
-                : filled == 0 && !totalEntered ? "MISSING" : "PARTIAL";
+        boolean visitorReady = FestivalVisitorInputSupport.isReportReady(snapshot);
+        String visitorInput = switch (snapshot.status()) {
+            case READY -> "COMPLETE";
+            case CONFLICT -> "CONFLICT";
+            case UNSET -> "MISSING";
+            case PARTIAL -> "PARTIAL";
+        };
 
         Optional<FestivalReportJob> job = reportJobService.findLatestByFestivalId(
                 festival.getId()
@@ -102,6 +106,18 @@ public class FestivalReportDetailQueryApplicationService {
         String generationStatus = job.map(value -> value.getStatus().name())
                 .orElse(result.isPresent() ? "COMPLETED" : "NONE");
 
+        FestivalReportAiResult ai = result.map(this::readAi)
+                .orElseGet(FestivalReportAiResult::empty);
+        boolean jobFailed = job
+                .map(value -> value.getStatus() == FestivalReportJobStatus.FAILED)
+                .orElse(false);
+        boolean performanceAvailable = visitorReady
+                && !jobFailed
+                && result.isPresent();
+        boolean evaluationAvailable = visitorReady
+                && !jobFailed
+                && hasEvaluationContent(ai);
+
         return new FestivalReportStatusView(
                 festival.getPublicId(),
                 progress.name(),
@@ -109,8 +125,8 @@ public class FestivalReportDetailQueryApplicationService {
                 generationStatus,
                 job.map(FestivalReportJob::getProgressDayIndex).orElse(null),
                 job.map(FestivalReportJob::getProgressMessage).orElse(null),
-                visitorReady,
-                visitorReady,
+                performanceAvailable,
+                evaluationAvailable,
                 previousFestivalId,
                 result.map(FestivalResult::getGeneratedAt).orElse(null),
                 job.map(FestivalReportJob::getPublicId).orElse(null)
@@ -126,16 +142,22 @@ public class FestivalReportDetailQueryApplicationService {
         Optional<FestivalReportJob> job = reportJobService.findLatestByFestivalId(
                 festival.getId()
         );
-        FestivalReportAiResult ai = resultService
-                .findByFestivalId(festival.getId())
+        Optional<FestivalResult> result = resultService.findByFestivalId(festival.getId());
+        FestivalReportAiResult ai = result
                 .map(this::readAi)
-                .orElse(FestivalReportAiResult.empty());
+                .orElseGet(FestivalReportAiResult::empty);
         String generationStatus = job.map(value -> value.getStatus().name())
-                .orElse(metrics.visitorInputCompleted() ? "NONE" : "NONE");
+                .orElse(result.isPresent() ? "COMPLETED" : "NONE");
+        boolean jobFailed = job
+                .map(value -> value.getStatus() == FestivalReportJobStatus.FAILED)
+                .orElse(false);
+        boolean performanceAvailable = metrics.visitorInputCompleted()
+                && !jobFailed
+                && result.isPresent();
 
         return new FestivalReportPerformanceView(
                 festival.getPublicId(),
-                metrics.visitorInputCompleted(),
+                performanceAvailable,
                 generationStatus,
                 metrics,
                 ai
@@ -169,14 +191,19 @@ public class FestivalReportDetailQueryApplicationService {
         Optional<FestivalReportJob> job = reportJobService.findLatestByFestivalId(
                 festival.getId()
         );
-        boolean available = FestivalVisitorDaySupport.isVisitorInputReady(
-                festival,
-                visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(
-                        festival.getId()
-                ),
-                visitorCountService.findTotalByFestivalId(festival.getId())
-                        .isPresent()
-        );
+        boolean available = FestivalVisitorInputSupport.isReportReady(
+                FestivalVisitorInputSupport.resolve(
+                        festival,
+                        visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(
+                                festival.getId()
+                        ),
+                        visitorCountService.findTotalByFestivalId(festival.getId())
+                                .map(FestivalTotalVisitorCount::getVisitorCountValue)
+                )
+        )
+                && job.map(value -> value.getStatus() != FestivalReportJobStatus.FAILED)
+                        .orElse(true)
+                && hasEvaluationContent(ai);
 
         return new FestivalReportEvaluationView(
                 festival.getPublicId(),
@@ -218,6 +245,23 @@ public class FestivalReportDetailQueryApplicationService {
         } catch (Exception exception) {
             return FestivalReportAiResult.empty();
         }
+    }
+
+    private boolean hasEvaluationContent(FestivalReportAiResult ai) {
+        FestivalReportEvaluationAi evaluation = ai.evaluation();
+        if (evaluation == null) {
+            return false;
+        }
+        FestivalReportTextSummary summary = evaluation.summary();
+        boolean hasKeywords = !evaluation.positiveKeywords().isEmpty()
+                || !evaluation.negativeKeywords().isEmpty();
+        boolean hasSummary = summary != null
+                && !(summary.positives().isEmpty()
+                && summary.issues().isEmpty()
+                && summary.improvements().isEmpty());
+        boolean hasSentiment = evaluation.headlineSentiment() != null
+                && !"NONE".equals(evaluation.headlineSentiment());
+        return hasSentiment || hasKeywords || hasSummary;
     }
 
     private AdminAccount findAuthenticatedAdmin(AdminPrincipal principal) {
