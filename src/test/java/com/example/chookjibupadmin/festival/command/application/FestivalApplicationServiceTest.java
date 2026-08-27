@@ -62,6 +62,10 @@ class FestivalApplicationServiceTest {
     @Mock
     private FestivalLocationService festivalLocationService;
 
+    @Mock
+    private com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService
+            visitorCountService;
+
     @Nested
     @DisplayName("create")
     class Create {

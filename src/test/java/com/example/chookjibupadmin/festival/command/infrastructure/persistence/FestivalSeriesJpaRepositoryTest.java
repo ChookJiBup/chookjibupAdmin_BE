@@ -44,6 +44,29 @@ class FestivalSeriesJpaRepositoryTest {
             assertThat(found.getNameValue()).isEqualTo("마포나루 새우젓축제");
             assertThat(found.getNormalizedName()).isEqualTo("마포나루새우젓축제");
         }
+
+        @Test
+        @DisplayName("파이프라인 SQL의 시리즈 컬럼명으로 저장한다")
+        void success_Save_PipelineColumnNames() {
+            FestivalSeries saved =
+                    festivalSeriesJpaRepository.saveAndFlush(festivalSeries());
+
+            Object[] row = (Object[]) entityManager.createNativeQuery("""
+                            select series_id,
+                                   series_name,
+                                   normalized_name,
+                                   public_id
+                            from festival_series
+                            where series_id = :seriesId
+                            """)
+                    .setParameter("seriesId", saved.getId())
+                    .getSingleResult();
+
+            assertThat(row[0]).isEqualTo(saved.getId());
+            assertThat(row[1]).isEqualTo("마포나루 새우젓축제");
+            assertThat(row[2]).isEqualTo("마포나루새우젓축제");
+            assertThat(row[3]).isNotNull();
+        }
     }
 
     @Nested

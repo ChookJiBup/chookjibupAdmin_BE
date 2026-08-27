@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.festival.command.application.dto;
 
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -11,8 +12,30 @@ public record UpdateFestivalCommand(
         LocalDate startDate,
         LocalDate endDate,
         LocalTime operationStartTime,
-        LocalTime operationEndTime
+        LocalTime operationEndTime,
+        FestivalVisitorCountInputMode visitorCountInputMode
 ) {
+    public UpdateFestivalCommand(
+            String name,
+            String description,
+            List<FestivalLocationCommand> locations,
+            LocalDate startDate,
+            LocalDate endDate,
+            LocalTime operationStartTime,
+            LocalTime operationEndTime
+    ) {
+        this(
+                name,
+                description,
+                locations,
+                startDate,
+                endDate,
+                operationStartTime,
+                operationEndTime,
+                null
+        );
+    }
+
     public UpdateFestivalCommand(
             String name,
             String description,
@@ -30,7 +53,8 @@ public record UpdateFestivalCommand(
                 startDate,
                 endDate,
                 operationStartTime,
-                operationEndTime
+                operationEndTime,
+                null
         );
     }
 

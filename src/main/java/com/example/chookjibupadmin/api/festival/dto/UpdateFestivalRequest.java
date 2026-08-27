@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.api.festival.dto;
 
 import com.example.chookjibupadmin.festival.command.application.dto.UpdateFestivalCommand;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.festival.location.domain.FestivalLocationType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -43,7 +44,10 @@ public record UpdateFestivalRequest(
 
         @Schema(description = "운영 종료 시간", example = "21:00:00")
         @NotNull
-        LocalTime operationEndTime
+        LocalTime operationEndTime,
+
+        @Schema(description = "방문 인원 입력 모드. null이면 변경하지 않음", example = "TOTAL", allowableValues = {"DAILY", "TOTAL"})
+        FestivalVisitorCountInputMode visitorCountInputMode
 ) {
     public UpdateFestivalRequest(
             String name,
@@ -77,7 +81,8 @@ public record UpdateFestivalRequest(
                 startDate,
                 endDate,
                 operationStartTime,
-                operationEndTime
+                operationEndTime,
+                null
         );
     }
 
@@ -92,7 +97,8 @@ public record UpdateFestivalRequest(
                 startDate,
                 endDate,
                 operationStartTime,
-                operationEndTime
+                operationEndTime,
+                visitorCountInputMode
         );
     }
 

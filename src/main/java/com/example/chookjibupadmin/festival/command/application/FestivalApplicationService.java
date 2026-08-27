@@ -11,6 +11,7 @@ import com.example.chookjibupadmin.festival.command.application.dto.FestivalLoca
 import com.example.chookjibupadmin.festival.command.application.dto.UpdateFestivalCommand;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalSeries;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescription;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddress;
@@ -26,6 +27,7 @@ import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueAppl
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
+import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +53,7 @@ public class FestivalApplicationService {
     private final FestivalMapService festivalMapService;
     private final MapAnalysisQueueApplicationService mapAnalysisQueueService;
     private final FestivalLocationService festivalLocationService;
+    private final FestivalVisitorCountService visitorCountService;
 
     /**
      * 축제 묶음을 연결한 뒤 연도별 축제 기본 정보를 저장하고 생성자를 1관리자로 배정한다.
@@ -122,7 +125,8 @@ public class FestivalApplicationService {
                 FestivalOperationTime.of(
                         command.operationStartTime(),
                         command.operationEndTime()
-                )
+                ),
+                normalizeCreateVisitorMode(command.visitorCountInputMode())
         );
 
         Festival savedFestival = festivalService.save(festival);
@@ -226,9 +230,49 @@ public class FestivalApplicationService {
                         command.operationEndTime()
                 )
         );
+        if (command.visitorCountInputMode() != null) {
+            FestivalVisitorCountInputMode nextMode =
+                    requireSelectableVisitorMode(command.visitorCountInputMode());
+            if (festival.getVisitorCountInputMode() != nextMode) {
+                ensureVisitorModeChangeAllowed(festival.getId());
+                festival.changeVisitorCountInputMode(nextMode);
+            }
+        }
         synchronizeLocations(festival, command.locations(), adminAccount.getId());
 
         return festival;
+    }
+
+    private void ensureVisitorModeChangeAllowed(Long festivalId) {
+        boolean hasDaily = !visitorCountService
+                .findDailyByFestivalIdOrderByVisitDateAsc(festivalId)
+                .isEmpty();
+        boolean hasTotal = visitorCountService
+                .findTotalByFestivalId(festivalId)
+                .isPresent();
+        if (hasDaily || hasTotal) {
+            throw new CustomException(
+                    ErrorCode.FESTIVAL_VISITOR_INPUT_MODE_CHANGE_FORBIDDEN
+            );
+        }
+    }
+
+    private FestivalVisitorCountInputMode normalizeCreateVisitorMode(
+            FestivalVisitorCountInputMode mode
+    ) {
+        if (mode == null) {
+            return FestivalVisitorCountInputMode.UNSET;
+        }
+        return requireSelectableVisitorMode(mode);
+    }
+
+    private FestivalVisitorCountInputMode requireSelectableVisitorMode(
+            FestivalVisitorCountInputMode mode
+    ) {
+        if (mode == FestivalVisitorCountInputMode.UNSET) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        return mode;
     }
 
     private FestivalLocationCommand validateLocations(List<FestivalLocationCommand> locations) {
