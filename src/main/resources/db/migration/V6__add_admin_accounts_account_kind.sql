@@ -1,5 +1,5 @@
 ALTER TABLE admin_accounts
-    ADD COLUMN account_kind VARCHAR(50) NOT NULL DEFAULT 'GOVERNMENT';
+    ADD COLUMN IF NOT EXISTS account_kind VARCHAR(50) NOT NULL DEFAULT 'GOVERNMENT';
 
 UPDATE admin_accounts
 SET account_kind = 'CONTRACTOR'
