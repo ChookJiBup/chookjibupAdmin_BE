@@ -1,9 +1,12 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:chookjibup_admin_test;MODE=PostgreSQL;DATABASE_TO_UPPER=false;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS JSON
+    url: "jdbc:h2:mem:chookjibup_admin_test;MODE=PostgreSQL;DATABASE_TO_UPPER=false;INIT=CREATE DOMAIN IF NOT EXISTS jsonb AS json\\;CREATE DOMAIN IF NOT EXISTS JSONB AS json"
     driver-class-name: org.h2.Driver
     username: sa
     password:
+  test:
+    database:
+      replace: none
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -13,9 +16,6 @@ spring:
         format_sql: true
   flyway:
     enabled: false
-  test:
-    database:
-      replace: none
   data:
     redis:
       host: localhost
