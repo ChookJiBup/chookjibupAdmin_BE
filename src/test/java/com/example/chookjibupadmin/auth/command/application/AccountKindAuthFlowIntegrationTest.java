@@ -126,8 +126,8 @@ class AccountKindAuthFlowIntegrationTest {
                                 "중앙광장",
                                 null,
                                 null,
-                                null,
-                                null,
+                                new java.math.BigDecimal("37.5683000"),
+                                new java.math.BigDecimal("126.8973000"),
                                 true,
                                 0
                         )
