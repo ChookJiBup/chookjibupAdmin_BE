@@ -94,6 +94,24 @@ class FieldStaffAccountServiceTest {
         }
 
         @Test
+        @DisplayName("인증 주체가 없으면 내부 예외 대신 토큰 오류로 거절한다")
+        void fail_ValidateAuthentication_NullPrincipal_CustomException() {
+            assertThatThrownBy(() -> fieldStaffAccountService
+                    .validateAuthentication(null, now))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.AUTH_TOKEN_INVALID.getMessage());
+        }
+
+        @Test
+        @DisplayName("검증 시각이 없으면 내부 예외 대신 토큰 오류로 거절한다")
+        void fail_ValidateAuthentication_NullNow_CustomException() {
+            assertThatThrownBy(() -> fieldStaffAccountService
+                    .validateAuthentication(principal(fieldStaffAccount()), null))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.AUTH_TOKEN_INVALID.getMessage());
+        }
+
+        @Test
         @DisplayName("토큰의 축제 ID가 현재 계정과 다르면 거부한다")
         void fail_ValidateAuthentication_FestivalMismatch_CustomException() {
             // given

@@ -52,6 +52,16 @@ public enum ErrorCode {
     FESTIVAL_MAP_DELETE_FAILED(50202, HttpStatus.BAD_GATEWAY, "축제 배치도 이미지 정리에 실패했습니다."),
     FESTIVAL_MAP_STORAGE_NOT_CONFIGURED(50301, HttpStatus.SERVICE_UNAVAILABLE, "축제 배치도 이미지 저장 설정이 필요합니다."),
     FESTIVAL_MAP_LOCATION_REQUIRED(40010, HttpStatus.BAD_REQUEST, "축제 primary 장소의 위경도가 필요합니다."),
+    FESTIVAL_PRIMARY_LOCATION_COORDINATES_REQUIRED(
+            40013,
+            HttpStatus.BAD_REQUEST,
+            "대표 장소의 위도와 경도가 필요합니다."
+    ),
+    FESTIVAL_LOCATION_COORDINATES_OUT_OF_KOREA(
+            40014,
+            HttpStatus.BAD_REQUEST,
+            "축제 장소 좌표는 대한민국 인근 허용 범위 안이어야 합니다."
+    ),
     FESTIVAL_MAP_INVALID_STATUS(40908, HttpStatus.CONFLICT, "현재 상태에서는 축제 배치도를 변경할 수 없습니다."),
     FESTIVAL_MAP_READ_URL_FAILED(50203, HttpStatus.BAD_GATEWAY, "축제 배치도 조회 URL 생성에 실패했습니다."),
     FESTIVAL_MAP_READ_FAILED(50204, HttpStatus.BAD_GATEWAY, "축제 배치도 분석 이미지 조회에 실패했습니다."),

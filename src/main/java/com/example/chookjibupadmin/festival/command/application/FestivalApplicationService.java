@@ -28,6 +28,7 @@ import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService;
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class FestivalApplicationService {
+
+    /** 대한민국 인근 허용 박스 — 위도 (국경 Polygon 아님). */
+    private static final BigDecimal KOREA_LAT_MIN = new BigDecimal("33.0");
+    private static final BigDecimal KOREA_LAT_MAX = new BigDecimal("38.7");
+    /** 대한민국 인근 허용 박스 — 경도. */
+    private static final BigDecimal KOREA_LNG_MIN = new BigDecimal("124.5");
+    private static final BigDecimal KOREA_LNG_MAX = new BigDecimal("132.0");
 
     private final FestivalService festivalService;
     private final FestivalSeriesService festivalSeriesService;
@@ -279,15 +287,13 @@ public class FestivalApplicationService {
         if (locations == null
                 || locations.isEmpty()
                 || locations.size() > 100
+                || locations.stream().anyMatch(location -> location == null)
                 || locations.stream().filter(FestivalLocationCommand::primary).count() != 1) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
         HashSet<String> keys = new HashSet<>();
         HashSet<UUID> locationIds = new HashSet<>();
         for (FestivalLocationCommand location : locations) {
-            if (location == null) {
-                throw new CustomException(ErrorCode.INVALID_REQUEST);
-            }
             if (location.locationId() != null
                     && !locationIds.add(location.locationId())) {
                 throw new CustomException(ErrorCode.INVALID_REQUEST);
@@ -303,11 +309,42 @@ public class FestivalApplicationService {
             if (!keys.add(key)) {
                 throw new CustomException(ErrorCode.INVALID_REQUEST);
             }
+            validateLocationCoordinates(location);
         }
         return locations.stream()
                 .filter(FestivalLocationCommand::primary)
                 .findFirst()
                 .orElseThrow();
+    }
+
+    /**
+     * 대표 장소는 위경도 필수. 보조 장소는 둘 다 null 허용.
+     * 좌표가 있으면 대한민국 인근 허용 박스 안에 있어야 한다.
+     */
+    private void validateLocationCoordinates(FestivalLocationCommand location) {
+        BigDecimal lat = location.latitude();
+        BigDecimal lng = location.longitude();
+        boolean missingLat = lat == null;
+        boolean missingLng = lng == null;
+        if (location.primary()) {
+            if (missingLat || missingLng) {
+                throw new CustomException(ErrorCode.FESTIVAL_PRIMARY_LOCATION_COORDINATES_REQUIRED);
+            }
+        } else if (missingLat != missingLng) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        } else if (missingLat) {
+            return;
+        }
+        if (isOutsideKorea(lat, lng)) {
+            throw new CustomException(ErrorCode.FESTIVAL_LOCATION_COORDINATES_OUT_OF_KOREA);
+        }
+    }
+
+    private static boolean isOutsideKorea(BigDecimal lat, BigDecimal lng) {
+        return lat.compareTo(KOREA_LAT_MIN) < 0
+                || lat.compareTo(KOREA_LAT_MAX) > 0
+                || lng.compareTo(KOREA_LNG_MIN) < 0
+                || lng.compareTo(KOREA_LNG_MAX) > 0;
     }
 
     private List<FestivalLocation> toLocations(

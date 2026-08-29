@@ -15,6 +15,8 @@ import com.example.chookjibupadmin.festival.command.application.FestivalApplicat
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalCommand;
 import com.example.chookjibupadmin.festival.command.application.dto.FestivalLocationCommand;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
 import com.example.chookjibupadmin.festival.location.domain.FestivalLocationType;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 체크리스트 §9 카카오 좌표 부스맵 E2E(서버 통합) 검증. */
@@ -49,6 +52,7 @@ class CoordinateMapFlowIntegrationTest {
 
     @Autowired private AdminAccountService adminAccountService;
     @Autowired private FestivalApplicationService festivalApplicationService;
+    @Autowired private FestivalLocationService festivalLocationService;
     @Autowired private FestivalMapCoordinateRegistrationApplicationService coordinateRegistrationService;
     @Autowired private FestivalMapService mapService;
     @Autowired private FestivalRoadmapService roadmapService;
@@ -132,9 +136,17 @@ class CoordinateMapFlowIntegrationTest {
     @DisplayName("primary lat/lng 없으면 POST maps가 FESTIVAL_MAP_LOCATION_REQUIRED")
     void fail_CreateMapWithoutCoordinates() {
         Festival festival = festivalApplicationService.create(
-                createFestivalCommand(null, null),
+                createFestivalCommand(new BigDecimal("37.5665"), new BigDecimal("126.9780")),
                 principal
         );
+        List<FestivalLocation> locations = festivalLocationService.findAllByFestivalId(festival.getId());
+        FestivalLocation primary = locations.stream()
+                .filter(FestivalLocation::isPrimary)
+                .findFirst()
+                .orElseThrow();
+        ReflectionTestUtils.setField(primary, "latitude", null);
+        ReflectionTestUtils.setField(primary, "longitude", null);
+        festivalLocationService.saveAll(List.of(primary));
 
         assertThatThrownBy(() -> coordinateRegistrationService.ensureCoordinateMap(
                 festival.getPublicId(), "본행사 배치", principal

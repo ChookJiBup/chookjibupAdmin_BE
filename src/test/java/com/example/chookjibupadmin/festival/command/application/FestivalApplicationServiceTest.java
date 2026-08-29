@@ -17,19 +17,26 @@ import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalCommand;
+import com.example.chookjibupadmin.festival.command.application.dto.FestivalLocationCommand;
 import com.example.chookjibupadmin.festival.command.application.dto.UpdateFestivalCommand;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalSeries;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescription;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocationType;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCount;
+import com.example.chookjibupadmin.visitor.command.domain.vo.VisitorCount;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -69,6 +76,38 @@ class FestivalApplicationServiceTest {
     @Nested
     @DisplayName("create")
     class Create {
+
+        @Test
+        @DisplayName("장소 목록에 null 항목이 있으면 500 대신 잘못된 요청으로 거절한다")
+        void fail_Create_NullLocationReturnsInvalidRequest() {
+            List<FestivalLocationCommand> locations =
+                    new java.util.ArrayList<>(createCommand().locations());
+            locations.add(null);
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    locations,
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries series = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(series, "id", 10L);
+                        return series;
+                    });
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+        }
 
         @Test
         @DisplayName("축제 기본 정보를 저장하고 생성자를 1관리자로 배정한다")
@@ -200,8 +239,19 @@ class FestivalApplicationServiceTest {
                     festivalSeries.getPublicId(),
                     "다른 축제",
                     "마포구 대표 지역 축제",
-                    "서울특별시 마포구 월드컵로 243",
-                    "월드컵공원",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "월드컵공원",
+                            "서울특별시 마포구 월드컵로 243",
+                            null,
+                            "월드컵공원",
+                            null,
+                            null,
+                            new BigDecimal("37.5683000"),
+                            new BigDecimal("126.8973000"),
+                            true,
+                            0
+                    )),
                     LocalDate.of(2026, 10, 16),
                     LocalDate.of(2026, 10, 18),
                     LocalTime.of(10, 0),
@@ -246,6 +296,477 @@ class FestivalApplicationServiceTest {
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.AUTH_FESTIVAL_CREATE_FORBIDDEN.getMessage());
         }
+
+        @Test
+        @DisplayName("대표 장소 위경도가 없으면 생성할 수 없다")
+        void fail_Create_PrimaryCoordinatesRequired() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "월드컵공원",
+                            "서울특별시 마포구 월드컵로 243",
+                            null,
+                            "중앙광장",
+                            null,
+                            null,
+                            null,
+                            null,
+                            true,
+                            0
+                    )),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026))
+                    .willReturn(false);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_PRIMARY_LOCATION_COORDINATES_REQUIRED.getMessage());
+        }
+
+        @Test
+        @DisplayName("한국 영역 밖 좌표면 생성할 수 없다")
+        void fail_Create_CoordinatesOutOfKorea() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "월드컵공원",
+                            "서울특별시 마포구 월드컵로 243",
+                            null,
+                            "중앙광장",
+                            null,
+                            null,
+                            new BigDecimal("35.6812"),
+                            new BigDecimal("139.7671"),
+                            true,
+                            0
+                    )),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026))
+                    .willReturn(false);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_LOCATION_COORDINATES_OUT_OF_KOREA.getMessage());
+        }
+
+        @Test
+        @DisplayName("보조 장소 좌표가 null이면 생성이 가능하다")
+        void success_Create_SecondaryWithoutCoordinates() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    List.of(
+                            new FestivalLocationCommand(
+                                    FestivalLocationType.MAIN_VENUE,
+                                    "월드컵공원",
+                                    "서울특별시 마포구 월드컵로 243",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    new BigDecimal("37.5683"),
+                                    new BigDecimal("126.8973"),
+                                    true,
+                                    0
+                            ),
+                            new FestivalLocationCommand(
+                                    FestivalLocationType.PARKING,
+                                    "임시 주차장",
+                                    "서울특별시 마포구 성산동 123",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    false,
+                                    1
+                            )
+                    ),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026)).willReturn(false);
+            given(festivalService.save(any(Festival.class)))
+                    .willAnswer(invocation -> {
+                        Festival festival = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festival, "id", 1L);
+                        return festival;
+                    });
+
+            Festival festival = festivalApplicationService.create(command, principal());
+            assertThat(festival.getId()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("위도만 있으면 생성할 수 없다")
+        void fail_Create_LatitudeOnly() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "월드컵공원",
+                            "서울특별시 마포구 월드컵로 243",
+                            null,
+                            null,
+                            null,
+                            null,
+                            new BigDecimal("37.5683"),
+                            null,
+                            true,
+                            0
+                    )),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026)).willReturn(false);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_PRIMARY_LOCATION_COORDINATES_REQUIRED.getMessage());
+        }
+
+        @Test
+        @DisplayName("경도만 있으면 생성할 수 없다")
+        void fail_Create_LongitudeOnly() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "월드컵공원",
+                            "서울특별시 마포구 월드컵로 243",
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            new BigDecimal("126.8973"),
+                            true,
+                            0
+                    )),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026)).willReturn(false);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_PRIMARY_LOCATION_COORDINATES_REQUIRED.getMessage());
+        }
+
+        @Test
+        @DisplayName("보조 장소 좌표가 한국 인근 범위 밖이면 거절한다")
+        void fail_Create_SecondaryOutOfKorea() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    List.of(
+                            new FestivalLocationCommand(
+                                    FestivalLocationType.MAIN_VENUE,
+                                    "월드컵공원",
+                                    "서울특별시 마포구 월드컵로 243",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    new BigDecimal("37.5683"),
+                                    new BigDecimal("126.8973"),
+                                    true,
+                                    0
+                            ),
+                            new FestivalLocationCommand(
+                                    FestivalLocationType.PARKING,
+                                    "해외 주차장",
+                                    "도쿄",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    new BigDecimal("35.6812"),
+                                    new BigDecimal("139.7671"),
+                                    false,
+                                    1
+                            )
+                    ),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026)).willReturn(false);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_LOCATION_COORDINATES_OUT_OF_KOREA.getMessage());
+        }
+
+        @Test
+        @DisplayName("한국 인근 범위 바로 밖 좌표는 거절한다")
+        void fail_Create_JustOutsideKoreaBoundary() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "범위 밖 행사장",
+                            "검증용 주소",
+                            null,
+                            null,
+                            null,
+                            null,
+                            new BigDecimal("32.9999999"),
+                            new BigDecimal("124.5"),
+                            true,
+                            0
+                    )),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026)).willReturn(false);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_LOCATION_COORDINATES_OUT_OF_KOREA.getMessage());
+        }
+
+        @Test
+        @DisplayName("보조 장소 위도만 있으면 거절한다")
+        void fail_Create_SecondaryLatitudeOnly() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    List.of(
+                            new FestivalLocationCommand(
+                                    FestivalLocationType.MAIN_VENUE,
+                                    "월드컵공원",
+                                    "서울특별시 마포구 월드컵로 243",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    new BigDecimal("37.5683"),
+                                    new BigDecimal("126.8973"),
+                                    true,
+                                    0
+                            ),
+                            new FestivalLocationCommand(
+                                    FestivalLocationType.PARKING,
+                                    "임시 주차장",
+                                    "서울특별시 마포구 성산동 123",
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    new BigDecimal("37.56"),
+                                    null,
+                                    false,
+                                    1
+                            )
+                    ),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026)).willReturn(false);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+        }
+
+        @Test
+        @DisplayName("한국 범위 경계값(33.0, 38.7, 124.5, 132.0)은 허용한다")
+        void success_Create_KoreaBoundaryCoordinates() {
+            for (BigDecimal[] point : new BigDecimal[][]{
+                    {new BigDecimal("33.0"), new BigDecimal("124.5")},
+                    {new BigDecimal("38.7"), new BigDecimal("132.0")}
+            }) {
+                CreateFestivalCommand command = new CreateFestivalCommand(
+                        null,
+                        "마포나루 새우젓축제",
+                        "마포구 대표 지역 축제",
+                        List.of(new FestivalLocationCommand(
+                                FestivalLocationType.MAIN_VENUE,
+                                "경계 행사장",
+                                "검증용 주소",
+                                null,
+                                null,
+                                null,
+                                null,
+                                point[0],
+                                point[1],
+                                true,
+                                0
+                        )),
+                        LocalDate.of(2026, 10, 16),
+                        LocalDate.of(2026, 10, 18),
+                        LocalTime.of(10, 0),
+                        LocalTime.of(21, 0)
+                );
+                given(adminAccountService.getById(principal().adminId()))
+                        .willReturn(unassignedAdmin());
+                given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                        .willReturn(java.util.Optional.empty());
+                given(festivalSeriesService.save(any(FestivalSeries.class)))
+                        .willAnswer(invocation -> {
+                            FestivalSeries festivalSeries = invocation.getArgument(0);
+                            ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                            return festivalSeries;
+                        });
+                given(festivalService.existsBySeriesIdAndYear(10L, 2026)).willReturn(false);
+                given(festivalService.save(any(Festival.class)))
+                        .willAnswer(invocation -> {
+                            Festival festival = invocation.getArgument(0);
+                            ReflectionTestUtils.setField(festival, "id", 1L);
+                            return festival;
+                        });
+
+                assertThat(festivalApplicationService.create(command, principal()).getId())
+                        .isEqualTo(1L);
+            }
+        }
+
+        @Test
+        @DisplayName("레거시 주소 전용 생성은 좌표 누락으로 거절한다")
+        void fail_Create_LegacyAddressWithoutCoordinates() {
+            CreateFestivalCommand command = new CreateFestivalCommand(
+                    null,
+                    "마포나루 새우젓축제",
+                    "마포구 대표 지역 축제",
+                    "서울특별시 마포구 월드컵로 243",
+                    "월드컵공원",
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(10, 0),
+                    LocalTime.of(21, 0)
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalSeriesService.findByNormalizedName("마포나루새우젓축제"))
+                    .willReturn(java.util.Optional.empty());
+            given(festivalSeriesService.save(any(FestivalSeries.class)))
+                    .willAnswer(invocation -> {
+                        FestivalSeries festivalSeries = invocation.getArgument(0);
+                        ReflectionTestUtils.setField(festivalSeries, "id", 10L);
+                        return festivalSeries;
+                    });
+            given(festivalService.existsBySeriesIdAndYear(10L, 2026)).willReturn(false);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_PRIMARY_LOCATION_COORDINATES_REQUIRED.getMessage());
+        }
     }
 
     @Nested
@@ -280,6 +801,111 @@ class FestivalApplicationServiceTest {
             assertThat(updated.getDetailAddressValue())
                     .isEqualTo(command.detailAddress());
             then(festivalService).should().getByPublicIdForUpdate(publicId);
+        }
+
+        @Test
+        @DisplayName("수정 시 대표 장소 좌표가 없으면 거절한다")
+        void fail_Update_PrimaryCoordinatesRequired() {
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            UUID publicId = festival.getPublicId();
+            UpdateFestivalCommand command = new UpdateFestivalCommand(
+                    "수정 축제",
+                    "수정 설명",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "수정 행사장",
+                            "서울특별시 마포구 수정로 1",
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            true,
+                            0
+                    )),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(20, 0),
+                    null
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
+            givenOwnerRole(1L, festivalId);
+
+            assertThatThrownBy(() -> festivalApplicationService.update(publicId, command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_PRIMARY_LOCATION_COORDINATES_REQUIRED.getMessage());
+        }
+
+        @Test
+        @DisplayName("수정 시 대표 장소 좌표가 한국 범위 밖이면 거절한다")
+        void fail_Update_CoordinatesOutOfKorea() {
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            UUID publicId = festival.getPublicId();
+            UpdateFestivalCommand command = new UpdateFestivalCommand(
+                    "수정 축제",
+                    "수정 설명",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "수정 행사장",
+                            "서울특별시 마포구 수정로 1",
+                            null,
+                            null,
+                            null,
+                            null,
+                            new BigDecimal("35.6812"),
+                            new BigDecimal("139.7671"),
+                            true,
+                            0
+                    )),
+                    LocalDate.of(2026, 10, 16),
+                    LocalDate.of(2026, 10, 18),
+                    LocalTime.of(9, 0),
+                    LocalTime.of(20, 0),
+                    null
+            );
+            given(adminAccountService.getById(principal().adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
+            givenOwnerRole(1L, festivalId);
+
+            assertThatThrownBy(() -> festivalApplicationService.update(publicId, command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_LOCATION_COORDINATES_OUT_OF_KOREA.getMessage());
+        }
+
+        @Test
+        @DisplayName("방문 인원 데이터가 있으면 입력 모드를 변경할 수 없다")
+        void fail_Update_VisitorInputModeChangeForbidden_CustomException() {
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            festival.changeVisitorCountInputMode(FestivalVisitorCountInputMode.DAILY);
+            UUID publicId = festival.getPublicId();
+            AdminPrincipal principal = principal();
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(publicId))
+                    .willReturn(festival);
+            givenOwnerRole(1L, festivalId);
+            given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(festivalId))
+                    .willReturn(List.of(FestivalDailyVisitorCount.create(
+                            festivalId,
+                            LocalDate.of(2026, 10, 16),
+                            VisitorCount.of(100)
+                    )));
+
+            assertThatThrownBy(() -> festivalApplicationService.update(
+                    publicId,
+                    updateCommand(FestivalVisitorCountInputMode.TOTAL),
+                    principal
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_VISITOR_INPUT_MODE_CHANGE_FORBIDDEN.getMessage());
         }
 
         @Test
@@ -363,12 +989,24 @@ class FestivalApplicationServiceTest {
             UpdateFestivalCommand command = new UpdateFestivalCommand(
                     "수정 축제",
                     "수정 설명",
-                    "서울특별시 마포구 수정로 1",
-                    "수정 행사장",
+                    List.of(new FestivalLocationCommand(
+                            FestivalLocationType.MAIN_VENUE,
+                            "수정 행사장",
+                            "서울특별시 마포구 수정로 1",
+                            null,
+                            "수정 행사장",
+                            null,
+                            null,
+                            new BigDecimal("37.5665000"),
+                            new BigDecimal("126.9780000"),
+                            true,
+                            0
+                    )),
                     LocalDate.of(2027, 11, 1),
                     LocalDate.of(2027, 11, 3),
                     LocalTime.of(9, 0),
-                    LocalTime.of(20, 0)
+                    LocalTime.of(20, 0),
+                    null
             );
             AdminPrincipal principal = principal();
             given(adminAccountService.getById(principal.adminId()))
@@ -397,8 +1035,19 @@ class FestivalApplicationServiceTest {
                 seriesId,
                 "마포나루 새우젓축제",
                 "마포구 대표 지역 축제",
-                "서울특별시 마포구 월드컵로 243",
-                "월드컵공원",
+                List.of(new FestivalLocationCommand(
+                        FestivalLocationType.MAIN_VENUE,
+                        "월드컵공원",
+                        "서울특별시 마포구 월드컵로 243",
+                        null,
+                        "월드컵공원",
+                        null,
+                        null,
+                        new BigDecimal("37.5683000"),
+                        new BigDecimal("126.8973000"),
+                        true,
+                        0
+                )),
                 LocalDate.of(2026, 10, 16),
                 LocalDate.of(2026, 10, 18),
                 LocalTime.of(10, 0),
@@ -407,15 +1056,31 @@ class FestivalApplicationServiceTest {
     }
 
     private UpdateFestivalCommand updateCommand() {
+        return updateCommand(null);
+    }
+
+    private UpdateFestivalCommand updateCommand(FestivalVisitorCountInputMode visitorCountInputMode) {
         return new UpdateFestivalCommand(
                 "수정 축제",
                 "수정 설명",
-                "서울특별시 마포구 수정로 1",
-                "수정 행사장",
-                LocalDate.of(2026, 11, 1),
-                LocalDate.of(2026, 11, 3),
+                List.of(new FestivalLocationCommand(
+                        FestivalLocationType.MAIN_VENUE,
+                        "수정 행사장",
+                        "서울특별시 마포구 수정로 1",
+                        null,
+                        "수정 행사장",
+                        null,
+                        null,
+                        new BigDecimal("37.5665000"),
+                        new BigDecimal("126.9780000"),
+                        true,
+                        0
+                )),
+                LocalDate.of(2026, 10, 16),
+                LocalDate.of(2026, 10, 18),
                 LocalTime.of(9, 0),
-                LocalTime.of(20, 0)
+                LocalTime.of(20, 0),
+                visitorCountInputMode
         );
     }
 

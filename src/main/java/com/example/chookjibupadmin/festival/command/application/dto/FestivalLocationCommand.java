@@ -50,6 +50,10 @@ public record FestivalLocationCommand(
         );
     }
 
+    /**
+     * 주소만으로 대표 장소를 만드는 레거시 입력이다.
+     * 좌표는 채우지 않으며, 등록·수정 검증에서 40013으로 거절된다.
+     */
     public static FestivalLocationCommand legacy(String address, String detail) {
         return new FestivalLocationCommand(
                 null,

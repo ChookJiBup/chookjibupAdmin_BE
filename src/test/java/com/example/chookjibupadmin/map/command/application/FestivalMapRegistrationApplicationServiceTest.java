@@ -20,6 +20,8 @@ import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalCommand;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalWithMapResult;
+import com.example.chookjibupadmin.festival.command.application.dto.FestivalLocationCommand;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocationType;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
@@ -27,10 +29,12 @@ import com.example.chookjibupadmin.map.command.application.dto.PreparedMapImage;
 import com.example.chookjibupadmin.map.command.application.dto.StoredMapImageFile;
 import com.example.chookjibupadmin.map.command.application.port.MapImagePreparationPort;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -173,8 +177,19 @@ class FestivalMapRegistrationApplicationServiceTest {
                 null,
                 "테스트 축제",
                 "테스트 축제 설명",
-                "서울특별시 마포구 월드컵로 243",
-                "월드컵공원",
+                List.of(new FestivalLocationCommand(
+                        FestivalLocationType.MAIN_VENUE,
+                        "월드컵공원",
+                        "서울특별시 마포구 월드컵로 243",
+                        null,
+                        "월드컵공원",
+                        null,
+                        null,
+                        new BigDecimal("37.5683000"),
+                        new BigDecimal("126.8973000"),
+                        true,
+                        0
+                )),
                 LocalDate.of(2026, 10, 16),
                 LocalDate.of(2026, 10, 18),
                 LocalTime.of(10, 0),

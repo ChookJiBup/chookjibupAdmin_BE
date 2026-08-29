@@ -53,7 +53,10 @@ public class FestivalCommandController {
     /**
      * 임시 기준의 축제 기본 정보를 저장한다.
      */
-    @Operation(summary = "축제 기본 정보 생성")
+    @Operation(
+            summary = "축제 기본 정보 생성",
+            description = "대표 장소(primary) 위경도 필수. 누락 40013, 대한민국 인근 범위 밖 40014."
+    )
     @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -77,7 +80,10 @@ public class FestivalCommandController {
     /**
      * 축제 기본 정보와 AI 분석 대상 원본 도면을 함께 등록한다.
      */
-    @Operation(summary = "AI 분석용 원본 도면을 포함한 축제 기본 정보 생성")
+    @Operation(
+            summary = "AI 분석용 원본 도면을 포함한 축제 기본 정보 생성",
+            description = "대표 장소 위경도 필수(JSON 파트와 동일). 누락 40013, 범위 밖 40014."
+    )
     @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -111,7 +117,10 @@ public class FestivalCommandController {
     /**
      * 1관리자 권한으로 담당 축제의 기본 정보를 수정한다.
      */
-    @Operation(summary = "축제 기본 정보 수정")
+    @Operation(
+            summary = "축제 기본 정보 수정",
+            description = "locations는 필수이며 대표 장소 위경도도 필수. 누락 40013, 범위 밖 40014."
+    )
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping("/{festivalId}")
     public ApiResponse<UpdateFestivalResponse> update(

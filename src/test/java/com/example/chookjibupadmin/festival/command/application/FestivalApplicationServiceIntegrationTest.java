@@ -23,6 +23,7 @@ import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
 import com.example.chookjibupadmin.festival.location.domain.FestivalLocationType;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -249,8 +250,8 @@ class FestivalApplicationServiceIntegrationTest {
                                 "중앙광장",
                                 null,
                                 null,
-                                null,
-                                null,
+                                new BigDecimal("37.5683000"),
+                                new BigDecimal("126.8973000"),
                                 true,
                                 0
                         ),

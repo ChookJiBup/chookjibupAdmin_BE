@@ -9,6 +9,7 @@ import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,13 @@ public class FieldStaffAccountService {
     }
 
     /**
+     * 내부 식별자로 현장 스태프 계정을 선택적으로 조회한다.
+     */
+    public Optional<FieldStaffAccount> findById(Long fieldStaffAccountId) {
+        return fieldStaffAccountRepository.findById(fieldStaffAccountId);
+    }
+
+    /**
      * 내부 식별자로 현장 스태프 계정을 조회한다.
      */
     public FieldStaffAccount getById(Long fieldStaffAccountId) {
@@ -47,6 +55,9 @@ public class FieldStaffAccountService {
             FieldStaffPrincipal principal,
             LocalDateTime now
     ) {
+        if (principal == null || now == null) {
+            throw new CustomException(ErrorCode.AUTH_TOKEN_INVALID);
+        }
         FieldStaffAccount account = fieldStaffAccountRepository
                 .findById(principal.fieldStaffId())
                 .orElseThrow(() -> new CustomException(ErrorCode.AUTH_TOKEN_INVALID));
