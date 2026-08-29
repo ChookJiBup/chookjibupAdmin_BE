@@ -15,6 +15,7 @@ import com.example.chookjibupadmin.booth.command.domain.BoothQueueModifierType;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.command.application.FestivalOperationAccessService;
+import com.example.chookjibupadmin.operator.command.application.FieldStaffAccountService;
 import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -43,6 +44,7 @@ public class BoothQueueCommandApplicationService {
     private final BoothInfoService boothInfoService;
     private final AdminAccountService adminAccountService;
     private final AdminFestivalRoleService adminFestivalRoleService;
+    private final FieldStaffAccountService fieldStaffAccountService;
 
     public BoothQueueResult updateTail(
             UUID festivalPublicId,
@@ -62,7 +64,7 @@ public class BoothQueueCommandApplicationService {
         validateTailCoordinates(command.tailLatitude(), command.tailLongitude());
         List<Map<String, BigDecimal>> path = toPathGeometry(command.path());
 
-        switch (principal) {
+        String modifierName = switch (principal) {
             case AdminPrincipal adminPrincipal -> updateAsAdmin(
                     festivalId,
                     queue,
@@ -78,11 +80,16 @@ public class BoothQueueCommandApplicationService {
                     staffPrincipal
             );
             default -> throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-        return BoothQueueResult.from(boothQueueService.save(queue), booth.getBoothName());
+        };
+
+        return BoothQueueResult.from(
+                boothQueueService.save(queue),
+                booth.getBoothName(),
+                modifierName
+        );
     }
 
-    private void updateAsAdmin(
+    private String updateAsAdmin(
             Long festivalId,
             BoothQueue queue,
             UpdateBoothQueueCommand command,
@@ -104,9 +111,10 @@ public class BoothQueueCommandApplicationService {
                 admin.getId(),
                 null
         );
+        return admin.getNameValue();
     }
 
-    private void updateAsStaff(
+    private String updateAsStaff(
             Long festivalId,
             BoothQueue queue,
             UpdateBoothQueueCommand command,
@@ -125,6 +133,7 @@ public class BoothQueueCommandApplicationService {
                 null,
                 principal.fieldStaffId()
         );
+        return fieldStaffAccountService.getById(principal.fieldStaffId()).getNameValue();
     }
 
     private void validateTailCoordinates(BigDecimal lat, BigDecimal lng) {

@@ -16,8 +16,15 @@ import com.example.chookjibupadmin.booth.command.domain.BoothQueueModifierType;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.command.application.FestivalOperationAccessService;
+import com.example.chookjibupadmin.operator.command.application.FieldStaffAccountService;
+import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPhoneNumber;
 import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +56,9 @@ class BoothQueueCommandApplicationServiceTest {
     @Mock
     private AdminFestivalRoleService adminFestivalRoleService;
 
+    @Mock
+    private FieldStaffAccountService fieldStaffAccountService;
+
     @Test
     @DisplayName("스태프는 배정 축제 대기열 줄끝을 수정한다")
     void success_UpdateTail_AsStaff() {
@@ -69,6 +79,7 @@ class BoothQueueCommandApplicationServiceTest {
         given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
         given(boothInfoService.getById(7L)).willReturn(booth);
         given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
+        given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
 
         BoothQueueResult result = service.updateTail(
                 festivalPublicId,
@@ -79,7 +90,20 @@ class BoothQueueCommandApplicationServiceTest {
 
         assertThat(result.queueTailMeters()).isEqualTo(15);
         assertThat(result.lastModifierType()).isEqualTo(BoothQueueModifierType.STAFF);
+        assertThat(result.lastModifierName()).isEqualTo("김스태프");
         assertThat(result.tailLatitude()).isEqualByComparingTo("37.5665");
+    }
+
+    private FieldStaffAccount staffAccount(String name) {
+        return FieldStaffAccount.create(
+                10L,
+                FieldStaffLoginId.of("staff01"),
+                FieldStaffName.of(name),
+                FieldStaffPhoneNumber.of("010-1234-5678"),
+                FieldStaffPasswordHash.of("encoded-password"),
+                LocalDateTime.of(2026, 10, 9, 0, 0),
+                LocalDateTime.of(2026, 10, 18, 23, 59)
+        );
     }
 
     @Test

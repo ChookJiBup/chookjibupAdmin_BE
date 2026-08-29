@@ -17,9 +17,14 @@ public record BoothQueueResult(
         Integer queueTailMeters,
         List<Map<String, BigDecimal>> path,
         BoothQueueModifierType lastModifierType,
+        String lastModifierName,
         LocalDateTime updatedAt
 ) {
-    public static BoothQueueResult from(BoothQueue queue, String boothName) {
+    public static BoothQueueResult from(
+            BoothQueue queue,
+            String boothName,
+            String lastModifierName
+    ) {
         return new BoothQueueResult(
                 queue.getPublicId(),
                 queue.getBoothId(),
@@ -29,6 +34,7 @@ public record BoothQueueResult(
                 queue.getQueueTailMeters(),
                 queue.getPathGeometry(),
                 queue.getModifierType(),
+                lastModifierName,
                 queue.getUpdatedAt()
         );
     }

@@ -35,6 +35,8 @@ public record FestivalQueueListResponse(
             Integer queueTailMeters,
             List<Map<String, BigDecimal>> path,
             BoothQueueModifierType lastModifierType,
+            @Schema(description = "마지막으로 줄끝을 갱신한 사람의 이름", nullable = true)
+            String lastModifierName,
             LocalDateTime updatedAt
     ) {
         public static QueueItem from(BoothQueueResult result) {
@@ -47,6 +49,7 @@ public record FestivalQueueListResponse(
                     result.queueTailMeters(),
                     result.path(),
                     result.lastModifierType(),
+                    result.lastModifierName(),
                     result.updatedAt()
             );
         }

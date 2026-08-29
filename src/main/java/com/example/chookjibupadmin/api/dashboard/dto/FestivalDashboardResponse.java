@@ -13,6 +13,8 @@ import java.util.UUID;
 public record FestivalDashboardResponse(
         @Schema(description = "외부 노출용 축제 ID")
         UUID festivalId,
+        @Schema(description = "축제명", example = "김천김밥축제")
+        String festivalName,
         @Schema(description = "하위 availability OR (deprecated)", deprecated = true)
         boolean dataAvailable,
         @Schema(description = "실시간 현재 방문자 수 가용 여부")
@@ -42,6 +44,7 @@ public record FestivalDashboardResponse(
     public static FestivalDashboardResponse from(FestivalDashboardView view) {
         return new FestivalDashboardResponse(
                 view.festivalId(),
+                view.festivalName(),
                 view.dataAvailable(),
                 view.visitorAvailable(),
                 view.boothAvailable(),

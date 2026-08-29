@@ -81,6 +81,7 @@ class FestivalDashboardQueryApplicationServiceTest {
             );
 
             assertThat(view.festivalId()).isEqualTo(publicId);
+            assertThat(view.festivalName()).isEqualTo("마포나루 새우젓축제");
             assertThat(view.dataAvailable()).isFalse();
             assertThat(view.visitorAvailable()).isFalse();
             assertThat(view.currentVisitorCount()).isNull();
@@ -101,6 +102,7 @@ class FestivalDashboardQueryApplicationServiceTest {
             FestivalDashboardView view = dashboardQueryService.getDashboard(publicId, staff);
 
             assertThat(view.festivalId()).isEqualTo(publicId);
+            assertThat(view.festivalName()).isEqualTo("마포나루 새우젓축제");
             assertThat(view.visitorAvailable()).isFalse();
             assertThat(view.currentVisitorCount()).isNull();
         }
