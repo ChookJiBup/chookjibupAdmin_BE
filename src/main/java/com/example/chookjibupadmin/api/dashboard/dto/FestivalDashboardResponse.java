@@ -13,7 +13,7 @@ import java.util.UUID;
 public record FestivalDashboardResponse(
         @Schema(description = "외부 노출용 축제 ID")
         UUID festivalId,
-        @Schema(description = "축제명", example = "김천김밥축제")
+        @Schema(description = "축제명", example = "마포나루 새우젓축제")
         String festivalName,
         @Schema(description = "하위 availability OR (deprecated)", deprecated = true)
         boolean dataAvailable,
