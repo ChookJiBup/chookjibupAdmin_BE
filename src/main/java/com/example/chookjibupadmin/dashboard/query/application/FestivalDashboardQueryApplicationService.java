@@ -42,12 +42,13 @@ public class FestivalDashboardQueryApplicationService {
         authorize(festival, principal);
 
         return metricProvider.findCurrent(festival.getId())
-                .map(metric -> toView(festival.getPublicId(), metric))
-                .orElseGet(() -> emptyView(festival.getPublicId()));
+                .map(metric -> toView(festival.getPublicId(), festival.getNameValue(), metric))
+                .orElseGet(() -> emptyView(festival.getPublicId(), festival.getNameValue()));
     }
 
     private FestivalDashboardView toView(
             UUID festivalPublicId,
+            String festivalName,
             FestivalDashboardMetricProvider.Snapshot metric
     ) {
         boolean dataAvailable = metric.visitorAvailable()
@@ -80,6 +81,7 @@ public class FestivalDashboardQueryApplicationService {
                 .toList();
         return new FestivalDashboardView(
                 festivalPublicId,
+                festivalName,
                 dataAvailable,
                 metric.visitorAvailable(),
                 metric.boothAvailable(),
@@ -95,9 +97,10 @@ public class FestivalDashboardQueryApplicationService {
         );
     }
 
-    private FestivalDashboardView emptyView(UUID festivalPublicId) {
+    private FestivalDashboardView emptyView(UUID festivalPublicId, String festivalName) {
         return new FestivalDashboardView(
                 festivalPublicId,
+                festivalName,
                 false,
                 false,
                 false,

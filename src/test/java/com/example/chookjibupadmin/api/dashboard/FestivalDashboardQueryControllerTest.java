@@ -34,6 +34,7 @@ class FestivalDashboardQueryControllerTest extends AdminHttpIntegrationTestSuppo
             mockMvc.perform(get("/api/festivals/{festivalId}/dashboard", created.festivalId())
                             .header("Authorization", bearer(owner)))
                     .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.festivalName").isNotEmpty())
                     .andExpect(jsonPath("$.data.dataAvailable").value(false))
                     .andExpect(jsonPath("$.data.visitorAvailable").value(false))
                     .andExpect(jsonPath("$.data.currentVisitorCount").value(nullValue()));

@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record FestivalDashboardView(
         UUID festivalId,
+        String festivalName,
         boolean dataAvailable,
         boolean visitorAvailable,
         boolean boothAvailable,
