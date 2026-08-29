@@ -60,6 +60,7 @@ public class AdminManagedFestivalDetailQueryApplicationService {
                 festival.getEndDate(),
                 festival.getOperationStartTime(),
                 festival.getOperationEndTime(),
+                festival.getVisitorCountInputMode(),
                 festivalLocationService.findAllByFestivalId(festival.getId())
                         .stream()
                         .map(FestivalLocationDetail::from)

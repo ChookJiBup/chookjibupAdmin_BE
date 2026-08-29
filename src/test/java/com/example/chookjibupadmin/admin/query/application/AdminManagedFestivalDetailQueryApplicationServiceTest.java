@@ -18,6 +18,7 @@ import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalStatus;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescription;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddress;
@@ -109,6 +110,8 @@ class AdminManagedFestivalDetailQueryApplicationServiceTest {
         assertThat(result.description()).isEqualTo("축제 설명");
         assertThat(result.operationStartTime()).isEqualTo(LocalTime.of(10, 0));
         assertThat(result.operationEndTime()).isEqualTo(LocalTime.of(21, 0));
+        assertThat(result.visitorCountInputMode())
+                .isEqualTo(FestivalVisitorCountInputMode.UNSET);
         assertThat(result.locations()).hasSize(1);
     }
 

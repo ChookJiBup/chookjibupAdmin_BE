@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalDetail;
 import com.example.chookjibupadmin.api.festival.dto.FestivalLocationResponse;
 import com.example.chookjibupadmin.festival.command.domain.FestivalStatus;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
@@ -30,6 +31,8 @@ public record AdminManagedFestivalDetailResponse(
         @Schema(description = "종료일") LocalDate endDate,
         @Schema(description = "일일 운영 시작 시간") LocalTime operationStartTime,
         @Schema(description = "일일 운영 종료 시간") LocalTime operationEndTime,
+        @Schema(description = "방문 인원 입력 방식", example = "DAILY")
+        FestivalVisitorCountInputMode visitorCountInputMode,
         @Schema(description = "축제 장소 목록") List<FestivalLocationResponse> locations
 ) {
 
@@ -51,6 +54,7 @@ public record AdminManagedFestivalDetailResponse(
                 detail.endDate(),
                 detail.operationStartTime(),
                 detail.operationEndTime(),
+                detail.visitorCountInputMode(),
                 detail.locations().stream()
                         .map(FestivalLocationResponse::from)
                         .toList()

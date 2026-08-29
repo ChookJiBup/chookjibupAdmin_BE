@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.admin.query.application.dto;
 
 import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.festival.command.domain.FestivalStatus;
+import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.festival.location.application.dto.FestivalLocationDetail;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import java.time.LocalDate;
@@ -27,6 +28,7 @@ public record AdminManagedFestivalDetail(
         LocalDate endDate,
         LocalTime operationStartTime,
         LocalTime operationEndTime,
+        FestivalVisitorCountInputMode visitorCountInputMode,
         List<FestivalLocationDetail> locations
 ) {
 }
