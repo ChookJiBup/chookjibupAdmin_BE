@@ -27,6 +27,14 @@ public class FieldStaffAccountRepositoryImpl implements FieldStaffAccountReposit
     }
 
     @Override
+    public List<FieldStaffAccount> findAllById(Collection<Long> fieldStaffAccountIds) {
+        if (fieldStaffAccountIds == null || fieldStaffAccountIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findAllById(fieldStaffAccountIds);
+    }
+
+    @Override
     public Optional<FieldStaffAccount> findByPublicId(UUID publicId) {
         return jpaRepository.findByPublicId(publicId);
     }

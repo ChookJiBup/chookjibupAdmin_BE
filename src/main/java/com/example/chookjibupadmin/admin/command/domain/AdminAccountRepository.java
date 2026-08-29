@@ -22,6 +22,11 @@ public interface AdminAccountRepository {
     Optional<AdminAccount> findById(Long adminAccountId);
 
     /**
+     * 관리자 식별자 목록에 해당하는 계정을 조회한다.
+     */
+    List<AdminAccount> findAllById(Collection<Long> adminAccountIds);
+
+    /**
      * 외부 노출용 관리자 UUID로 계정을 조회한다.
      */
     Optional<AdminAccount> findByPublicId(UUID publicId);

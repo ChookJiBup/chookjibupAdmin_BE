@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.auth.support.FestivalActorPrincipal;
 import com.example.chookjibupadmin.dashboard.query.application.dto.DashboardBoothView;
+import com.example.chookjibupadmin.dashboard.query.application.dto.DashboardZoneView;
 import com.example.chookjibupadmin.dashboard.query.application.dto.FestivalDashboardView;
 import com.example.chookjibupadmin.dashboard.query.application.port.FestivalDashboardMetricProvider;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
@@ -57,9 +58,24 @@ public class FestivalDashboardQueryApplicationService {
                 .map(b -> new DashboardBoothView(
                         b.boothId(),
                         b.boothName(),
+                        b.roadmapNodePublicId(),
+                        b.lat(),
+                        b.lng(),
                         b.congestionLevel(),
                         b.waitMinutes(),
-                        b.congestionCreatedAt()
+                        b.congestionCreatedAt(),
+                        b.modifierType(),
+                        b.modifierAdminId(),
+                        b.modifierStaffId(),
+                        b.modifierName()
+                ))
+                .toList();
+        List<DashboardZoneView> zones = metric.zones().stream()
+                .map(z -> new DashboardZoneView(
+                        z.zoneId(),
+                        z.name(),
+                        z.sortOrder(),
+                        z.boothNodeIds()
                 ))
                 .toList();
         return new FestivalDashboardView(
@@ -74,7 +90,8 @@ public class FestivalDashboardQueryApplicationService {
                 metric.activeQueueCount(),
                 metric.averageWaitMinutes(),
                 metric.updatedAt(),
-                booths
+                booths,
+                zones
         );
     }
 
@@ -91,6 +108,7 @@ public class FestivalDashboardQueryApplicationService {
                 null,
                 null,
                 null,
+                List.of(),
                 List.of()
         );
     }

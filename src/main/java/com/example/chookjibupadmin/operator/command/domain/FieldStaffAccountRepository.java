@@ -22,6 +22,11 @@ public interface FieldStaffAccountRepository {
     Optional<FieldStaffAccount> findById(Long fieldStaffAccountId);
 
     /**
+     * 내부 식별자 목록에 해당하는 현장 스태프 계정을 조회한다.
+     */
+    List<FieldStaffAccount> findAllById(Collection<Long> fieldStaffAccountIds);
+
+    /**
      * 외부 노출용 UUID로 현장 스태프 계정을 조회한다.
      */
     Optional<FieldStaffAccount> findByPublicId(UUID publicId);

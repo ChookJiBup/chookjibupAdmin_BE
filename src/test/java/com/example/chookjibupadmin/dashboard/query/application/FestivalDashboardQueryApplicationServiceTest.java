@@ -86,6 +86,7 @@ class FestivalDashboardQueryApplicationServiceTest {
             assertThat(view.currentVisitorCount()).isNull();
             assertThat(view.operatingStatus()).isEqualTo("DATA_UNAVAILABLE");
             assertThat(view.booths()).isEmpty();
+            assertThat(view.zones()).isEmpty();
         }
 
         @Test

@@ -36,6 +36,20 @@ public class AdminAccountService {
     }
 
     /**
+     * 내부 식별자로 관리자 계정을 선택적으로 조회한다.
+     */
+    public Optional<AdminAccount> findById(Long adminAccountId) {
+        return adminAccountRepository.findById(adminAccountId);
+    }
+
+    /**
+     * 내부 식별자 목록에 해당하는 관리자 계정을 조회한다.
+     */
+    public List<AdminAccount> findAllById(Collection<Long> adminAccountIds) {
+        return adminAccountRepository.findAllById(adminAccountIds);
+    }
+
+    /**
      * 내부 식별자로 관리자 계정을 조회한다.
      */
     public AdminAccount getById(Long adminAccountId) {

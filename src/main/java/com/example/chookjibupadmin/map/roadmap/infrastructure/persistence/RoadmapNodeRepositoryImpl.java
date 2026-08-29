@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.map.roadmap.infrastructure.persistence;
 
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNode;
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNodeRepository;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +34,14 @@ public class RoadmapNodeRepositoryImpl implements RoadmapNodeRepository {
                 roadmapId,
                 mapId
         );
+    }
+
+    @Override
+    public List<RoadmapNode> findAllById(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findAllById(ids);
     }
 
     @Override

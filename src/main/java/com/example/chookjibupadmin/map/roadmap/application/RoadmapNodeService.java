@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNode;
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNodeRepository;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,10 @@ public class RoadmapNodeService {
                 roadmapId,
                 mapId
         );
+    }
+
+    public List<RoadmapNode> findAllById(Collection<Long> ids) {
+        return repository.findAllById(ids);
     }
 
     public RoadmapNode getByPublicIdAndMapId(UUID publicId, Long mapId) {

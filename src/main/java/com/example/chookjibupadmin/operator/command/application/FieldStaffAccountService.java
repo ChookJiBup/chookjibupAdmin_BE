@@ -41,6 +41,13 @@ public class FieldStaffAccountService {
     }
 
     /**
+     * 내부 식별자 목록에 해당하는 현장 스태프 계정을 조회한다.
+     */
+    public List<FieldStaffAccount> findAllById(Collection<Long> fieldStaffAccountIds) {
+        return fieldStaffAccountRepository.findAllById(fieldStaffAccountIds);
+    }
+
+    /**
      * 내부 식별자로 현장 스태프 계정을 조회한다.
      */
     public FieldStaffAccount getById(Long fieldStaffAccountId) {

@@ -27,6 +27,14 @@ public class AdminAccountRepositoryImpl implements AdminAccountRepository {
     }
 
     @Override
+    public List<AdminAccount> findAllById(Collection<Long> adminAccountIds) {
+        if (adminAccountIds == null || adminAccountIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findAllById(adminAccountIds);
+    }
+
+    @Override
     public Optional<AdminAccount> findByPublicId(UUID publicId) {
         return jpaRepository.findByPublicId(publicId);
     }

@@ -16,6 +16,7 @@ public record FestivalDashboardView(
         Long activeQueueCount,
         Long averageWaitMinutes,
         LocalDateTime updatedAt,
-        List<DashboardBoothView> booths
+        List<DashboardBoothView> booths,
+        List<DashboardZoneView> zones
 ) {
 }
