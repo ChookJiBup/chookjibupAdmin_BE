@@ -85,6 +85,7 @@ public enum ErrorCode {
     FESTIVAL_REPORT_VISITOR_INPUT_CONFLICT(40916, HttpStatus.CONFLICT, "방문 인원 일자 합과 총원이 불일치합니다. 값을 맞추거나 입력 모드를 확인한 뒤 다시 시도하세요."),
     FESTIVAL_VISITOR_INPUT_MODE_CHANGE_FORBIDDEN(40917, HttpStatus.CONFLICT, "방문 인원 데이터가 있는 축제에서는 입력 모드를 변경할 수 없습니다."),
     BOOTH_NOT_FOUND(40411, HttpStatus.NOT_FOUND, "부스를 찾을 수 없습니다."),
+    BOOTH_QUEUE_NOT_FOUND(40412, HttpStatus.NOT_FOUND, "부스 대기열을 찾을 수 없습니다."),
     ROADMAP_NODE_NOT_BOOTH(40918, HttpStatus.CONFLICT, "부스 유형 노드만 승인할 수 있습니다."),
     ROADMAP_NODE_ALREADY_APPROVED(40919, HttpStatus.CONFLICT, "이미 승인되어 부스와 연결된 노드입니다."),
     FESTIVAL_REPORT_ANALYSIS_FAILED(50206, HttpStatus.BAD_GATEWAY, "축제 결과 보고서 분석에 실패했습니다."),
