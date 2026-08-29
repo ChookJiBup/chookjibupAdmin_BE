@@ -29,7 +29,7 @@ public record AdminSummaryResponse(
         @Schema(description = "직급. 외부업자는 null", example = "과장")
         String rank,
 
-        @Schema(description = "계정 종류", example = "GOVERNMENT")
+        @Schema(description = "계정 종류. CONTRACTOR는 축제 배정 시 제2관리자와 동일 권한·축제 생성 불가", example = "GOVERNMENT")
         AccountKind accountKind,
 
         @Schema(description = "관리자 역할. 축제 생성 전에는 null", example = "FESTIVAL_OWNER")

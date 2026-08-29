@@ -186,13 +186,15 @@ public class AdminAccount extends BaseTimeEntity {
 
     /**
      * 축제를 새로 생성할 수 있는 계정인지 확인한다.
+     * 외부업자는 제2관리자와 같이 생성할 수 없고, 공무원 계정만 가능하다.
      */
     public boolean canCreateFestival() {
         return accountKind == AccountKind.GOVERNMENT;
     }
 
     /**
-     * 외부업자(운영자) 계정인지 확인한다.
+     * 외부업자 계정인지 확인한다.
+     * 축제 배정 시 역할은 제2관리자(SUB_ADMIN)이며 권한 플래그도 그와 동일하다.
      */
     public boolean isContractor() {
         return accountKind == AccountKind.CONTRACTOR;

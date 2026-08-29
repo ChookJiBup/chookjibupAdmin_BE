@@ -11,7 +11,11 @@ public enum ErrorCode {
     AUTH_EMAIL_DOMAIN_NOT_ALLOWED(40002, HttpStatus.BAD_REQUEST, "정부 공식 이메일만 사용할 수 있습니다."),
     AUTH_GOVERNMENT_EMAIL_REQUIRED(40011, HttpStatus.BAD_REQUEST, "공무원 가입은 정부 공식 이메일만 사용할 수 있습니다."),
     AUTH_CONTRACTOR_GOVERNMENT_EMAIL_NOT_ALLOWED(40012, HttpStatus.BAD_REQUEST, "외부업자 가입에는 일반 이메일을 사용해 주세요."),
-    AUTH_FESTIVAL_CREATE_FORBIDDEN(40304, HttpStatus.FORBIDDEN, "축제 생성은 공무원 계정만 가능합니다."),
+    AUTH_FESTIVAL_CREATE_FORBIDDEN(
+            40304,
+            HttpStatus.FORBIDDEN,
+            "축제 생성은 공무원 계정만 가능합니다. 외부업자는 제2관리자와 동일하게 축제를 새로 만들 수 없습니다."
+    ),
     AUTH_GOVERNMENT_ACCOUNT_CANNOT_BE_OPERATOR(40305, HttpStatus.FORBIDDEN, "공무원 계정은 운영자로 등록할 수 없습니다."),
     AUTH_EMAIL_VERIFICATION_NOT_FOUND(40003, HttpStatus.BAD_REQUEST, "이메일 인증 요청을 찾을 수 없습니다."),
     AUTH_EMAIL_VERIFICATION_INVALID(40004, HttpStatus.BAD_REQUEST, "이메일 인증 코드가 올바르지 않습니다."),
