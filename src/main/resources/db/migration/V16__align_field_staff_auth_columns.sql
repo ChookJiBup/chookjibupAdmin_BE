@@ -2,7 +2,7 @@ DO $$
 BEGIN
     IF to_regclass('field_staff_accounts') IS NULL THEN
         RAISE EXCEPTION
-            'field_staff_accounts must exist before applying V14; provision the staff table first';
+            'field_staff_accounts must exist before applying V16; provision the staff table first';
     END IF;
 
     -- 상태 변경 API가 사용하는 인증 버전 컬럼을 운영 DB에도 보장한다.
