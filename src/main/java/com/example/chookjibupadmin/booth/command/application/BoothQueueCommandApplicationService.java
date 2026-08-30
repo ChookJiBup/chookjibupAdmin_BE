@@ -9,6 +9,10 @@ import com.example.chookjibupadmin.auth.support.FestivalActorPrincipal;
 import com.example.chookjibupadmin.booth.command.application.dto.BoothQueueResult;
 import com.example.chookjibupadmin.booth.command.application.dto.UpdateBoothQueueCommand;
 import com.example.chookjibupadmin.booth.command.application.dto.UpdateBoothQueueCommand.QueuePathPointCommand;
+import com.example.chookjibupadmin.booth.command.domain.BoothCongestion;
+import com.example.chookjibupadmin.booth.command.domain.BoothCongestionEstimate;
+import com.example.chookjibupadmin.booth.command.domain.BoothCongestionEstimator;
+import com.example.chookjibupadmin.booth.command.domain.BoothCongestionModifierType;
 import com.example.chookjibupadmin.booth.command.domain.BoothInfo;
 import com.example.chookjibupadmin.booth.command.domain.BoothQueue;
 import com.example.chookjibupadmin.booth.command.domain.BoothQueueModifierType;
@@ -21,6 +25,7 @@ import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,10 +43,13 @@ public class BoothQueueCommandApplicationService {
     private static final BigDecimal KOREA_LAT_MAX = new BigDecimal("38.7");
     private static final BigDecimal KOREA_LNG_MIN = new BigDecimal("124.5");
     private static final BigDecimal KOREA_LNG_MAX = new BigDecimal("132.0");
+    private static final BoothCongestionEstimator BOOTH_CONGESTION_ESTIMATOR =
+            new BoothCongestionEstimator();
 
     private final FestivalOperationAccessService festivalOperationAccessService;
     private final BoothQueueService boothQueueService;
     private final BoothInfoService boothInfoService;
+    private final BoothCongestionService boothCongestionService;
     private final AdminAccountService adminAccountService;
     private final AdminFestivalRoleService adminFestivalRoleService;
     private final FieldStaffAccountService fieldStaffAccountService;
@@ -64,7 +72,7 @@ public class BoothQueueCommandApplicationService {
         validateTailCoordinates(command.tailLatitude(), command.tailLongitude());
         List<Map<String, BigDecimal>> path = toPathGeometry(command.path());
 
-        String modifierName = switch (principal) {
+        CongestionModifier modifier = switch (principal) {
             case AdminPrincipal adminPrincipal -> updateAsAdmin(
                     festivalId,
                     queue,
@@ -81,15 +89,12 @@ public class BoothQueueCommandApplicationService {
             );
             default -> throw new CustomException(ErrorCode.UNAUTHORIZED);
         };
-
-        return BoothQueueResult.from(
-                boothQueueService.save(queue),
-                booth.getBoothName(),
-                modifierName
-        );
+        BoothQueue savedQueue = boothQueueService.save(queue);
+        recordEstimatedCongestion(booth.getId(), command.queueTailMeters(), modifier);
+        return BoothQueueResult.from(savedQueue, booth.getBoothName(), modifier.name());
     }
 
-    private String updateAsAdmin(
+    private CongestionModifier updateAsAdmin(
             Long festivalId,
             BoothQueue queue,
             UpdateBoothQueueCommand command,
@@ -111,10 +116,15 @@ public class BoothQueueCommandApplicationService {
                 admin.getId(),
                 null
         );
-        return admin.getNameValue();
+        return new CongestionModifier(
+                BoothCongestionModifierType.ADMIN,
+                admin.getId(),
+                null,
+                admin.getNameValue()
+        );
     }
 
-    private String updateAsStaff(
+    private CongestionModifier updateAsStaff(
             Long festivalId,
             BoothQueue queue,
             UpdateBoothQueueCommand command,
@@ -133,7 +143,49 @@ public class BoothQueueCommandApplicationService {
                 null,
                 principal.fieldStaffId()
         );
-        return fieldStaffAccountService.getById(principal.fieldStaffId()).getNameValue();
+        return new CongestionModifier(
+                BoothCongestionModifierType.STAFF,
+                null,
+                principal.fieldStaffId(),
+                fieldStaffAccountService.getById(principal.fieldStaffId()).getNameValue()
+        );
+    }
+
+    private void recordEstimatedCongestion(
+            Long boothId,
+            Integer queueTailMeters,
+            CongestionModifier modifier
+    ) {
+        Optional<BoothCongestionEstimate> estimate = BOOTH_CONGESTION_ESTIMATOR
+                .estimate(queueTailMeters);
+        if (estimate.isEmpty()) {
+            return;
+        }
+
+        BoothCongestionEstimate value = estimate.get();
+        Optional<BoothCongestion> latest = boothCongestionService
+                .findLatestByBoothId(boothId);
+        if (latest.filter(congestion -> congestion.getWaitMinutes() != null
+                && congestion.getWaitMinutes() == value.waitMinutes()
+                && congestion.getCongestionLevel() == value.congestionLevel())
+                .isPresent()) {
+            return;
+        }
+
+        BoothCongestion congestion = modifier.type() == BoothCongestionModifierType.ADMIN
+                ? BoothCongestion.recordByAdmin(
+                        boothId,
+                        modifier.adminId(),
+                        value.waitMinutes(),
+                        value.congestionLevel()
+                )
+                : BoothCongestion.recordByStaff(
+                        boothId,
+                        modifier.staffId(),
+                        value.waitMinutes(),
+                        value.congestionLevel()
+                );
+        boothCongestionService.save(congestion);
     }
 
     private void validateTailCoordinates(BigDecimal lat, BigDecimal lng) {
@@ -164,5 +216,13 @@ public class BoothQueueCommandApplicationService {
                     return map;
                 })
                 .toList();
+    }
+
+    private record CongestionModifier(
+            BoothCongestionModifierType type,
+            Long adminId,
+            Long staffId,
+            String name
+    ) {
     }
 }
