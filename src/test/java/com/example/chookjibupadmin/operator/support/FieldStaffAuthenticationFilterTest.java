@@ -46,6 +46,9 @@ class FieldStaffAuthenticationFilterTest {
     @Mock
     private ApiSecurityErrorWriter errorWriter;
 
+    @Mock
+    private FieldStaffAuthCookieService authCookieService;
+
     private FieldStaffAuthenticationFilter filter;
 
     @BeforeEach
@@ -58,7 +61,8 @@ class FieldStaffAuthenticationFilterTest {
                 tokenProvider,
                 fieldStaffAccountService,
                 errorWriter,
-                clock
+                clock,
+                authCookieService
         );
     }
 

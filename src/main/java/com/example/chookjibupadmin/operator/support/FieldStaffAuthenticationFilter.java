@@ -46,6 +46,7 @@ public class FieldStaffAuthenticationFilter extends OncePerRequestFilter {
     private final FieldStaffAccountService fieldStaffAccountService;
     private final ApiSecurityErrorWriter errorWriter;
     private final Clock clock;
+    private final FieldStaffAuthCookieService authCookieService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -69,15 +70,15 @@ public class FieldStaffAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String authorization = request.getHeader(AUTHORIZATION_HEADER);
-        if (authorization == null || !authorization.startsWith(BEARER_PREFIX)) {
+        String accessToken = resolveAccessToken(request);
+        if (accessToken == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             FieldStaffPrincipal principal = tokenProvider.parse(
-                    authorization.substring(BEARER_PREFIX.length())
+                    accessToken
             );
             fieldStaffAccountService.validateAuthentication(
                     principal,
@@ -100,5 +101,20 @@ public class FieldStaffAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.clearContext();
             errorWriter.write(response, exception.getErrorCode());
         }
+    }
+
+    private String resolveAccessToken(HttpServletRequest request) {
+        if (request.getCookies() != null) {
+            for (var cookie : request.getCookies()) {
+                if (authCookieService.cookieName().equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        if (authorization != null && authorization.startsWith(BEARER_PREFIX)) {
+            return authorization.substring(BEARER_PREFIX.length());
+        }
+        return null;
     }
 }

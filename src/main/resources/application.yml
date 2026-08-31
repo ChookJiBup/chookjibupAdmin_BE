@@ -74,6 +74,9 @@ app:
     jwt:
       secret: ${APP_FIELD_STAFF_JWT_SECRET:${APP_JWT_SECRET}}
       access-token-expiration-seconds: ${APP_FIELD_STAFF_JWT_EXPIRATION_SECONDS:1800}
+      cookie-name: ${APP_FIELD_STAFF_JWT_COOKIE_NAME:chookjibup_staff_access}
+      cookie-secure: ${APP_FIELD_STAFF_JWT_COOKIE_SECURE:false}
+      cookie-same-site: ${APP_FIELD_STAFF_JWT_COOKIE_SAME_SITE:Strict}
   road-address:
     base-url: ${APP_ROAD_ADDRESS_BASE_URL:https://business.juso.go.kr}
     confirmation-key: ${APP_ROAD_ADDRESS_CONFIRMATION_KEY:}
