@@ -87,7 +87,8 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/field-staff/auth/login"
+                                "/api/field-staff/auth/login",
+                                "/api/field-staff/auth/logout"
                         ).permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
