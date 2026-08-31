@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.global.response;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,6 +12,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  * 전역 예외를 표준 ApiResponse 에러 응답으로 변환한다.
  */
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     /**
@@ -71,7 +73,8 @@ public class GlobalExceptionHandler {
      * 처리되지 않은 예외를 내부 서버 오류 응답으로 변환한다.
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Void>> handleException() {
+    public ResponseEntity<ApiResponse<Void>> handleException(Exception exception) {
+        log.error("Unhandled server exception", exception);
         return ResponseEntity
                 .status(ErrorCode.INTERNAL_SERVER_ERROR.getHttpStatus())
                 .body(ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR));
