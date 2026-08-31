@@ -146,6 +146,31 @@ class BoothCongestionFestivalDashboardMetricProviderTest {
         }
 
         @Test
+        @DisplayName("로드맵 노드가 연결되지 않은 부스도 좌표 없이 반환한다")
+        void success_FindCurrent_BoothWithoutRoadmapNode() {
+            Festival festival = festival();
+            BoothInfo booth = BoothInfo.create(10L, 20L, "미연결부스");
+            ReflectionTestUtils.setField(booth, "id", 1L);
+            ReflectionTestUtils.setField(booth, "roadmapNodeId", null);
+            stubClock();
+            given(festivalService.getById(10L)).willReturn(festival);
+            given(boothInfoService.findAllByFestivalId(10L)).willReturn(List.of(booth));
+            given(boothCongestionService.findLatestByBoothIds(List.of(1L)))
+                    .willReturn(List.of());
+            given(festivalRoadmapService.findByFestivalId(10L))
+                    .willReturn(Optional.empty());
+
+            FestivalDashboardMetricProvider.Snapshot snapshot =
+                    provider.findCurrent(10L).orElseThrow();
+
+            FestivalDashboardMetricProvider.BoothMetric metric = snapshot.booths().getFirst();
+            assertThat(metric.roadmapNodePublicId()).isNull();
+            assertThat(metric.lat()).isNull();
+            assertThat(metric.lng()).isNull();
+            verify(roadmapNodeService, never()).findAllById(anySet());
+        }
+
+        @Test
         @DisplayName("부스 혼잡이 있으면 대기 지표는 채우고 현재 방문자는 비운다")
         void success_FindCurrent_BoothsWithCongestion() {
             Festival festival = festival();

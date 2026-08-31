@@ -105,7 +105,8 @@ public class BoothCongestionFestivalDashboardMetricProvider
         List<BoothMetric> boothMetrics = new ArrayList<>();
         for (BoothInfo booth : booths) {
             BoothCongestion congestion = latestByBooth.get(booth.getId());
-            RoadmapNode node = nodesById.get(booth.getRoadmapNodeId());
+            Long roadmapNodeId = booth.getRoadmapNodeId();
+            RoadmapNode node = roadmapNodeId == null ? null : nodesById.get(roadmapNodeId);
             Wgs84Point point = extractWgs84Point(node);
             boothMetrics.add(new BoothMetric(
                     booth.getId(),
