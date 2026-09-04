@@ -101,3 +101,40 @@ Environment Variable로 관리한다.
 - Actions의 `Deploy` 워크플로에서 `Run workflow`를 선택하면 `main`을
   수동 배포할 수 있다.
 - 최신 `main`보다 오래된 CI 실행은 자동으로 배포를 건너뛴다.
+
+## RDS 경량 시드 (1회성 수동)
+
+관리자 테스트 계정은 Deploy와 함께 자동으로 넣지 않는다. Actions의
+`Seed RDS` 워크플로를 **수동으로 1회** 실행한다. EC2에 `psql`/`python3`
+추가 설치는 필요 없고, Deploy와 같은 Java 21 + JDBC로 SQL을 적용한다.
+
+성공 후 워크플로·시드 러너 코드는 저장소에서 제거할 수 있다.
+(`docs/seed-data` SQL 명세는 남겨도 된다.)
+
+### 사전 조건
+
+1. `Deploy`가 최소 한 번 성공해 EC2에 앱·secret 파일이 있어야 한다.
+2. `ChookJiBup_data_pipeline`으로 활성 `festivals`가 **10개 이상** 적재되어
+   있어야 한다. 시드 SQL이 부족하면 실패한다.
+3. 관리자 ID `1..48` 예약 구간에 비시드 계정이 있으면 시드가 중단된다.
+4. 실행 파일: `docs/seed-data/시드데이터_RDS경량_통합.sql`
+5. 실행기: `./gradlew applyRdsSeed` (`RdsLightSeedRunner`, JDBC)
+
+### 실행
+
+1. Actions → **Seed RDS** → Run workflow (`main` 브랜치).
+2. `target_sha`는 비우면 최신 `main`.
+3. 성공 로그에 `admin01@seed.mapo.go.kr` 행이 보이면 완료.
+
+Deploy concurrency group(`admin-be-production`)을 공유하므로 Deploy와 Seed는
+동시에 돌지 않는다.
+
+### 로그인 (시드 성공 후)
+
+| 항목 | 값 |
+| --- | --- |
+| 이메일 | `admin01@seed.mapo.go.kr` |
+| 비밀번호 | `qwer1234` |
+| 계정 종류 | 공무원 (`GOVERNMENT`) |
+
+비밀번호는 예전 초안의 `SeedPass1!`가 아니다.

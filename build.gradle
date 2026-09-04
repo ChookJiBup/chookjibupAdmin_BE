@@ -55,3 +55,13 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// Temporary one-shot RDS seed runner (no psql). Remove after first successful seed.
+tasks.register('applyRdsSeed', JavaExec) {
+	group = 'seed'
+	description = 'Apply docs/seed-data RDS light seed via JDBC'
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'com.example.chookjibupadmin.support.seed.RdsLightSeedRunner'
+	systemProperty 'seed.secretFile', System.getenv('SECRET_FILE') ?: '/etc/chookjibup-admin/application-secret.yml'
+	systemProperty 'seed.sqlFile', System.getenv('SEED_SQL') ?: "${projectDir}/docs/seed-data/시드데이터_RDS경량_통합.sql"
+}
