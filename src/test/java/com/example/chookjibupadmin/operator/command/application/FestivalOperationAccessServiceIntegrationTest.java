@@ -123,14 +123,15 @@ class FestivalOperationAccessServiceIntegrationTest {
     }
 
     private FieldStaffAccount fieldStaffAccount(Long festivalId) {
+        LocalDateTime now = LocalDateTime.now();
         return FieldStaffAccount.create(
                 festivalId,
                 FieldStaffLoginId.of("operation01"),
                 FieldStaffName.of("현장스태프"),
                 FieldStaffPhoneNumber.of("010-1234-5678"),
                 FieldStaffPasswordHash.of("password-hash"),
-                LocalDateTime.of(2026, 8, 1, 0, 0),
-                LocalDateTime.of(2026, 8, 31, 23, 59)
+                now.minusDays(1),
+                now.plusDays(30)
         );
     }
 
@@ -139,6 +140,7 @@ class FestivalOperationAccessServiceIntegrationTest {
     }
 
     private Festival festival(String name, Long seriesId) {
+        LocalDate today = LocalDate.now();
         return Festival.create(
                 seriesId,
                 UUID.randomUUID(),
@@ -146,8 +148,8 @@ class FestivalOperationAccessServiceIntegrationTest {
                 FestivalDescription.of("현장 운영 인증 테스트"),
                 FestivalAddress.of("서울특별시 마포구 월드컵로 243"),
                 FestivalPeriod.of(
-                        LocalDate.of(2026, 8, 1),
-                        LocalDate.of(2026, 8, 31)
+                        today.minusDays(1),
+                        today.plusDays(30)
                 ),
                 FestivalOperationTime.of(
                         LocalTime.of(9, 0),

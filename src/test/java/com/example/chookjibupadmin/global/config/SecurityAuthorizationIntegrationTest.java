@@ -276,14 +276,15 @@ class SecurityAuthorizationIntegrationTest {
     }
 
     private FieldStaffAccount fieldStaffAccount() {
+        LocalDateTime now = LocalDateTime.now();
         return FieldStaffAccount.create(
                 10L,
                 FieldStaffLoginId.of("security01"),
                 FieldStaffName.of("보안스태프"),
                 FieldStaffPhoneNumber.of("010-1234-5678"),
                 FieldStaffPasswordHash.of("password-hash"),
-                LocalDateTime.of(2026, 8, 1, 0, 0),
-                LocalDateTime.of(2026, 8, 31, 23, 59)
+                now.minusDays(1),
+                now.plusDays(30)
         );
     }
 
