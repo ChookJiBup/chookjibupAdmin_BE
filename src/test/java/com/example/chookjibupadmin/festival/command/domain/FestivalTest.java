@@ -154,6 +154,25 @@ class FestivalTest {
         }
     }
 
+    @Nested
+    @DisplayName("nullable embeddable getters")
+    class NullableEmbeddableGetters {
+
+        @Test
+        @DisplayName("설명·운영시간이 null인 파이프라인 축제도 getter가 NPE 없이 null을 반환한다")
+        void success_NullEmbeddables_ReturnNull() {
+            Festival festival = festival();
+            ReflectionTestUtils.setField(festival, "description", null);
+            ReflectionTestUtils.setField(festival, "operationTime", null);
+            ReflectionTestUtils.setField(festival, "address", null);
+
+            assertThat(festival.getDescriptionValue()).isNull();
+            assertThat(festival.getOperationStartTime()).isNull();
+            assertThat(festival.getOperationEndTime()).isNull();
+            assertThat(festival.getAddressValue()).isNull();
+        }
+    }
+
     private Festival festival() {
         return Festival.create(
                 1L,

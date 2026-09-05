@@ -161,6 +161,16 @@ END
 FROM seed_festival_map m
 WHERE f.festival_id = m.festival_id;
 
+-- pipeline festivals may lack operation hours / description; Admin detail getters need safe values
+UPDATE festivals f
+SET
+    operation_start_time = COALESCE(f.operation_start_time, TIME '10:00'),
+    operation_end_time = COALESCE(f.operation_end_time, TIME '21:00'),
+    content = COALESCE(NULLIF(BTRIM(f.content), ''), f.festival_name || ' 시드 설명'),
+    road_address = COALESCE(NULLIF(BTRIM(f.road_address), ''), '시드 도로명주소')
+FROM seed_festival_map m
+WHERE f.festival_id = m.festival_id;
+
 -- Admin BE enum 계약에 맞게 남은 파이프라인 CHECK를 정렬한다.
 DO $$
 BEGIN

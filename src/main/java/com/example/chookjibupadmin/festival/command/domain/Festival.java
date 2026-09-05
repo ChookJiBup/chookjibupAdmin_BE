@@ -374,15 +374,15 @@ public class Festival extends BaseTimeEntity {
     }
 
     public String getNameValue() {
-        return name.getValue();
+        return name == null ? null : name.getValue();
     }
 
     public String getDescriptionValue() {
-        return description.getValue();
+        return description == null ? null : description.getValue();
     }
 
     public String getAddressValue() {
-        return address.getValue();
+        return address == null ? null : address.getValue();
     }
 
     public String getDetailAddressValue() {
@@ -390,19 +390,19 @@ public class Festival extends BaseTimeEntity {
     }
 
     public LocalDate getStartDate() {
-        return period.getStartDate();
+        return period == null ? null : period.getStartDate();
     }
 
     public LocalDate getEndDate() {
-        return period.getEndDate();
+        return period == null ? null : period.getEndDate();
     }
 
     public LocalTime getOperationStartTime() {
-        return operationTime.getStartTime();
+        return operationTime == null ? null : operationTime.getStartTime();
     }
 
     public LocalTime getOperationEndTime() {
-        return operationTime.getEndTime();
+        return operationTime == null ? null : operationTime.getEndTime();
     }
 
 }

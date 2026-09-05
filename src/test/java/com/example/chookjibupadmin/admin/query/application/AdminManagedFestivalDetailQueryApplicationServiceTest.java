@@ -116,6 +116,34 @@ class AdminManagedFestivalDetailQueryApplicationServiceTest {
     }
 
     @Test
+    @DisplayName("운영시간·설명이 비어 있는 담당 축제 단건 조회도 성공한다")
+    void success_GetManagedFestival_NullOperationTimeAndDescription() {
+        AdminAccount adminAccount = adminAccount();
+        Festival festival = festival();
+        ReflectionTestUtils.setField(festival, "description", null);
+        ReflectionTestUtils.setField(festival, "operationTime", null);
+        given(adminAccountService.getById(1L)).willReturn(adminAccount);
+        given(managedFestivalQueryService.getCurrentManagedFestival(
+                1L,
+                FESTIVAL_ID,
+                LocalDate.of(2026, 8, 8)
+        )).willReturn(managedFestivalView());
+        given(festivalService.getByPublicId(FESTIVAL_ID)).willReturn(festival);
+        given(festivalLocationService.findAllByFestivalId(10L))
+                .willReturn(List.of());
+
+        AdminManagedFestivalDetail result = service.getManagedFestival(
+                FESTIVAL_ID,
+                new AdminPrincipal(1L, "owner@mapo.go.kr")
+        );
+
+        assertThat(result.description()).isNull();
+        assertThat(result.operationStartTime()).isNull();
+        assertThat(result.operationEndTime()).isNull();
+        assertThat(result.locations()).isEmpty();
+    }
+
+    @Test
     @DisplayName("인증 주체가 없으면 축제 상세를 조회할 수 없다")
     void fail_GetManagedFestival_Unauthorized_CustomException() {
         assertThatThrownBy(() -> service.getManagedFestival(FESTIVAL_ID, null))
