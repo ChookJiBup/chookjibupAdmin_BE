@@ -5,7 +5,29 @@
 DROP TABLE IF EXISTS pg_temp.seed_festival_map;
 DROP TABLE IF EXISTS pg_temp.seed_admin_ids;
 DROP TABLE IF EXISTS pg_temp.seed_staff_ids;
+-- progress_status / is_active / lat·lng 는 Admin RDS festivals에 없을 수 있다.
+-- 진행 상태는 start_date·end_date로 계산하고, 좌표는 시드 기본값을 쓴다.
 CREATE TEMP TABLE seed_festival_map AS
+WITH ranked AS (
+    SELECT
+        festival_id,
+        public_id,
+        festival_name,
+        CASE
+            WHEN start_date IS NULL OR end_date IS NULL THEN NULL
+            WHEN CURRENT_DATE < start_date THEN 'upcoming'
+            WHEN CURRENT_DATE > end_date THEN 'completed'
+            ELSE 'ongoing'
+        END AS progress_status,
+        start_date,
+        end_date,
+        37.5665000::numeric AS base_lat,
+        126.9780000::numeric AS base_lng,
+        road_address
+    FROM festivals
+    WHERE start_date IS NOT NULL
+      AND end_date IS NOT NULL
+)
 SELECT
     ROW_NUMBER() OVER (
         ORDER BY
@@ -23,12 +45,11 @@ SELECT
     progress_status,
     start_date,
     end_date,
-    COALESCE(latitude, 37.5665000) AS base_lat,
-    COALESCE(longitude, 126.9780000) AS base_lng,
+    base_lat,
+    base_lng,
     road_address
-FROM festivals
-WHERE is_active = true
-  AND progress_status IN ('ongoing', 'upcoming', 'completed')
+FROM ranked
+WHERE progress_status IN ('ongoing', 'upcoming', 'completed')
 LIMIT 10;
 
 DO $$

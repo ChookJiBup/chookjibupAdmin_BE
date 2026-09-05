@@ -78,6 +78,23 @@ python main.py
 
 ```sql
 CREATE TEMP TABLE seed_festival_map AS
+WITH ranked AS (
+    SELECT
+        festival_id,
+        public_id,
+        festival_name,
+        CASE
+            WHEN start_date IS NULL OR end_date IS NULL THEN NULL
+            WHEN CURRENT_DATE < start_date THEN 'upcoming'
+            WHEN CURRENT_DATE > end_date THEN 'completed'
+            ELSE 'ongoing'
+        END AS progress_status,
+        start_date,
+        end_date
+    FROM festivals
+    WHERE start_date IS NOT NULL
+      AND end_date IS NOT NULL
+)
 SELECT
     ROW_NUMBER() OVER (
         ORDER BY
@@ -95,9 +112,8 @@ SELECT
     progress_status,
     start_date,
     end_date
-FROM festivals
-WHERE is_active = true
-  AND progress_status IN ('ongoing', 'upcoming', 'completed')
+FROM ranked
+WHERE progress_status IN ('ongoing', 'upcoming', 'completed')
 LIMIT 10;
 ```
 

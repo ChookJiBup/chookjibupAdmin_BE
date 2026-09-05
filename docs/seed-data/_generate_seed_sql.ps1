@@ -26,8 +26,13 @@ BEGIN
     IF to_regclass('festivals') IS NULL THEN
         RAISE EXCEPTION 'festivals table missing. Run data pipeline first.';
     END IF;
-    IF (SELECT COUNT(*) FROM festivals WHERE is_active = true) < 10 THEN
-        RAISE EXCEPTION 'Need at least 10 active festivals from pipeline.';
+    IF (
+        SELECT COUNT(*)
+        FROM festivals
+        WHERE start_date IS NOT NULL
+          AND end_date IS NOT NULL
+    ) < 10 THEN
+        RAISE EXCEPTION 'Need at least 10 festivals with start_date and end_date from pipeline.';
     END IF;
 END
 `$`$;
