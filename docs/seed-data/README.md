@@ -9,7 +9,7 @@ Admin BE의 개발·연동 테스트용 경량 시드 세트다.
 - `ChookJiBup_data_pipeline`이 `festivals`와 파이프라인 전용 테이블을 먼저 적재해야 한다.
 - 관리자 계정·스태프·지도·부스·방문 입력 테이블은 Admin BE Flyway(V1~V16)가 생성해야 한다.
 - 파이프라인 `schema.sql`의 `admins`·`festival_staff` 테이블을 같은 대상에 중복 적용하지 않는다.
-- 운영 데이터가 있는 RDS에서는 실행 전 백업과 관리자 ID 1~48 예약 범위 확인이 필요하다.
+- 운영 데이터가 있는 RDS에서는 실행 전 백업과 관리자 ID `910001..910048` 예약 범위 확인이 필요하다.
 
 ## 파일 역할
 
@@ -20,6 +20,7 @@ Admin BE의 개발·연동 테스트용 경량 시드 세트다.
 | `_seed_sql_core.sql` | placeholder를 포함한 생성 원본. 직접 실행 금지 |
 | `_generate_seed_sql.ps1` | 실행용 통합 SQL 생성기 |
 | `시드데이터_RDS경량_통합.sql` | placeholder 치환이 완료된 실행 파일 |
+| `rds-light-seed.sql` | Actions/EC2용 ASCII 경로 별칭(통합 SQL과 동일) |
 
 ## 생성·실행
 

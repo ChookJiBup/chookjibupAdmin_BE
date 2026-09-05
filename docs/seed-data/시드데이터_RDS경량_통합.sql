@@ -160,10 +160,16 @@ DELETE FROM admin_accounts aa
 USING seed_admin_ids sa
 WHERE aa.id = sa.id;
 
+-- 매핑 축제에 남은 비시드 역할도 제거해 OWNER 중복을 막는다.
+DELETE FROM admin_festival_roles afr
+USING seed_festival_map sf
+WHERE afr.festival_id = sf.festival_id;
+
+-- 시드 관리자 PK는 910001..910048 (실계정 IDENTITY 1..n 과 충돌 방지)
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM admin_accounts WHERE id BETWEEN 1 AND 48) THEN
-        RAISE EXCEPTION 'Reserved seed admin ids 1..48 are already used by non-seed accounts.';
+    IF EXISTS (SELECT 1 FROM admin_accounts WHERE id BETWEEN 910001 AND 910048) THEN
+        RAISE EXCEPTION 'Reserved seed admin ids 910001..910048 are already used by non-seed accounts.';
     END IF;
 END $$;
 
@@ -184,55 +190,55 @@ INSERT INTO admin_accounts (
     password_hash, auth_version, status, created_at, updated_at
 )
 SELECT
-    g.id,
-    ('a0000000-0000-4000-8000-' || lpad(g.id::text, 12, '0'))::uuid,
-    CASE WHEN g.id BETWEEN 21 AND 30 THEN 'CONTRACTOR' ELSE 'GOVERNMENT' END,
+    910000 + g.slot,
+    ('a0000000-0000-4000-8000-' || lpad((910000 + g.slot)::text, 12, '0'))::uuid,
+    CASE WHEN g.slot BETWEEN 21 AND 30 THEN 'CONTRACTOR' ELSE 'GOVERNMENT' END,
     CASE
-        WHEN g.id BETWEEN 1 AND 10 THEN 'owner.' || lpad(g.id::text, 2, '0') || '@seed.mapo.go.kr'
-        WHEN g.id BETWEEN 11 AND 20 THEN 'op.' || lpad((g.id - 10)::text, 2, '0') || '@seed.mapo.go.kr'
-        ELSE 'contractor.' || lpad((g.id - 20)::text, 2, '0') || '@seed-event.co.kr'
+        WHEN g.slot BETWEEN 1 AND 10 THEN 'owner.' || lpad(g.slot::text, 2, '0') || '@seed.mapo.go.kr'
+        WHEN g.slot BETWEEN 11 AND 20 THEN 'op.' || lpad((g.slot - 10)::text, 2, '0') || '@seed.mapo.go.kr'
+        ELSE 'contractor.' || lpad((g.slot - 20)::text, 2, '0') || '@seed-event.co.kr'
     END,
     CASE
-        WHEN g.id BETWEEN 1 AND 10 THEN (ARRAY['김','이','박','최','정','강','조','윤','장','임'])[((g.id - 1) % 10) + 1] || '총괄' || lpad(g.id::text, 2, '0')
-        WHEN g.id BETWEEN 11 AND 20 THEN (ARRAY['김','이','박','최','정','강','조','윤','장','임'])[((g.id - 11) % 10) + 1] || '운영' || lpad((g.id - 10)::text, 2, '0')
-        ELSE '외부운영' || lpad((g.id - 20)::text, 2, '0')
+        WHEN g.slot BETWEEN 1 AND 10 THEN (ARRAY['김','이','박','최','정','강','조','윤','장','임'])[((g.slot - 1) % 10) + 1] || '총괄' || lpad(g.slot::text, 2, '0')
+        WHEN g.slot BETWEEN 11 AND 20 THEN (ARRAY['김','이','박','최','정','강','조','윤','장','임'])[((g.slot - 11) % 10) + 1] || '운영' || lpad((g.slot - 10)::text, 2, '0')
+        ELSE '외부운영' || lpad((g.slot - 20)::text, 2, '0')
     END,
     CASE
-        WHEN g.id BETWEEN 1 AND 10 THEN (ARRAY['관광정책과','문화관광과','축제추진단','도시디자인과','안전총괄과'])[((g.id - 1) % 5) + 1]
-        WHEN g.id BETWEEN 11 AND 20 THEN (ARRAY['관광정책과','도시디자인과','안전총괄과'])[((g.id - 11) % 3) + 1]
-        ELSE '이벤트업체' || lpad((g.id - 20)::text, 2, '0')
+        WHEN g.slot BETWEEN 1 AND 10 THEN (ARRAY['관광정책과','문화관광과','축제추진단','도시디자인과','안전총괄과'])[((g.slot - 1) % 5) + 1]
+        WHEN g.slot BETWEEN 11 AND 20 THEN (ARRAY['관광정책과','도시디자인과','안전총괄과'])[((g.slot - 11) % 3) + 1]
+        ELSE '이벤트업체' || lpad((g.slot - 20)::text, 2, '0')
     END,
     CASE
-        WHEN g.id BETWEEN 21 AND 30 THEN NULL
-        WHEN g.id % 7 = 0 THEN '단장'
-        ELSE (ARRAY['과장','주무관','대리','사무관'])[((g.id - 1) % 4) + 1]
+        WHEN g.slot BETWEEN 21 AND 30 THEN NULL
+        WHEN g.slot % 7 = 0 THEN '단장'
+        ELSE (ARRAY['과장','주무관','대리','사무관'])[((g.slot - 1) % 4) + 1]
     END,
     '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()
-FROM generate_series(1, 30) AS g(id);
+FROM generate_series(1, 30) AS g(slot);
 
 INSERT INTO admin_accounts (
     id, public_id, account_kind, email, name, organization, job_rank,
     password_hash, auth_version, status, created_at, updated_at
 )
 VALUES
-    (31, 'b0000031-0000-4000-8000-000000000031', 'GOVERNMENT', 'admin01@seed.mapo.go.kr', '연결테스트01', '관광정책과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (32, 'b0000032-0000-4000-8000-000000000032', 'GOVERNMENT', 'admin02@seed.mapo.go.kr', '연결테스트02', '관광정책과', '주무관', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (33, 'b0000033-0000-4000-8000-000000000033', 'CONTRACTOR', 'admin03@seed-event.co.kr', '연결테스트03', '이벤트업체A', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (34, 'b0000034-0000-4000-8000-000000000034', 'GOVERNMENT', 'admin11@seed.mapo.go.kr', '미연결11', '문화관광과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (35, 'b0000035-0000-4000-8000-000000000035', 'GOVERNMENT', 'admin12@seed.mapo.go.kr', '미연결12', '문화관광과', '주무관', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (36, 'b0000036-0000-4000-8000-000000000036', 'CONTRACTOR', 'admin13@seed-event.co.kr', '미연결13', '이벤트업체B', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (37, 'b0000037-0000-4000-8000-000000000037', 'GOVERNMENT', 'admin21@seed.mapo.go.kr', '세트C01', '축제추진단', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (38, 'b0000038-0000-4000-8000-000000000038', 'GOVERNMENT', 'admin22@seed.mapo.go.kr', '세트C02', '축제추진단', '주무관', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (39, 'b0000039-0000-4000-8000-000000000039', 'CONTRACTOR', 'admin23@seed-event.co.kr', '세트C03', '이벤트업체C', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (40, 'b0000040-0000-4000-8000-000000000040', 'GOVERNMENT', 'admin31@seed.mapo.go.kr', '세트D01', '도시디자인과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (41, 'b0000041-0000-4000-8000-000000000041', 'GOVERNMENT', 'admin32@seed.mapo.go.kr', '세트D02', '도시디자인과', '대리', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (42, 'b0000042-0000-4000-8000-000000000042', 'CONTRACTOR', 'admin33@seed-event.co.kr', '세트D03', '이벤트업체D', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (43, 'b0000043-0000-4000-8000-000000000043', 'GOVERNMENT', 'admin41@seed.mapo.go.kr', '세트E01', '안전총괄과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (44, 'b0000044-0000-4000-8000-000000000044', 'GOVERNMENT', 'admin42@seed.mapo.go.kr', '세트E02', '안전총괄과', '주무관', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (45, 'b0000045-0000-4000-8000-000000000045', 'CONTRACTOR', 'admin43@seed-event.co.kr', '세트E03', '이벤트업체E', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (46, 'b0000046-0000-4000-8000-000000000046', 'GOVERNMENT', 'admin51@seed.mapo.go.kr', '세트F01', '관광정책과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (47, 'b0000047-0000-4000-8000-000000000047', 'GOVERNMENT', 'admin52@seed.mapo.go.kr', '세트F02', '관광정책과', '대리', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
-    (48, 'b0000048-0000-4000-8000-000000000048', 'CONTRACTOR', 'admin53@seed-event.co.kr', '세트F03', '이벤트업체F', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now());
+    (910031, 'b0000031-0000-4000-8000-000000000031', 'GOVERNMENT', 'admin01@seed.mapo.go.kr', '연결테스트01', '관광정책과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910032, 'b0000032-0000-4000-8000-000000000032', 'GOVERNMENT', 'admin02@seed.mapo.go.kr', '연결테스트02', '관광정책과', '주무관', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910033, 'b0000033-0000-4000-8000-000000000033', 'CONTRACTOR', 'admin03@seed-event.co.kr', '연결테스트03', '이벤트업체A', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910034, 'b0000034-0000-4000-8000-000000000034', 'GOVERNMENT', 'admin11@seed.mapo.go.kr', '미연결11', '문화관광과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910035, 'b0000035-0000-4000-8000-000000000035', 'GOVERNMENT', 'admin12@seed.mapo.go.kr', '미연결12', '문화관광과', '주무관', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910036, 'b0000036-0000-4000-8000-000000000036', 'CONTRACTOR', 'admin13@seed-event.co.kr', '미연결13', '이벤트업체B', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910037, 'b0000037-0000-4000-8000-000000000037', 'GOVERNMENT', 'admin21@seed.mapo.go.kr', '세트C01', '축제추진단', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910038, 'b0000038-0000-4000-8000-000000000038', 'GOVERNMENT', 'admin22@seed.mapo.go.kr', '세트C02', '축제추진단', '주무관', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910039, 'b0000039-0000-4000-8000-000000000039', 'CONTRACTOR', 'admin23@seed-event.co.kr', '세트C03', '이벤트업체C', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910040, 'b0000040-0000-4000-8000-000000000040', 'GOVERNMENT', 'admin31@seed.mapo.go.kr', '세트D01', '도시디자인과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910041, 'b0000041-0000-4000-8000-000000000041', 'GOVERNMENT', 'admin32@seed.mapo.go.kr', '세트D02', '도시디자인과', '대리', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910042, 'b0000042-0000-4000-8000-000000000042', 'CONTRACTOR', 'admin33@seed-event.co.kr', '세트D03', '이벤트업체D', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910043, 'b0000043-0000-4000-8000-000000000043', 'GOVERNMENT', 'admin41@seed.mapo.go.kr', '세트E01', '안전총괄과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910044, 'b0000044-0000-4000-8000-000000000044', 'GOVERNMENT', 'admin42@seed.mapo.go.kr', '세트E02', '안전총괄과', '주무관', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910045, 'b0000045-0000-4000-8000-000000000045', 'CONTRACTOR', 'admin43@seed-event.co.kr', '세트E03', '이벤트업체E', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910046, 'b0000046-0000-4000-8000-000000000046', 'GOVERNMENT', 'admin51@seed.mapo.go.kr', '세트F01', '관광정책과', '과장', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910047, 'b0000047-0000-4000-8000-000000000047', 'GOVERNMENT', 'admin52@seed.mapo.go.kr', '세트F02', '관광정책과', '대리', '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now()),
+    (910048, 'b0000048-0000-4000-8000-000000000048', 'CONTRACTOR', 'admin53@seed-event.co.kr', '세트F03', '이벤트업체F', NULL, '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0, 'ACTIVE', now(), now());
 
 -- ========== admin_festival_roles (30 base + 10 A-cross = 40) ==========
 INSERT INTO admin_festival_roles (
@@ -241,8 +247,8 @@ INSERT INTO admin_festival_roles (
 SELECT
     gen_random_uuid(),
     CASE m.seed_idx
-        WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46
-        ELSE m.seed_idx
+        WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046
+        ELSE 910000 + m.seed_idx
     END,
     m.festival_id,
     'FESTIVAL_OWNER',
@@ -255,23 +261,23 @@ SELECT gen_random_uuid(), sub.admin_id, m.festival_id, 'SUB_ADMIN', sub.owner_id
 FROM seed_festival_map m
 CROSS JOIN LATERAL (
     VALUES
-        (CASE m.seed_idx WHEN 1 THEN 32 WHEN 7 THEN 38 WHEN 8 THEN 41 WHEN 9 THEN 44 WHEN 10 THEN 47 ELSE 10 + m.seed_idx END),
-         CASE m.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END),
-        (CASE m.seed_idx WHEN 1 THEN 33 WHEN 7 THEN 39 WHEN 8 THEN 42 WHEN 9 THEN 45 WHEN 10 THEN 48 ELSE 20 + m.seed_idx END),
-         CASE m.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END)
+        (CASE m.seed_idx WHEN 1 THEN 910032 WHEN 7 THEN 910038 WHEN 8 THEN 910041 WHEN 9 THEN 910044 WHEN 10 THEN 910047 ELSE 910010 + m.seed_idx END),
+         CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END),
+        (CASE m.seed_idx WHEN 1 THEN 910033 WHEN 7 THEN 910039 WHEN 8 THEN 910042 WHEN 9 THEN 910045 WHEN 10 THEN 910048 ELSE 910020 + m.seed_idx END),
+         CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END)
 ) AS sub(admin_id, owner_id);
 
 -- A-set cross SUB_ADMIN (F2~F6)
 INSERT INTO admin_festival_roles (public_id, admin_account_id, festival_id, role, invited_by_admin_id, created_at, updated_at)
-SELECT gen_random_uuid(), x.admin_id, m.festival_id, 'SUB_ADMIN', m.seed_idx, now(), now()
+SELECT gen_random_uuid(), x.admin_id, m.festival_id, 'SUB_ADMIN', 910000 + m.seed_idx, now(), now()
 FROM seed_festival_map m
 JOIN LATERAL (
     SELECT unnest(CASE m.seed_idx
-        WHEN 2 THEN ARRAY[31, 32]
-        WHEN 3 THEN ARRAY[32, 33]
-        WHEN 4 THEN ARRAY[31, 33]
-        WHEN 5 THEN ARRAY[31, 32]
-        WHEN 6 THEN ARRAY[32, 33]
+        WHEN 2 THEN ARRAY[910031, 910032]
+        WHEN 3 THEN ARRAY[910032, 910033]
+        WHEN 4 THEN ARRAY[910031, 910033]
+        WHEN 5 THEN ARRAY[910031, 910032]
+        WHEN 6 THEN ARRAY[910032, 910033]
         ELSE ARRAY[]::bigint[]
     END) AS admin_id
 ) x ON true
@@ -287,7 +293,7 @@ SELECT
     m.festival_id,
     'staff-' || lpad(m.seed_idx::text, 2, '0') || '-' || lpad(s.seq::text, 2, '0'),
     '스태프' || lpad(m.seed_idx::text, 2, '0') || '-' || lpad(s.seq::text, 2, '0'),
-    '010-40' || lpad((g.staff_id)::text, 3, '0') || '-' || lpad(g.staff_id::text, 4, '0'),
+    '010-' || lpad((4000 + g.staff_id)::text, 4, '0') || '-' || lpad(g.staff_id::text, 4, '0'),
     '$2a$10$SquZ7eQJgGuMtAB3lvtureY0RtvrWorpA4ENzrRjqhAb7ONCBWffy', 0,
     (COALESCE(m.start_date, CURRENT_DATE) - interval '1 day')::timestamp,
     (COALESCE(m.end_date, CURRENT_DATE) + interval '1 day')::timestamp + time '23:59:59',
@@ -325,10 +331,10 @@ SELECT
     f.n = 1,
     f.n - 1,
     CASE WHEN f.n = 1 THEN NULL ELSE COALESCE(
-        CASE f.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE f.seed_idx END, 1)
+        CASE f.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + f.seed_idx END, 1)
     END,
     CASE WHEN f.n = 1 THEN NULL ELSE COALESCE(
-        CASE f.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE f.seed_idx END, 1)
+        CASE f.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + f.seed_idx END, 1)
     END,
     now(), now()
 FROM (
@@ -369,7 +375,7 @@ SELECT
     'UPLOADED',
     CASE WHEN m.seed_idx IN (1, 2) THEN 'COORDINATE' ELSE 'IMAGE' END,
     true,
-    COALESCE(CASE m.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END, 1),
+    COALESCE(CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END, 1),
     0,
     now(), now()
 FROM seed_festival_map m;
@@ -398,7 +404,7 @@ SELECT
     1920, 1080, 960, 540,
     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     'REPLACED', 'IMAGE', false,
-    COALESCE(CASE m.seed_idx WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END, 1),
+    COALESCE(CASE m.seed_idx WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END, 1),
     NULL,
     now(), 0, now(), now()
 FROM seed_festival_map m
@@ -430,11 +436,11 @@ SELECT
     (ARRAY[0,2,1,3,5,2,4,1,3,5])[m.seed_idx],
     (ARRAY[0,1,0,1,3,1,2,1,2,3])[m.seed_idx],
     jsonb_build_array(
-        jsonb_build_object('zoneId', 'zone-main', 'name', '메인', 'color', '#FF6B6B'),
-        jsonb_build_object('zoneId', 'zone-food', 'name', '푸드', 'color', '#4ECDC4'),
-        jsonb_build_object('zoneId', 'zone-safe', 'name', '안전', 'color', '#FFE66D')
+        jsonb_build_object('zoneId', gen_random_uuid(), 'name', '메인', 'sortOrder', 0, 'boothNodeIds', '[]'::jsonb),
+        jsonb_build_object('zoneId', gen_random_uuid(), 'name', '푸드', 'sortOrder', 1, 'boothNodeIds', '[]'::jsonb),
+        jsonb_build_object('zoneId', gen_random_uuid(), 'name', '안전', 'sortOrder', 2, 'boothNodeIds', '[]'::jsonb)
     ),
-    COALESCE(CASE m.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END, 1),
+    COALESCE(CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END, 1),
     0, now(), now()
 FROM seed_festival_map m
 JOIN festival_maps fm ON fm.festival_id = m.festival_id AND fm.is_current = true;
@@ -487,8 +493,8 @@ SELECT
     CASE WHEN n.node_no > 8 AND n.node_no % 4 = 0 THEN 'AI' ELSE 'ADMIN' END,
     CASE WHEN n.node_no > 8 AND n.node_no % 4 = 0 THEN 'REVIEW_REQUIRED' ELSE 'CONFIRMED' END,
     n.node_no,
-    COALESCE(CASE m.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END, 1),
-    COALESCE(CASE m.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END, 1),
+    COALESCE(CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END, 1),
+    COALESCE(CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END, 1),
     0, now(), now()
 FROM seed_festival_map m
 JOIN festival_roadmap fr ON fr.festival_id = m.festival_id
@@ -534,7 +540,7 @@ SELECT
     (ARRAY[0,3,5,8,10,11,12,15,18,20,22,25,28,30,31,35,40,45,50])[((bi.booth_id - 1) % 19) + 1],
     CASE WHEN bi.booth_id % 5 = 0 THEN '[{"lat":37.5665,"lng":126.9780}]'::jsonb ELSE NULL END,
     CASE WHEN bi.booth_id % 7 = 0 THEN 'ADMIN' ELSE 'STAFF' END,
-    CASE WHEN bi.booth_id % 7 = 0 THEN COALESCE(CASE m.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END, 1) END,
+    CASE WHEN bi.booth_id % 7 = 0 THEN COALESCE(CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END, 1) END,
     CASE WHEN bi.booth_id % 7 <> 0 THEN (
         SELECT fsa.id FROM field_staff_accounts fsa
         WHERE fsa.festival_id = bi.festival_id AND fsa.status = 'ACTIVE'
@@ -560,7 +566,7 @@ SELECT
     CASE
         WHEN g.row_no IN (3, 4) AND bq.booth_id % 3 = 0 THEN COALESCE(
             bq.modifier_admin_id,
-            CASE m.seed_idx WHEN 1 THEN 31 WHEN 7 THEN 37 WHEN 8 THEN 40 WHEN 9 THEN 43 WHEN 10 THEN 46 ELSE m.seed_idx END
+            CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END
         )
     END,
     CASE
