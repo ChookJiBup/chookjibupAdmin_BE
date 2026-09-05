@@ -5,7 +5,7 @@ set -euo pipefail
 
 SECRET_FILE="${SECRET_FILE:-/etc/chookjibup-admin/application-secret.yml}"
 DEPLOY_PATH="${DEPLOY_PATH:-/home/ec2-user/app/chookjibupAdmin_BE}"
-SEED_SQL="${SEED_SQL:-${DEPLOY_PATH}/docs/seed-data/시드데이터_RDS경량_통합.sql}"
+SEED_SQL="${SEED_SQL:-${DEPLOY_PATH}/docs/seed-data/rds-light-seed.sql}"
 JAVA_HOME="${JAVA_HOME:-/usr/lib/jvm/java-21-amazon-corretto.x86_64}"
 
 cd "$DEPLOY_PATH"

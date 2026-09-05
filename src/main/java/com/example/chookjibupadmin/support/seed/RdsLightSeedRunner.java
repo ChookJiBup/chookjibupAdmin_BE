@@ -62,14 +62,31 @@ public final class RdsLightSeedRunner {
 
         String script = Files.readString(sqlFile, StandardCharsets.UTF_8);
         List<String> statements = splitSql(script);
+        System.out.println("Parsed SQL statements: " + statements.size());
 
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password)) {
-            // Let the seed script own BEGIN/COMMIT.
-            connection.setAutoCommit(true);
+            // One JDBC transaction: TEMP ... ON COMMIT DROP tables must survive until COMMIT.
+            connection.setAutoCommit(false);
             try (Statement statement = connection.createStatement()) {
+                int index = 0;
                 for (String sql : statements) {
-                    statement.execute(sql);
+                    index++;
+                    if (isTransactionBoundary(sql)) {
+                        continue;
+                    }
+                    try {
+                        statement.execute(sql);
+                    } catch (SQLException ex) {
+                        throw new SQLException(
+                                "Seed statement #" + index + " failed: " + preview(sql),
+                                ex
+                        );
+                    }
                 }
+                connection.commit();
+            } catch (SQLException ex) {
+                connection.rollback();
+                throw ex;
             }
 
             System.out.println("----- Seed verification -----");
@@ -98,6 +115,21 @@ public final class RdsLightSeedRunner {
         }
 
         System.out.println("Seed completed.");
+    }
+
+    private static boolean isTransactionBoundary(String sql) {
+        String normalized = sql.trim();
+        return normalized.equalsIgnoreCase("BEGIN")
+                || normalized.equalsIgnoreCase("COMMIT")
+                || normalized.equalsIgnoreCase("ROLLBACK");
+    }
+
+    private static String preview(String sql) {
+        String compact = sql.replaceAll("\\s+", " ").trim();
+        if (compact.length() <= 180) {
+            return compact;
+        }
+        return compact.substring(0, 180) + "...";
     }
 
     private static Map<String, String> readDatasource(Path secretFile) throws IOException {

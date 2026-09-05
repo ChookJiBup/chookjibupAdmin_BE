@@ -63,5 +63,5 @@ tasks.register('applyRdsSeed', JavaExec) {
 	classpath = sourceSets.main.runtimeClasspath
 	mainClass = 'com.example.chookjibupadmin.support.seed.RdsLightSeedRunner'
 	systemProperty 'seed.secretFile', System.getenv('SECRET_FILE') ?: '/etc/chookjibup-admin/application-secret.yml'
-	systemProperty 'seed.sqlFile', System.getenv('SEED_SQL') ?: "${projectDir}/docs/seed-data/시드데이터_RDS경량_통합.sql"
+	systemProperty 'seed.sqlFile', System.getenv('SEED_SQL') ?: "${projectDir}/docs/seed-data/rds-light-seed.sql"
 }

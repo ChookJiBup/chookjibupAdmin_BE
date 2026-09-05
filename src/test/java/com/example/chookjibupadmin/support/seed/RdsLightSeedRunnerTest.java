@@ -30,4 +30,11 @@ class RdsLightSeedRunnerTest {
         assertThat(statements.get(2)).isEqualTo("SELECT 1");
         assertThat(statements.get(3)).isEqualTo("COMMIT");
     }
+
+    @Test
+    @DisplayName("트랜잭션 경계 BEGIN/COMMIT 문은 식별 가능하다")
+    void success_SplitSql_KeepsTransactionBoundariesForFiltering() {
+        List<String> statements = RdsLightSeedRunner.splitSql("BEGIN; SELECT 1; COMMIT;");
+        assertThat(statements).containsExactly("BEGIN", "SELECT 1", "COMMIT");
+    }
 }

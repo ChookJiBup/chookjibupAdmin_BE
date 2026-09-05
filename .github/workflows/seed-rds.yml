@@ -32,7 +32,7 @@ jobs:
       JAVA_HOME: ${{ vars.ADMIN_JAVA_HOME || '/usr/lib/jvm/java-21-amazon-corretto.x86_64' }}
       SECRET_PARAMETER: ${{ vars.ADMIN_APPLICATION_SECRET_PARAMETER || '/chookjibup/admin/application-secret-yml' }}
       SECRET_FILE: ${{ vars.ADMIN_APPLICATION_SECRET_FILE || '/etc/chookjibup-admin/application-secret.yml' }}
-      SEED_SQL_RELPATH: docs/seed-data/시드데이터_RDS경량_통합.sql
+      SEED_SQL_RELPATH: docs/seed-data/rds-light-seed.sql
       SEED_SCRIPT_RELPATH: .github/scripts/apply-rds-seed.sh
 
     steps:
