@@ -112,7 +112,7 @@ WHERE bi.festival_id = sf.festival_id;
 
 DELETE FROM roadmap_node rn
 USING festival_roadmap fr, seed_festival_map sf
-WHERE rn.roadmap_id = fr.roadmap_id AND fr.festival_id = sf.festival_id;
+WHERE rn.roadmap_id = fr.id AND fr.festival_id = sf.festival_id;
 
 DELETE FROM festival_roadmap fr
 USING seed_festival_map sf
@@ -407,7 +407,7 @@ WHERE m.seed_idx IN (8, 9, 10);
 
 -- 도메인 규칙과 동일하게 새(current) 지도가 이전(REPLACED) 지도를 가리킨다.
 UPDATE festival_maps current_map
-SET replaces_map_id = old_map.map_id
+SET replaces_map_id = old_map.id
 FROM seed_festival_map m
 JOIN festival_maps old_map
   ON old_map.festival_id = m.festival_id
@@ -425,7 +425,7 @@ INSERT INTO festival_roadmap (
 SELECT
     gen_random_uuid(),
     m.festival_id,
-    fm.map_id,
+    fm.id,
     (ARRAY['ANALYZING','REVIEW_REQUIRED','REVIEW_REQUIRED','EDITING','EDITING','EDITING','EDITING','EDITING','PUBLISHED','PUBLISHED'])[m.seed_idx],
     (ARRAY[0,2,1,3,5,2,4,1,3,5])[m.seed_idx],
     (ARRAY[0,1,0,1,3,1,2,1,2,3])[m.seed_idx],
@@ -447,7 +447,7 @@ INSERT INTO roadmap_node (
 )
 SELECT
     gen_random_uuid(),
-    fr.roadmap_id,
+    fr.id,
     fr.current_map_id,
     CASE WHEN n.node_no <= 8 THEN 'BOOTH' ELSE (ARRAY['STAGE','RESTROOM','PATH','ENTRANCE','INFORMATION','PARKING','OTHER'])[n.node_no - 8] END,
     CASE WHEN n.node_no <= 8 THEN '부스-' || m.seed_idx || '-' || n.node_no ELSE '시설-' || m.seed_idx || '-' || n.node_no END,
@@ -492,7 +492,7 @@ SELECT
     0, now(), now()
 FROM seed_festival_map m
 JOIN festival_roadmap fr ON fr.festival_id = m.festival_id
-JOIN festival_maps fm ON fm.map_id = fr.current_map_id
+JOIN festival_maps fm ON fm.id = fr.current_map_id
 CROSS JOIN generate_series(1, 15) AS n(node_no)
 CROSS JOIN LATERAL (
     SELECT
@@ -511,7 +511,7 @@ SELECT
 FROM seed_festival_map m
 JOIN festival_roadmap fr ON fr.festival_id = m.festival_id
 JOIN roadmap_node rn
-  ON rn.roadmap_id = fr.roadmap_id
+  ON rn.roadmap_id = fr.id
  AND rn.node_type = 'BOOTH'
  AND rn.review_status = 'CONFIRMED';
 
@@ -620,8 +620,8 @@ SELECT setval(pg_get_serial_sequence('admin_accounts', 'id'), GREATEST((SELECT C
 SELECT setval(pg_get_serial_sequence('admin_festival_roles', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM admin_festival_roles), 1));
 SELECT setval(pg_get_serial_sequence('field_staff_accounts', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM field_staff_accounts), 1));
 SELECT setval(pg_get_serial_sequence('festival_locations', 'location_id'), GREATEST((SELECT COALESCE(MAX(location_id), 1) FROM festival_locations), 1));
-SELECT setval(pg_get_serial_sequence('festival_maps', 'map_id'), GREATEST((SELECT COALESCE(MAX(map_id), 1) FROM festival_maps), 1));
-SELECT setval(pg_get_serial_sequence('festival_roadmap', 'roadmap_id'), GREATEST((SELECT COALESCE(MAX(roadmap_id), 1) FROM festival_roadmap), 1));
+SELECT setval(pg_get_serial_sequence('festival_maps', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM festival_maps), 1));
+SELECT setval(pg_get_serial_sequence('festival_roadmap', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM festival_roadmap), 1));
 SELECT setval(pg_get_serial_sequence('roadmap_node', 'id'), GREATEST((SELECT COALESCE(MAX(id), 1) FROM roadmap_node), 1));
 SELECT setval(pg_get_serial_sequence('booth_info', 'booth_id'), GREATEST((SELECT COALESCE(MAX(booth_id), 1) FROM booth_info), 1));
 SELECT setval(pg_get_serial_sequence('booth_queue', 'queue_id'), GREATEST((SELECT COALESCE(MAX(queue_id), 1) FROM booth_queue), 1));
