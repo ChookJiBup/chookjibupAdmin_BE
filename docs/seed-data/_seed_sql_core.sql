@@ -161,6 +161,56 @@ END
 FROM seed_festival_map m
 WHERE f.festival_id = m.festival_id;
 
+-- Admin BE enum 계약에 맞게 남은 파이프라인 CHECK를 정렬한다.
+DO $$
+BEGIN
+    IF to_regclass('field_staff_accounts') IS NOT NULL THEN
+        ALTER TABLE field_staff_accounts
+            DROP CONSTRAINT IF EXISTS field_staff_accounts_status_check;
+        UPDATE field_staff_accounts
+        SET status = 'INACTIVE'
+        WHERE status = 'SUSPENDED';
+        ALTER TABLE field_staff_accounts
+            ADD CONSTRAINT field_staff_accounts_status_check
+            CHECK (status IN ('ACTIVE', 'INACTIVE', 'DELETED'));
+    END IF;
+
+    IF to_regclass('festival_roadmap') IS NOT NULL THEN
+        ALTER TABLE festival_roadmap
+            DROP CONSTRAINT IF EXISTS festival_roadmap_status_check;
+        ALTER TABLE festival_roadmap
+            ADD CONSTRAINT festival_roadmap_status_check
+            CHECK (status IN (
+                'ANALYZING', 'REVIEW_REQUIRED', 'EDITING', 'PUBLISHED',
+                'DRAFT', 'APPROVED', 'ARCHIVED'
+            ));
+    END IF;
+
+    IF to_regclass('roadmap_node') IS NOT NULL THEN
+        ALTER TABLE roadmap_node
+            DROP CONSTRAINT IF EXISTS roadmap_node_node_type_check;
+        ALTER TABLE roadmap_node
+            DROP CONSTRAINT IF EXISTS roadmap_node_source_check;
+        ALTER TABLE roadmap_node
+            DROP CONSTRAINT IF EXISTS roadmap_node_review_status_check;
+        ALTER TABLE roadmap_node
+            DROP CONSTRAINT IF EXISTS chk_roadmap_node_source_job;
+        ALTER TABLE roadmap_node
+            ADD CONSTRAINT roadmap_node_node_type_check
+            CHECK (node_type IN (
+                'BOOTH', 'STAGE', 'RESTROOM', 'ENTRANCE', 'EXIT', 'PATH',
+                'BUILDING', 'OPEN_SPACE', 'PARKING', 'INFORMATION', 'QUEUE', 'OTHER'
+            ));
+        ALTER TABLE roadmap_node
+            ADD CONSTRAINT roadmap_node_source_check
+            CHECK (source IN ('AI', 'ADMIN'));
+        ALTER TABLE roadmap_node
+            ADD CONSTRAINT roadmap_node_review_status_check
+            CHECK (review_status IN ('REVIEW_REQUIRED', 'CONFIRMED'));
+    END IF;
+END
+$$;
+
 -- ========== admin_accounts (30 bulk + 18 fixture = 48) ==========
 INSERT INTO admin_accounts (
     id, public_id, account_kind, email, name, organization, job_rank,
