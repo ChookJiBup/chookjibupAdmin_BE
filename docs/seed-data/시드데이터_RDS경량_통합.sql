@@ -234,6 +234,30 @@ BEGIN
 END
 $$;
 
+-- 파이프라인 admins(admin_id) FK를 제거해 admin_accounts 시드 ID를 쓸 수 있게 한다.
+DO $$
+DECLARE
+    fk RECORD;
+BEGIN
+    FOR fk IN
+        SELECT t.relname AS table_name, c.conname
+        FROM pg_constraint c
+        JOIN pg_class t ON t.oid = c.conrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        JOIN pg_class ft ON ft.oid = c.confrelid
+        WHERE c.contype = 'f'
+          AND n.nspname = current_schema()
+          AND ft.relname = 'admins'
+    LOOP
+        EXECUTE format(
+            'ALTER TABLE %I DROP CONSTRAINT %I',
+            fk.table_name,
+            fk.conname
+        );
+    END LOOP;
+END
+$$;
+
 -- ========== admin_accounts (30 bulk + 18 fixture = 48) ==========
 INSERT INTO admin_accounts (
     id, public_id, account_kind, email, name, organization, job_rank,
