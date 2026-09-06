@@ -36,13 +36,10 @@ psql -f .\docs\seed-data\시드데이터_RDS경량_통합.sql
 
 생성기는 core 파일 존재, placeholder 제거, `BEGIN`/`COMMIT`, 필수 SQL 섹션을 검사한다. 실제 RDS 실행 후에는 검토보고서의 검증 쿼리를 수행한다.
 
-### GitHub Actions (1회성 RDS 시드)
+### GitHub Actions (1회성 RDS 시드 완료)
 
-CI(`./gradlew test`)에는 시드를 넣지 않는다. 실 RDS용 시드는 Actions
-**Seed RDS**를 수동 1회 실행한다. EC2에 `psql` 설치는 필요 없고
-`./gradlew applyRdsSeed`(JDBC)를 사용한다.
-
-성공 후 워크플로/시드 러너는 삭제해도 된다. 상세는
-`.github/DEPLOYMENT.md`의 **RDS 경량 시드 (1회성 수동)**.
+실 RDS 시드는 1회 적용을 완료했고, 재실행 방지를 위해 전용 Actions 워크플로와
+JDBC 시드 러너를 저장소에서 제거했다. SQL과 이 문서는 실행 결과·재현 기준 보존을
+위해 남긴다. 재시드가 필요하면 운영 승인 후 별도 1회성 실행 경로를 다시 검토한다.
 
 시드 성공 후 공무원 로그인: `admin01@seed.mapo.go.kr` / `qwer1234`
