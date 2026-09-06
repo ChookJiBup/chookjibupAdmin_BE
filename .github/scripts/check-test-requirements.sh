@@ -7,6 +7,17 @@ if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]]; then
   base_sha="$(git rev-list --max-parents=0 HEAD)"
 fi
 
+# force-push 등으로 before SHA가 runner에 없으면 git diff가 128로 실패한다.
+if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
+  echo "Base SHA ${base_sha} is unavailable; falling back."
+  if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+    base_sha="$(git rev-parse HEAD~1)"
+  else
+    base_sha="$(git rev-list --max-parents=0 HEAD)"
+  fi
+  echo "Using base SHA ${base_sha}"
+fi
+
 changed_files="$(git diff --name-only "$base_sha" HEAD)"
 main_changed=()
 test_changed=()
