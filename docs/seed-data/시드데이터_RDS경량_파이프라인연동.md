@@ -63,7 +63,7 @@
 - 이미지 파일을 RDS에 저장하지 않고 S3 더미 object key·메타데이터만 저장해 디스크와 백업 용량을 줄인다.
 - **단일 SQL 파일**(`시드데이터_RDS경량_통합.sql`)을 `BEGIN`/`COMMIT` 한 트랜잭션으로 실행한다. FK 검증 실패 시 전체 롤백한다. 운영 데이터가 있는 RDS에서는 `TRUNCATE ... CASCADE`를 사용하지 않는다.
 - `_seed_sql_core.sql`은 placeholder가 남은 생성 소스이므로 직접 실행하지 않고 `_generate_seed_sql.ps1` 결과만 실행한다.
-- 고정 관리자 ID 1~48을 사용하므로 실행 전 비시드 계정의 예약 범위 충돌 검사를 통과해야 한다.
+- 시드 관리자 PK `910001..910048`을 사용하므로 실행 전 비시드 계정의 예약 범위 충돌 검사를 통과해야 한다. 아래 계정 표의 `1..48`은 논리 슬롯이고 실제 DB PK는 `910000 + 슬롯`이다.
 
 ---
 
@@ -94,35 +94,49 @@ WITH ranked AS (
     FROM festivals
     WHERE start_date IS NOT NULL
       AND end_date IS NOT NULL
+),
+bucketed AS (
+    SELECT
+        ranked.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY progress_status
+            ORDER BY start_date NULLS LAST, festival_id
+        ) AS status_rank
+    FROM ranked
+    WHERE progress_status IN ('ongoing', 'upcoming', 'completed')
+),
+selected AS (
+    SELECT *
+    FROM bucketed
+    WHERE (progress_status = 'ongoing' AND status_rank <= 4)
+       OR (progress_status = 'upcoming' AND status_rank <= 2)
+       OR (progress_status = 'completed' AND status_rank <= 4)
 )
 SELECT
     ROW_NUMBER() OVER (
         ORDER BY
             CASE progress_status WHEN 'ongoing' THEN 0 WHEN 'upcoming' THEN 1 ELSE 2 END,
+            status_rank,
             start_date NULLS LAST,
             festival_id
     ) AS seed_idx,
-    ROW_NUMBER() OVER (
-        PARTITION BY progress_status
-        ORDER BY start_date NULLS LAST, festival_id
-    ) AS status_rank,
+    status_rank,
     festival_id,
     public_id,
     festival_name,
     progress_status,
     start_date,
     end_date
-FROM ranked
-WHERE progress_status IN ('ongoing', 'upcoming', 'completed')
-LIMIT 10;
+FROM selected;
 ```
 
-| seed_idx | festival_id | festival_name | progress_status |
-|---------:|------------:|---------------|-----------------|
-| 1 | `{PIPE.F1}` | (조회값) | ongoing |
-| 2 | `{PIPE.F2}` | … | ongoing |
-| … | … | … | … |
-| 10 | `{PIPE.F10}` | … | … |
+| seed_idx 범위 | 파이프라인 예시 | progress_status | quota |
+|--------------:|-----------------|-----------------|------:|
+| 1~4 | `{PIPE.F1}`~`{PIPE.F4}` | ongoing | 4 |
+| 5~6 | `{PIPE.F5}`~`{PIPE.F6}` | upcoming | 2 |
+| 7~10 | `{PIPE.F7}`~`{PIPE.F10}` | completed | 4 |
+
+실제 `festival_id`·축제명은 위 쿼리의 조회값을 사용하며, 표의 F1~F10은 상태별 quota를 설명하기 위한 논리 순번이다.
 
 ### 3.2 파이프라인 소유 데이터와 관리자 보완 데이터
 
@@ -142,7 +156,7 @@ LIMIT 10;
 | upcoming | 2 | `UNSET` | 방문 데이터 없음, 장소·지도만 존재 |
 | completed | 4 | `DAILY` 2 / `TOTAL` 2 | 일자별 누적 또는 총원 중 하나만 입력 |
 
-파이프라인의 실제 축제 수가 위 분포와 다르더라도 수량을 억지로 맞추지 않는다. SQL은 `progress_status`를 우선 사용하고, completed 축제는 `status_rank` 1~2를 `DAILY`, 나머지를 `TOTAL`로 배정한다. ongoing은 `DAILY`, upcoming은 `UNSET`으로 처리하며 일자 데이터는 실제 날짜 범위 안에서만 생성한다.
+경량 프로파일은 위 4/2/4 quota를 기본값으로 사용한다. 특정 상태의 후보가 quota보다 적으면 다른 상태로 임의 대체하지 않고 사전검사에서 중단해 운영자가 축제 후보를 확인한다. SQL은 `progress_status`를 우선 사용하고, completed 축제는 `status_rank` 1~2를 `DAILY`, 3~4를 `TOTAL`로 배정한다. ongoing은 `DAILY`, upcoming은 `UNSET`으로 처리하며 일자 데이터는 실제 날짜 범위 안에서만 생성한다.
 
 ---
 
@@ -173,6 +187,8 @@ festival_visitor_count / festival_visitor_total
 ---
 
 ## 5. `admin_accounts` — 30명 + fixture 18명
+
+> 아래 `id`는 시드 슬롯 표기다. 실제 `admin_accounts.id`는 `910000 + 슬롯`으로 저장된다(예: 슬롯 31 → PK 910031).
 
 | id | account_kind | 역할 | email 패턴 | organization |
 |---:|--------------|------|------------|--------------|
@@ -496,7 +512,9 @@ AI 분석 노드는 시설 노드에 한해 `source = AI`, `confidence`를 0.55~
 
 ### 10.5 방문 인원 — 일자별 약 50 / 총원 2
 
-`festival.visitor_count_input_mode`와 저장 테이블을 일치시킨다.
+`festival.visitor_count_input_mode`와 저장 테이블을 일치시킨다. 단, `festivals`는 파이프라인 원본이므로
+시드 SQL이 모드·운영시간·설명·주소를 UPDATE하지 않는다. 파이프라인 적재 단계에서 모드가 아래 시나리오와
+일치하지 않으면 시드 실행 전에 원본을 수정하거나 시드 실행을 중단하고 원인을 확인한다.
 
 | 모드 | 대상 | 저장 규칙 |
 |------|------|-----------|
@@ -584,7 +602,7 @@ WHERE m.progress_status IN ('ongoing', 'completed')
 | C12 | 혼잡 modifier가 ADMIN이면 관리자 FK, STAFF이면 스태프 FK만 채움 |
 | C13 | CONTRACTOR → `SUB_ADMIN` only, 비활성·삭제·기간 만료 스태프는 로그인 실패 |
 | C14 | 동일 시드 매핑으로 재실행 시 행 수가 증가하지 않고 기존 시드만 교체 |
-| C15 | 관리자 ID 1~48이 비시드 계정과 충돌하지 않음(충돌 시 전체 롤백) |
+| C15 | 예약 시드 관리자 PK `910001..910048`이 비시드 계정과 충돌하지 않음(충돌 시 전체 롤백) |
 | C16 | geometry schema별 필수 필드·좌표 범위가 `MapGeometryValidator`를 통과 |
 
 ### 12.1 경계·실패 시나리오

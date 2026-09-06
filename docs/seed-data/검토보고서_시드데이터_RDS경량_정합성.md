@@ -107,7 +107,7 @@ MD 명세(`start_date - 1일`)에 맞게 SQL 반영.
 | `storage_status=REPLACED` | enum 존재 | OK |
 | queue modifier ADMIN/STAFF XOR FK | CASE 분기 | OK |
 | congestion modifier XOR FK | §3.2 수정 | OK |
-| DAILY vs TOTAL 분리 | UPDATE mode + INSERT 분기 | OK |
+| DAILY vs TOTAL 분리 | 상태/순번 기반 INSERT 분기 (festivals 원본 UPDATE 없음) | 조건부: 파이프라인의 `visitor_count_input_mode`와 시나리오 일치 필요 |
 | UNSET(5~6) 방문 0행 | INSERT 조건 제외 | OK |
 
 ### 4.3 예상 행 수 (파이프라인 10축제·날짜 정상 가정)
@@ -129,9 +129,9 @@ MD 명세(`start_date - 1일`)에 맞게 SQL 반영.
 
 ### 4.4 알려진 제한·주의
 
-1. **고정 PK 1~48**: 비시드 계정이 예약 범위를 사용하면 사전검사에서 실패한다. 개발/시드 전용 DB 권장.
+1. **예약 PK 910001~910048**: 비시드 계정이 예약 범위를 사용하면 사전검사에서 실패한다. 개발/시드 전용 DB 권장.
 2. **재실행 범위**: 명시된 시드 namespace와 매핑 축제 범위만 삭제한다. 매핑 축제가 바뀌면 이전 축제의 장소·지도·방문 입력 잔여 여부를 별도 확인해야 한다.
-3. **방문 모드 분포**: `seed_idx` 순서가 ongoing→upcoming→completed가 아니면 MD §3.3 시나리오와 어긋날 수 있음 (파이프라인 정렬 의존).
+3. **방문 모드 분포**: 상태별 quota(ongoing 4 / upcoming 2 / completed 4)를 `seed_festival_map`에서 사용하고, 후보가 부족하면 다른 상태로 대체하지 않고 사전검사에서 중단한다. completed `status_rank` 1~2는 DAILY·3~4는 TOTAL로 배정하며, 재시드 실행일의 날짜 상태가 달라질 수 있으므로 실행 직전 quota와 `start_date/end_date`를 재검증한다.
 4. **S3 파일 없음**: `seed/maps/...` 키만 존재. 실제 다운로드 API는 404 가능.
 5. **`map_analysis_job`**: 미포함 (MD §10.6와 동일).
 
@@ -171,26 +171,49 @@ MD 명세(`start_date - 1일`)에 맞게 SQL 반영.
 -- 행 수
 SELECT 'admin_accounts' t, COUNT(*) FROM admin_accounts WHERE email LIKE '%@seed.%'
 UNION ALL SELECT 'admin_festival_roles', COUNT(*) FROM admin_festival_roles afr
-  JOIN festivals f ON f.festival_id = afr.festival_id
-  WHERE f.festival_id IN (SELECT festival_id FROM festivals WHERE is_active LIMIT 10)
+  WHERE afr.admin_account_id IN (
+      SELECT id FROM admin_accounts WHERE email LIKE '%@seed.%'
+  )
 UNION ALL SELECT 'booth_congestion', COUNT(*) FROM booth_congestion;
 
 -- 역할 40·축제당 OWNER 1
-WITH seed_festival_map AS (
+WITH ranked AS (
+    SELECT
+        festival_id,
+        start_date,
+        end_date,
+        CASE
+            WHEN start_date IS NULL OR end_date IS NULL THEN NULL
+            WHEN CURRENT_DATE < start_date THEN 'upcoming'
+            WHEN CURRENT_DATE > end_date THEN 'completed'
+            ELSE 'ongoing'
+        END AS progress_status
+    FROM festivals
+    WHERE start_date IS NOT NULL
+      AND end_date IS NOT NULL
+), bucketed AS (
+    SELECT ranked.*,
+           ROW_NUMBER() OVER (
+               PARTITION BY progress_status
+               ORDER BY start_date NULLS LAST, festival_id
+           ) AS status_rank
+    FROM ranked
+), seed_festival_map AS (
     SELECT ROW_NUMBER() OVER (
                ORDER BY CASE progress_status
                             WHEN 'ongoing' THEN 0
                             WHEN 'upcoming' THEN 1
                             ELSE 2
                         END,
+                        status_rank,
                         start_date NULLS LAST,
                         festival_id
            ) AS seed_idx,
            festival_id
-    FROM festivals
-    WHERE is_active = true
-      AND progress_status IN ('ongoing', 'upcoming', 'completed')
-    LIMIT 10
+    FROM bucketed
+    WHERE (progress_status = 'ongoing' AND status_rank <= 4)
+       OR (progress_status = 'upcoming' AND status_rank <= 2)
+       OR (progress_status = 'completed' AND status_rank <= 4)
 ), expected(seed_idx, expected_total) AS (
     VALUES (1, 3), (2, 5), (3, 5), (4, 5), (5, 5),
            (6, 5), (7, 3), (8, 3), (9, 3), (10, 3)
@@ -209,7 +232,7 @@ HAVING COUNT(afr.id) <> e.expected_total
 -- geometry 기본 검증(IMAGE 지도)
 SELECT COUNT(*) AS invalid_image_geometry
 FROM roadmap_node rn
-JOIN festival_maps fm ON fm.map_id = rn.map_id
+JOIN festival_maps fm ON fm.id = rn.map_id
 WHERE fm.map_kind = 'IMAGE'
   AND (
       (rn.geometry_type = 'RECTANGLE'
@@ -222,7 +245,7 @@ WHERE fm.map_kind = 'IMAGE'
 SELECT COUNT(*) AS invalid_replacement_link
 FROM festival_maps old_map
 JOIN festival_maps current_map
-  ON current_map.replaces_map_id = old_map.map_id
+  ON current_map.replaces_map_id = old_map.id
 WHERE old_map.storage_status <> 'REPLACED'
    OR old_map.is_current;
 
@@ -239,6 +262,7 @@ WHERE NOT (
 );
 
 -- 방문 모드·테이블 일치
+-- visitor_count_input_mode는 파이프라인 원본값을 검증한다. 시드 SQL은 festivals를 UPDATE하지 않는다.
 SELECT f.festival_id, f.visitor_count_input_mode,
        (SELECT COUNT(*) FROM festival_visitor_count c WHERE c.festival_id=f.festival_id) daily_rows,
        (SELECT COUNT(*) FROM festival_visitor_total t WHERE t.festival_id=f.festival_id) total_rows

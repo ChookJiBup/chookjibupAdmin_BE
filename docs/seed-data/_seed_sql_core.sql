@@ -27,18 +27,33 @@ WITH ranked AS (
     FROM festivals
     WHERE start_date IS NOT NULL
       AND end_date IS NOT NULL
+),
+bucketed AS (
+    SELECT
+        ranked.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY progress_status
+            ORDER BY start_date NULLS LAST, festival_id
+        ) AS status_rank
+    FROM ranked
+    WHERE progress_status IN ('ongoing', 'upcoming', 'completed')
+),
+selected AS (
+    SELECT *
+    FROM bucketed
+    WHERE (progress_status = 'ongoing' AND status_rank <= 4)
+       OR (progress_status = 'upcoming' AND status_rank <= 2)
+       OR (progress_status = 'completed' AND status_rank <= 4)
 )
 SELECT
     ROW_NUMBER() OVER (
         ORDER BY
             CASE progress_status WHEN 'ongoing' THEN 0 WHEN 'upcoming' THEN 1 ELSE 2 END,
+            status_rank,
             start_date NULLS LAST,
             festival_id
     ) AS seed_idx,
-    ROW_NUMBER() OVER (
-        PARTITION BY progress_status
-        ORDER BY start_date NULLS LAST, festival_id
-    ) AS status_rank,
+    status_rank,
     festival_id,
     public_id,
     festival_name,
@@ -48,14 +63,17 @@ SELECT
     base_lat,
     base_lng,
     road_address
-FROM ranked
-WHERE progress_status IN ('ongoing', 'upcoming', 'completed')
-LIMIT 10;
+FROM selected;
 
 DO $$
 BEGIN
     IF (SELECT COUNT(*) FROM seed_festival_map) < 10 THEN
         RAISE EXCEPTION 'seed_festival_map has % rows; need 10', (SELECT COUNT(*) FROM seed_festival_map);
+    END IF;
+    IF (SELECT COUNT(*) FROM seed_festival_map WHERE progress_status = 'ongoing') <> 4
+       OR (SELECT COUNT(*) FROM seed_festival_map WHERE progress_status = 'upcoming') <> 2
+       OR (SELECT COUNT(*) FROM seed_festival_map WHERE progress_status = 'completed') <> 4 THEN
+        RAISE EXCEPTION 'seed_festival_map must contain ongoing=4, upcoming=2, completed=4';
     END IF;
 END $$;
 
@@ -150,26 +168,10 @@ BEGIN
     END IF;
 END $$;
 
--- visitor input mode on pipeline festivals
-UPDATE festivals f
-SET visitor_count_input_mode = CASE
-    WHEN m.progress_status = 'ongoing' THEN 'DAILY'
-    WHEN m.progress_status = 'upcoming' THEN 'UNSET'
-    WHEN m.progress_status = 'completed' AND m.status_rank <= 2 THEN 'DAILY'
-    ELSE 'TOTAL'
-END
-FROM seed_festival_map m
-WHERE f.festival_id = m.festival_id;
-
--- pipeline festivals may lack operation hours / description; Admin detail getters need safe values
-UPDATE festivals f
-SET
-    operation_start_time = COALESCE(f.operation_start_time, TIME '10:00'),
-    operation_end_time = COALESCE(f.operation_end_time, TIME '21:00'),
-    content = COALESCE(NULLIF(BTRIM(f.content), ''), f.festival_name || ' 시드 설명'),
-    road_address = COALESCE(NULLIF(BTRIM(f.road_address), ''), '시드 도로명주소')
-FROM seed_festival_map m
-WHERE f.festival_id = m.festival_id;
+-- festivals는 파이프라인 원본으로 취급한다. 시드 SQL에서 모드·운영시간·설명·주소를
+-- 보정하거나 덮어쓰지 않으며, 아래 방문 행은 seed_festival_map의 상태/순번 시나리오에
+-- 따라 생성한다. 애플리케이션에서 visitor_count_input_mode를 사용하려면 해당 값은
+-- 파이프라인 적재 단계에서 이미 결정되어 있어야 한다.
 
 -- Admin BE enum 계약에 맞게 남은 파이프라인 CHECK를 정렬한다.
 DO $$
