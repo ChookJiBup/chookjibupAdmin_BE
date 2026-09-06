@@ -18,7 +18,9 @@ if ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null; then
   echo "Using base SHA ${base_sha}"
 fi
 
-changed_files="$(git diff --name-only "$base_sha" HEAD)"
+# 삭제(D)만 있는 운영/테스트 변경은 "새 테스트 작성" 대상이 아니다.
+# (예: 일회성 시드 러너·테스트 동시 삭제 시 어노테이션 검사가 실패하던 문제)
+changed_files="$(git diff --name-only --diff-filter=ACMR "$base_sha" HEAD)"
 main_changed=()
 test_changed=()
 
