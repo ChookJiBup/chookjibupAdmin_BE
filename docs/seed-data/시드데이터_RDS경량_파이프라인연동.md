@@ -2,7 +2,7 @@
 
 # 시드 데이터 (RDS 경량) — 파이프라인 축제 연동
 
-작성일: 2026-09-03 (rev.5)
+작성일: 2026-09-06 (rev.6)
 대상: `chookjibupAdmin_BE` Flyway/JPA 스키마 + 공유 DB (`ChookJiBup_data_pipeline`가 적재한 `festivals`)
 **축제 마스터는 시드하지 않음** — 파이프라인 `festivals.festival_id` FK 참조
 
@@ -33,7 +33,7 @@
 | 축제 역할(A 세트 교차 추가) | - | **10** | O※ |
 | **축제 역할 최종** | - | **40** | O |
 | 현장 스태프 | 180 | **20** | O |
-| 축제 장소 | - | **25** | O※ |
+| 축제 장소 | - | **10** | O※ |
 | 지도(현재+교체 이력) | - | **13** | O※ |
 | 축제 배치도 | - | **10** | O※ |
 | 배치도 노드(시설 포함) | - | **150** | O※ |
@@ -48,7 +48,7 @@
 
 ### 2.1 확장 데이터의 의도
 
-- 장소는 축제당 1~5개로 분산한다. (3·3·2·2개 축제에 1·2·3·5개 = 총 25개)
+- 장소는 선정된 축제마다 파이프라인 원본 장소 1개씩만 생성한다(10개 축제 = 총 10개). 실제 다지역 장소는 운영자가 별도 등록하는 범위이며 시드에서 임의로 복제하지 않는다.
 - 지도는 10개 현재본과 3개 교체 이력을 넣어 S3 메타데이터, 현재본 유일성, 교체 조회를 검증한다.
 - 노드는 부스뿐 아니라 무대·화장실·통로·출입구·안내소를 포함한다. BOOTH 80개는 모두 `CONFIRMED` 상태로 만들고, 시설 노드만 AI 검수 대상을 포함한다.
 - 방문 인원은 `DAILY`(6축제)와 `TOTAL`(2축제)을 분리하고, `UNSET` 축제에는 방문 행을 넣지 않는다.
@@ -171,7 +171,7 @@ admin_festival_roles (기본 30 + A 교차 10 = **40행**)
     ↓
 field_staff_accounts (20)
     ↓
-festival_locations (25)
+festival_locations (10)
     ↓
 festival_maps (13) → festival_roadmap (10)
     ↓
@@ -447,28 +447,32 @@ for booth_idx 1..80:
 
 ## 10. 축제 장소·지도·배치도 보완 시드
 
-### 10.1 `festival_locations` — 25
+### 10.1 `festival_locations` — 10
 
-축제별 장소 수를 `seed_idx` 구간으로 분배한다. 1~3번은 1개, 4~6번은 2개, 7~8번은 3개, 9~10번은 5개를 만들어 총 25행을 구성한다. 축제마다 `is_primary = true`는 정확히 1행이어야 한다.
+선정된 축제마다 `festivals` 원본 장소를 1행씩 생성해 총 10행을 구성한다. 원본 주소·좌표가 없는 값을 시드 문자열이나 임의 좌표로 채우지 않으며, 다지역 장소 추가는 운영자가 실제 값을 입력하는 후속 작업으로 남긴다.
 
 ```text
-location_type = MAIN_VENUE(기본), SUB_VENUE/STAGE_AREA/EXPERIENCE_AREA/PARKING/ENTRANCE(추가)
-location_name = {축제명} 주행사장 / 부행사장-{n}
-source_type   = API(파이프라인 주소), MANUAL(관리자 추가 주소)
-API 행        = created_by_admin_id NULL, 도로명·좌표 중 하나 이상
-MANUAL 행     = created_by_admin_id 유효 관리자 ID, 좌표·주소 중 하나 이상
-sort_order    = 0부터 연속
+location_type = MAIN_VENUE
+location_name = `festivals.event_place`, 값이 없으면 `festivals.festival_name`
+source_type   = API
+created_by_admin_id / last_modified_by_admin_id = NULL
+is_primary    = TRUE
+sort_order    = 0
 ```
 
-기본 장소는 `festival.road_address`를 우선 사용하고, 추가 장소는 서로 다른 좌표(반경 100m 이상)를 사용한다. 좌표는 위도 `-90..90`, 경도 `-180..180` 범위를 지키며 위도·경도 중 하나만 채운 행은 만들지 않는다.
+값 매핑은 아래 원본 컬럼을 그대로 사용한다. `jibun_address`는 컬럼이 비어 있으면 `raw_payload.lnmAddr` 또는 `raw_payload.lnmadr`를 보조 원본으로 사용한다. 원본에 없는 값은 NULL로 둔다.
 
 | 필드 | 생성 규칙 예시 |
 |------|----------------|
 | `public_id` | 행마다 UUID v4, 재실행 시 동일 축제의 기존 UUID 재사용 금지 |
-| `road_address` / `jibun_address` | 파이프라인 주소 복사 또는 `({축제명}) 부행사장-{n}` 더미 주소 |
-| `detail_address` / `postal_code` | 30% NULL, 나머지는 행사장·동/층 정보 |
-| `latitude` / `longitude` | 기준 좌표 + `seed_idx·0.001` 오프셋 |
-| `boundary_geometry` | 20%만 GeoJSON Polygon, 나머지는 NULL |
+| `road_address` | `festivals.road_address` 원본 |
+| `jibun_address` | `festivals.jibun_address` → `raw_payload`의 `lnmAddr`/`lnmadr` 순서 |
+| `detail_address` | `festivals.detail_address` 원본, 없으면 NULL |
+| `postal_code` | 원본 컬럼이 없어 NULL |
+| `latitude` / `longitude` | `festivals.latitude` / `festivals.longitude` 원본값 그대로 |
+| `boundary_geometry` | 원본 도형이 없어 NULL |
+
+`latitude`와 `longitude`는 둘 다 존재하는 축제만 10개 quota 후보로 선정한다. 값이 하나라도 없으면 임의 좌표를 넣지 않고 시드 사전검사에서 중단한다.
 
 ### 10.2 `festival_maps` — 13
 
@@ -502,13 +506,15 @@ AI 분석 노드는 시설 노드에 한해 `source = AI`, `confidence`를 0.55~
 
 #### 대표 픽스처 샘플
 
+장소는 축제당 `MAIN_VENUE` 1행만 넣으며, 좌표·주소는 `festivals` 원본을 복사한다. 부행사장·다지역 장소는 시드가 만들지 않는다.
+
 | 축제 | 장소 | 지도/로드맵 | 노드 예시 | 부스 연결 |
 |------|------|-------------|-----------|-----------|
-| F1 | 주행사장 1개 | COORDINATE, ANALYZING | 무대·화장실·출입구 | 부스 8개 |
-| F4 | 주행사장 + 부행사장 | IMAGE, EDITING | AI 시설 노드(confidence 0.61) | 확정 부스 8개 |
-| F7 | 3개 행사 구역 | IMAGE 교체 완료 | 통로 POLYLINE·안내소 POINT | 확정 부스 8개 |
-| F9 | 5개 다지역 | 현재 지도 + 이전 지도 | 주차장·셔틀·출구 | 확정 부스 8개 |
-| F10 | 5개 다지역 | 분석 실패 후 재시도 | `REVIEW_REQUIRED` 노드 혼합 | 확정 부스 8개 |
+| F1 | 원본 주행사장 1개 | COORDINATE, ANALYZING | 무대·화장실·출입구 | 부스 8개 |
+| F4 | 원본 주행사장 1개 | IMAGE, EDITING | AI 시설 노드(confidence 0.61) | 확정 부스 8개 |
+| F7 | 원본 주행사장 1개 | IMAGE 교체 완료 | 통로 POLYLINE·안내소 POINT | 확정 부스 8개 |
+| F9 | 원본 주행사장 1개 | 현재 지도 + 이전 지도 | 주차장·셔틀·출구 | 확정 부스 8개 |
+| F10 | 원본 주행사장 1개 | 분석 실패 후 재시도 | `REVIEW_REQUIRED` 노드 혼합 | 확정 부스 8개 |
 
 ### 10.5 방문 인원 — 일자별 약 50 / 총원 2
 
@@ -593,7 +599,7 @@ WHERE m.progress_status IN ('ongoing', 'completed')
 | C3 | festival_id 10개 FK 유효 |
 | C4 | 대량 30 + fixture 18개 password_hash 전원 동일 BCrypt |
 | C5 | `(festival_id, login_id)` 20 유일 |
-| C6 | `festival_locations` 25, 축제별 primary 정확히 1개 |
+| C6 | `festival_locations` 10, 축제별 primary 정확히 1개 |
 | C7 | `festival_maps` 13, 축제별 current 지도 최대 1개, 교체 이력 FK 유효 |
 | C8 | `festival_roadmap` 10, `current_map_id`가 동일 축제 지도 참조 |
 | C9 | `roadmap_node` 150, `booth_info` 80, 노드↔부스 양방향 연결 일치 |
@@ -609,7 +615,7 @@ WHERE m.progress_status IN ('ongoing', 'completed')
 
 | 영역 | 반드시 포함할 케이스 |
 |------|----------------------|
-| 장소 | 단일 장소, 2개 분산 장소, 3개 복수 장소, 5개 다지역 장소; 좌표만·도로명만·경계 JSON |
+| 장소 | 원본 단일 장소, 주소 컬럼 NULL, 좌표 원본 보존; 다지역 장소는 운영자 수동 등록 |
 | 지도 | COORDINATE 지도, IMAGE 지도, 현재 지도 교체, 삭제(soft delete) 지도 |
 | AI 배치도 | `REVIEW_REQUIRED` 노드, 낮은 confidence, 분석 실패 job, 관리자 확정 노드 |
 | 방문 인원 | 기간 1일, 0명 일자, 오늘 이후 일자 금지, DAILY/TOTAL 혼용 금지 |
@@ -664,7 +670,7 @@ psql "$DATABASE_URL" -f chookjibupAdmin_BE/docs/seed-data/시드데이터_RDS경
 | 1 | `seed_festival_map` TEMP 생성 + 선삭제 |
 | 2 | `admin_accounts` 48 + `admin_festival_roles` 40 |
 | 3 | `field_staff_accounts` 20 |
-| 4 | `festival_locations` 25 → `festival_maps` 13 → `festival_roadmap` 10 |
+| 4 | `festival_locations` 10 → `festival_maps` 13 → `festival_roadmap` 10 |
 | 5 | `roadmap_node` 150 → `booth_info` 80 → 노드 UPDATE |
 | 6 | `booth_queue` 80 + `booth_congestion` 320 |
 | 7 | 방문 인원 + 시퀀스 `setval` |

@@ -1,4 +1,4 @@
-# Generates 시드데이터_RDS경량_통합.sql from rev.5 spec
+# Generates 시드데이터_RDS경량_통합.sql from rev.6 spec
 $outName = ([string][char]0xC2DC) + ([string][char]0xB4DC) + ([string][char]0xB370) + ([string][char]0xC774) + ([string][char]0xD130) + '_RDS' + ([string][char]0xACBD) + ([string][char]0xB7C9) + '_' + ([string][char]0xD1B5) + ([string][char]0xD569) + '.sql'
 $out = Join-Path $PSScriptRoot $outName
 $corePath = Join-Path $PSScriptRoot '_seed_sql_core.sql'
@@ -13,7 +13,7 @@ $core = [System.IO.File]::ReadAllText($corePath, [System.Text.Encoding]::UTF8)
 $core = $core.Replace('__BCRYPT__', $bcrypt).Replace('__SHA256__', $sha)
 
 $header = @"
--- Seed data RDS lightweight integrated script (rev.5)
+-- Seed data RDS lightweight integrated script (rev.6)
 -- Password plaintext for local fixtures: qwer1234
 -- Festivals are referenced from ChookJiBup_data_pipeline (no festival INSERT)
 -- Execute: psql -f generated_seed_sql.sql
@@ -31,8 +31,10 @@ BEGIN
         FROM festivals
         WHERE start_date IS NOT NULL
           AND end_date IS NOT NULL
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
     ) < 10 THEN
-        RAISE EXCEPTION 'Need at least 10 festivals with start_date and end_date from pipeline.';
+        RAISE EXCEPTION 'Need at least 10 festivals with start/end dates and lat/lng from pipeline.';
     END IF;
 END
 `$`$;

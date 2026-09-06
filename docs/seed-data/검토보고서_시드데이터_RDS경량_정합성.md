@@ -2,8 +2,8 @@
 
 # 시드 데이터 RDS 경량 — MD·SQL 정합성 검토
 
-작성일: 2026-09-03
-대상: `시드데이터_RDS경량_파이프라인연동.md` (rev.5), `시드데이터_RDS경량_통합.sql`
+작성일: 2026-09-06
+대상: `시드데이터_RDS경량_파이프라인연동.md` (rev.6), `시드데이터_RDS경량_통합.sql`
 
 ---
 
@@ -100,9 +100,8 @@ MD 명세(`start_date - 1일`)에 맞게 SQL 반영.
 
 | 규칙 | SQL | 판정 |
 |------|-----|------|
-| `festival_locations` API→created_by NULL | `n=1` API | OK |
-| `festival_locations` MANUAL→admin 필수 | `n>1` | OK |
-| 축제별 primary 1개 | `is_primary = (n=1)` | OK |
+| `festival_locations` API→created_by NULL | 원본 장소 1행 API | OK |
+| 축제별 primary 1개 | 축제당 원본 장소 1행, `is_primary = true` | OK |
 | `festival_maps` current 1개/축제 | 첫 INSERT만 `is_current=true` | OK |
 | `storage_status=REPLACED` | enum 존재 | OK |
 | queue modifier ADMIN/STAFF XOR FK | CASE 분기 | OK |
@@ -117,7 +116,7 @@ MD 명세(`start_date - 1일`)에 맞게 SQL 반영.
 | admin_accounts | 48 |
 | admin_festival_roles | 40 |
 | field_staff_accounts | 20 |
-| festival_locations | 25 |
+| festival_locations | 10 |
 | festival_maps | 13 |
 | festival_roadmap | 10 |
 | roadmap_node | 150 |
@@ -165,6 +164,10 @@ MD 명세(`start_date - 1일`)에 맞게 SQL 반영.
 
 생성기 header를 ASCII로 변경하고 core 본문은 명시적 UTF-8로 읽고 쓰도록 유지했다. 생성 후 UTF-8 strict decode와 한글 본문 포함 여부를 확인했으며, Windows PowerShell 콘솔 코드페이지와 무관하게 파일 바이트는 정상이다.
 
+### 5.7 장소 원본 값 보존 (rev.6)
+
+`festival_locations`는 축제별 1행, 총 10행으로 축소했다. `event_place`, `road_address`, `jibun_address`, `detail_address`, `latitude`, `longitude`를 `festivals` 원본에서 읽고, 주소 컬럼이 비어 있으면 `raw_payload`의 `lnmAddr`/`lnmadr`를 지번주소 보조 원본으로 사용한다. postal code·boundary geometry·추가 다지역 주소는 원본에 없으므로 임의 문자열·좌표를 생성하지 않고 NULL 또는 운영자 수동 입력 대상으로 둔다.
+
 ## 6. 실행 후 검증 쿼리 (권장)
 
 ```sql
@@ -175,6 +178,15 @@ UNION ALL SELECT 'admin_festival_roles', COUNT(*) FROM admin_festival_roles afr
       SELECT id FROM admin_accounts WHERE email LIKE '%@seed.%'
   )
 UNION ALL SELECT 'booth_congestion', COUNT(*) FROM booth_congestion;
+
+-- 대표 장소 좌표 = festivals 원본 (기대: 0행)
+SELECT fl.festival_id, fl.latitude, f.latitude AS fest_lat,
+       fl.longitude, f.longitude AS fest_lng
+FROM festival_locations fl
+JOIN festivals f ON f.festival_id = fl.festival_id
+WHERE fl.is_primary
+  AND (fl.latitude IS DISTINCT FROM f.latitude
+       OR fl.longitude IS DISTINCT FROM f.longitude);
 
 -- 역할 40·축제당 OWNER 1
 WITH ranked AS (

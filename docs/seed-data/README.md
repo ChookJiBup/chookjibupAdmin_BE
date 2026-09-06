@@ -34,7 +34,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\docs\seed-data\_generate_s
 psql -f .\docs\seed-data\시드데이터_RDS경량_통합.sql
 ```
 
-생성기는 core 파일 존재, placeholder 제거, `BEGIN`/`COMMIT`, 필수 SQL 섹션을 검사한다. 실제 RDS 실행 후에는 검토보고서의 검증 쿼리를 수행한다.
+생성기는 core 파일 존재, placeholder 제거, `BEGIN`/`COMMIT`, 필수 SQL 섹션을 검사한다. `festival_locations`는 파이프라인 `festivals`의 행사장·주소·좌표를 그대로 사용하고, 원본에 없는 세부주소·우편번호·경계 도형은 NULL로 둔다. 실제 RDS 실행 후에는 검토보고서의 검증 쿼리를 수행한다.
 
 ### GitHub Actions (1회성 RDS 시드 완료)
 

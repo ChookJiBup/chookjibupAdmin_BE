@@ -1,4 +1,4 @@
--- Seed data RDS lightweight integrated script (rev.5)
+-- Seed data RDS lightweight integrated script (rev.6)
 -- Password plaintext for local fixtures: qwer1234
 -- Festivals are referenced from ChookJiBup_data_pipeline (no festival INSERT)
 -- Execute: psql -f generated_seed_sql.sql
@@ -16,8 +16,10 @@ BEGIN
         FROM festivals
         WHERE start_date IS NOT NULL
           AND end_date IS NOT NULL
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
     ) < 10 THEN
-        RAISE EXCEPTION 'Need at least 10 festivals with start_date and end_date from pipeline.';
+        RAISE EXCEPTION 'Need at least 10 festivals with start/end dates and lat/lng from pipeline.';
     END IF;
 END
 $$;
@@ -29,8 +31,9 @@ DROP TABLE IF EXISTS pg_temp.seed_festival_map;
 DROP TABLE IF EXISTS pg_temp.seed_admin_ids;
 DROP TABLE IF EXISTS pg_temp.seed_staff_ids;
 DROP TABLE IF EXISTS pg_temp.seed_festival_scope;
--- progress_status / is_active / lat·lng 는 Admin RDS festivals에 없을 수 있다.
--- 진행 상태는 start_date·end_date로 계산하고, 좌표는 시드 기본값을 쓴다.
+-- progress_status / is_active 는 Admin RDS festivals에 없을 수 있다.
+-- 진행 상태와 장소 좌표·주소는 festivals 원본 컬럼에서 읽는다. 원본 값이 없는
+-- 주소 세부값은 NULL로 두고 시드용 문자열·좌표를 생성하지 않는다.
 CREATE TEMP TABLE seed_festival_map AS
 WITH ranked AS (
     SELECT
@@ -45,12 +48,21 @@ WITH ranked AS (
         END AS progress_status,
         start_date,
         end_date,
-        37.5665000::numeric AS base_lat,
-        126.9780000::numeric AS base_lng,
-        road_address
+        NULLIF(BTRIM(event_place), '') AS event_place,
+        NULLIF(BTRIM(road_address), '') AS road_address,
+        COALESCE(
+            NULLIF(BTRIM(jibun_address), ''),
+            NULLIF(BTRIM(raw_payload ->> 'lnmAddr'), ''),
+            NULLIF(BTRIM(raw_payload ->> 'lnmadr'), '')
+        ) AS jibun_address,
+        NULLIF(BTRIM(detail_address), '') AS detail_address,
+        latitude::numeric AS base_lat,
+        longitude::numeric AS base_lng
     FROM festivals
     WHERE start_date IS NOT NULL
       AND end_date IS NOT NULL
+      AND latitude IS NOT NULL
+      AND longitude IS NOT NULL
 ),
 bucketed AS (
     SELECT
@@ -84,9 +96,12 @@ SELECT
     progress_status,
     start_date,
     end_date,
+    event_place,
+    road_address,
+    jibun_address,
+    detail_address,
     base_lat,
-    base_lng,
-    road_address
+    base_lng
 FROM selected;
 
 DO $$
@@ -418,7 +433,7 @@ JOIN seed_festival_map m ON m.seed_idx = ((g.staff_id - 1) / 2) + 1
 CROSS JOIN LATERAL (VALUES (1), (2)) AS s(seq)
 WHERE ((g.staff_id - 1) % 2) + 1 = s.seq;
 
--- ========== festival_locations (25) ==========
+-- ========== festival_locations (10: 축제 원본 장소 1개씩) ==========
 INSERT INTO festival_locations (
     public_id, festival_id, location_type, location_name, road_address, jibun_address,
     detail_address, postal_code, latitude, longitude, boundary_geometry,
@@ -428,34 +443,24 @@ INSERT INTO festival_locations (
 SELECT
     gen_random_uuid(),
     f.festival_id,
-    CASE WHEN f.n = 1 THEN 'MAIN_VENUE' ELSE (ARRAY['SUB_VENUE','STAGE_AREA','EXPERIENCE_AREA','PARKING','ENTRANCE'])[((f.n - 2) % 5) + 1] END,
-    f.festival_name || CASE WHEN f.n = 1 THEN ' 주행사장' ELSE ' 부행사장-' || f.n END,
-    COALESCE(f.road_address, f.festival_name || ' 도로명주소'),
+    'MAIN_VENUE',
+    COALESCE(f.event_place, f.festival_name),
+    f.road_address,
+    f.jibun_address,
+    f.detail_address,
     NULL,
-    CASE WHEN f.n % 3 = 0 THEN NULL ELSE '상세 ' || f.n END,
-    CASE WHEN f.n % 3 = 0 THEN NULL ELSE lpad((03900 + f.seed_idx * 10 + f.n)::text, 5, '0') END,
-    f.base_lat + (f.seed_idx * 0.001) + (f.n * 0.0001),
-    f.base_lng + (f.seed_idx * 0.001) + (f.n * 0.0001),
-    CASE WHEN f.n % 5 = 0 THEN '{"type":"Polygon","coordinates":[[[0,0],[1,0],[1,1],[0,1],[0,0]]]}'::jsonb ELSE NULL END,
-    CASE WHEN f.n = 1 THEN 'API' ELSE 'MANUAL' END,
-    f.n = 1,
-    f.n - 1,
-    CASE WHEN f.n = 1 THEN NULL ELSE COALESCE(
-        CASE f.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + f.seed_idx END, 1)
-    END,
-    CASE WHEN f.n = 1 THEN NULL ELSE COALESCE(
-        CASE f.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + f.seed_idx END, 1)
-    END,
+    f.base_lat,
+    f.base_lng,
+    NULL,
+    'API',
+    true,
+    0,
+    NULL,
+    NULL,
     now(), now()
 FROM (
-    SELECT m.*, gs.n
+    SELECT m.*, 1 AS n
     FROM seed_festival_map m
-    JOIN LATERAL generate_series(1, CASE
-        WHEN m.seed_idx <= 3 THEN 1
-        WHEN m.seed_idx <= 6 THEN 2
-        WHEN m.seed_idx <= 8 THEN 3
-        ELSE 5
-    END) gs(n) ON true
 ) f;
 
 -- ========== festival_maps (13) ==========
@@ -648,7 +653,12 @@ SELECT
     m.base_lat + (bi.booth_id % 10) * 0.00001,
     m.base_lng + (bi.booth_id % 10) * 0.00001,
     (ARRAY[0,3,5,8,10,11,12,15,18,20,22,25,28,30,31,35,40,45,50])[((bi.booth_id - 1) % 19) + 1],
-    CASE WHEN bi.booth_id % 5 = 0 THEN '[{"lat":37.5665,"lng":126.9780}]'::jsonb ELSE NULL END,
+    CASE
+        WHEN bi.booth_id % 5 = 0 THEN jsonb_build_array(
+            jsonb_build_object('lat', m.base_lat, 'lng', m.base_lng)
+        )
+        ELSE NULL
+    END,
     CASE WHEN bi.booth_id % 7 = 0 THEN 'ADMIN' ELSE 'STAFF' END,
     CASE WHEN bi.booth_id % 7 = 0 THEN COALESCE(CASE m.seed_idx WHEN 1 THEN 910031 WHEN 7 THEN 910037 WHEN 8 THEN 910040 WHEN 9 THEN 910043 WHEN 10 THEN 910046 ELSE 910000 + m.seed_idx END, 1) END,
     CASE WHEN bi.booth_id % 7 <> 0 THEN (
