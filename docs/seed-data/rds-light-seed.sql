@@ -28,6 +28,7 @@ $$;
 DROP TABLE IF EXISTS pg_temp.seed_festival_map;
 DROP TABLE IF EXISTS pg_temp.seed_admin_ids;
 DROP TABLE IF EXISTS pg_temp.seed_staff_ids;
+DROP TABLE IF EXISTS pg_temp.seed_festival_scope;
 -- progress_status / is_active / lat·lng 는 Admin RDS festivals에 없을 수 있다.
 -- 진행 상태는 start_date·end_date로 계산하고, 좌표는 시드 기본값을 쓴다.
 CREATE TEMP TABLE seed_festival_map AS
@@ -115,45 +116,55 @@ SELECT id
 FROM field_staff_accounts
 WHERE login_id LIKE 'staff-__-__';
 
--- scoped cleanup (re-run safe for the fixed seed namespace)
+-- 이번 매핑 + 기존 시드 역할이 붙어 있던 축제를 모두 정리 범위에 넣는다.
+-- (4/2/4 재선정으로 빠진 축제에 남은 queue가 seed admin FK를 붙잡고 있으면 실패한다)
+DROP TABLE IF EXISTS pg_temp.seed_festival_scope;
+CREATE TEMP TABLE seed_festival_scope ON COMMIT DROP AS
+SELECT festival_id FROM seed_festival_map
+UNION
+SELECT DISTINCT afr.festival_id
+FROM admin_festival_roles afr
+JOIN seed_admin_ids sa ON sa.id = afr.admin_account_id;
+
+-- scoped cleanup (re-run safe for the fixed seed namespace + mapping drift)
 DELETE FROM booth_congestion bc
-USING booth_info bi, seed_festival_map sf
+USING booth_info bi, seed_festival_scope sf
 WHERE bc.booth_id = bi.booth_id AND bi.festival_id = sf.festival_id;
 
 DELETE FROM booth_queue bq
-USING booth_info bi, seed_festival_map sf
+USING booth_info bi, seed_festival_scope sf
 WHERE bq.booth_id = bi.booth_id AND bi.festival_id = sf.festival_id;
 
 DELETE FROM booth_info bi
-USING seed_festival_map sf
+USING seed_festival_scope sf
 WHERE bi.festival_id = sf.festival_id;
 
 DELETE FROM roadmap_node rn
-USING festival_roadmap fr, seed_festival_map sf
+USING festival_roadmap fr, seed_festival_scope sf
 WHERE rn.roadmap_id = fr.id AND fr.festival_id = sf.festival_id;
 
 DELETE FROM festival_roadmap fr
-USING seed_festival_map sf
+USING seed_festival_scope sf
 WHERE fr.festival_id = sf.festival_id;
 
 DELETE FROM festival_maps fm
-USING seed_festival_map sf
+USING seed_festival_scope sf
 WHERE fm.festival_id = sf.festival_id;
 
 DELETE FROM festival_locations fl
-USING seed_festival_map sf
+USING seed_festival_scope sf
 WHERE fl.festival_id = sf.festival_id;
 
 DELETE FROM festival_visitor_count fvc
-USING seed_festival_map sf
+USING seed_festival_scope sf
 WHERE fvc.festival_id = sf.festival_id;
 
 DELETE FROM festival_visitor_total fvt
-USING seed_festival_map sf
+USING seed_festival_scope sf
 WHERE fvt.festival_id = sf.festival_id;
 
 DELETE FROM field_staff_accounts fsa
-USING seed_festival_map sf
+USING seed_festival_scope sf
 WHERE fsa.festival_id = sf.festival_id;
 
 -- 매핑 축제가 바뀌어도 이전 실행의 시드 관계가 계정을 붙잡지 않도록 정리한다.
@@ -164,6 +175,15 @@ WHERE bc.modifier_staff_id = ss.id;
 DELETE FROM booth_queue bq
 USING seed_staff_ids ss
 WHERE bq.modifier_staff_id = ss.id;
+
+DELETE FROM booth_congestion bc
+USING seed_admin_ids sa
+WHERE bc.modifier_admin_id = sa.id;
+
+-- modifier_type=ADMIN 인 채 admin_id만 NULL이 되면 CHECK 위반 → 행 삭제
+DELETE FROM booth_queue bq
+USING seed_admin_ids sa
+WHERE bq.modifier_admin_id = sa.id;
 
 DELETE FROM field_staff_accounts fsa
 USING seed_staff_ids ss
