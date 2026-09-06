@@ -35,7 +35,7 @@ jobs:
       DEPLOY_PATH: ${{ vars.ADMIN_DEPLOY_PATH || '/home/ec2-user/app/chookjibupAdmin_BE' }}
       DEPLOY_USER: ${{ vars.ADMIN_DEPLOY_USER || 'ec2-user' }}
       DEPLOY_HOME: ${{ vars.ADMIN_DEPLOY_HOME || '/home/ec2-user' }}
-      SYSTEMD_SERVICE: ${{ vars.ADMIN_SYSTEMD_SERVICE || 'chookjibup-admin-backend' }}
+      SYSTEMD_SERVICE: ${{ vars.ADMIN_SYSTEMD_SERVICE || 'chookjibup-backend' }}
       JAVA_HOME: ${{ vars.ADMIN_JAVA_HOME || '/usr/lib/jvm/java-21-amazon-corretto.x86_64' }}
       SECRET_PARAMETER: ${{ vars.ADMIN_APPLICATION_SECRET_PARAMETER || '/chookjibup/admin/application-secret-yml' }}
       SECRET_FILE: ${{ vars.ADMIN_APPLICATION_SECRET_FILE || '/etc/chookjibup-admin/application-secret.yml' }}

@@ -53,7 +53,7 @@ Parameter에 대한 `ssm:GetParameter` 권한이 필요하다. 고객 관리형 
 | `ADMIN_DEPLOY_PATH` | 선택 | `/home/ec2-user/app/chookjibupAdmin_BE` |
 | `ADMIN_DEPLOY_USER` | 선택 | `ec2-user` |
 | `ADMIN_DEPLOY_HOME` | 선택 | `/home/ec2-user` |
-| `ADMIN_SYSTEMD_SERVICE` | 선택 | `chookjibup-admin-backend` |
+| `ADMIN_SYSTEMD_SERVICE` | 선택 | `chookjibup-backend` |
 | `ADMIN_JAVA_HOME` | 선택 | `/usr/lib/jvm/java-21-amazon-corretto.x86_64` |
 | `ADMIN_APPLICATION_SECRET_PARAMETER` | 선택 | `/chookjibup/admin/application-secret-yml` |
 | `ADMIN_APPLICATION_SECRET_FILE` | 선택 | `/etc/chookjibup-admin/application-secret.yml` |
@@ -114,11 +114,13 @@ Environment Variable로 관리한다.
 ### 사전 조건
 
 1. `Deploy`가 최소 한 번 성공해 EC2에 앱·secret 파일이 있어야 한다.
-2. `ChookJiBup_data_pipeline`으로 활성 `festivals`가 **10개 이상** 적재되어
-   있어야 한다. 시드 SQL이 부족하면 실패한다.
-3. 관리자 ID `1..48` 예약 구간에 비시드 계정이 있으면 시드가 중단된다.
-4. 실행 파일: `docs/seed-data/시드데이터_RDS경량_통합.sql`
+2. `ChookJiBup_data_pipeline`으로 날짜 있는 `festivals`가 충분해야 한다.
+   시드는 ongoing 4 / upcoming 2 / completed 4를 **각각** 채울 수 있어야 하며,
+   부족하면 전체 롤백한다. (다른 상태로 대체하지 않음)
+3. 관리자 ID `910001..910048` 예약 구간에 비시드 계정이 있으면 시드가 중단된다.
+4. 실행 파일: `docs/seed-data/rds-light-seed.sql` (생성본 `시드데이터_RDS경량_통합.sql`과 동일)
 5. 실행기: `./gradlew applyRdsSeed` (`RdsLightSeedRunner`, JDBC)
+6. `festivals` 원본(모드·운영시간·설명·주소)은 시드가 UPDATE하지 않는다.
 
 ### 실행
 
