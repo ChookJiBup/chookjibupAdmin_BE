@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.common.domain.BaseTimeEntity;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
@@ -203,6 +204,31 @@ public class FestivalMap extends BaseTimeEntity {
     @Column(name = "map_kind", nullable = false, length = 20)
     private MapKind mapKind;
 
+    /**
+     * 이미지 배치도를 실세계 위경도에 고정하는 기준값. null이면 아직 앵커가 없어
+     * 노드를 이미지 정규화 좌표(schema 1.0)로만 저장할 수 있다.
+     */
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(
+                    name = "centerLatitude",
+                    column = @Column(name = "anchor_center_lat", precision = 10, scale = 7)
+            ),
+            @AttributeOverride(
+                    name = "centerLongitude",
+                    column = @Column(name = "anchor_center_lng", precision = 10, scale = 7)
+            ),
+            @AttributeOverride(
+                    name = "groundWidthMeters",
+                    column = @Column(name = "anchor_ground_width_m", precision = 10, scale = 2)
+            ),
+            @AttributeOverride(
+                    name = "rotationDegrees",
+                    column = @Column(name = "anchor_rotation_deg", precision = 6, scale = 3)
+            )
+    })
+    private MapImageAnchor imageAnchor;
+
     @Column(name = "is_current", nullable = false)
     private boolean current;
 
@@ -364,9 +390,32 @@ public class FestivalMap extends BaseTimeEntity {
         return map;
     }
 
-    /** 지도 버전이 저장하는 geometry schema 버전을 반환한다. */
+    /**
+     * 지도 버전이 저장하는 geometry schema 버전을 반환한다.
+     *
+     * <p>좌표 전용 지도는 처음부터 위경도로 편집하므로 2.0이고, 이미지 배치도는 앵커가
+     * 붙어야 정규화 좌표를 위경도로 옮길 수 있으므로 그때부터 2.0이 된다. 앵커가 없는
+     * 이미지 배치도는 예전처럼 1.0으로 남는다.</p>
+     */
     public String geometrySchemaVersion() {
-        return mapKind == MapKind.COORDINATE ? "2.0" : "1.0";
+        if (mapKind == MapKind.COORDINATE || hasImageAnchor()) {
+            return "2.0";
+        }
+        return "1.0";
+    }
+
+    public boolean hasImageAnchor() {
+        return imageAnchor != null;
+    }
+
+    /**
+     * 이미지 배치도에 앵커를 부여한다. 좌표 전용 지도에는 이미지가 없어 의미가 없다.
+     */
+    public void assignImageAnchor(MapImageAnchor anchor) {
+        if (anchor == null || mapKind != MapKind.IMAGE) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        imageAnchor = anchor;
     }
 
     public boolean isCoordinateMap() {
@@ -375,13 +424,16 @@ public class FestivalMap extends BaseTimeEntity {
 
     /**
      * 새 배치도를 현재 대상으로 전환하고 이 배치도를 교체 이력으로 남긴다.
+     *
+     * <p>교체 대상은 이미지 배치도든 좌표 전용 지도든 상관없다. 좌표 전용 지도만 있는
+     * 축제에서 관리자가 배치도 사진을 올려 AI 분석을 돌리는 경로가 여기로 들어온다.
+     * 다만 새로 올라오는 쪽은 분석할 이미지가 있어야 하므로 IMAGE만 허용한다.</p>
      */
     public void replaceWith(FestivalMap replacement, LocalDateTime replacedAt) {
         if (replacement == null || replacedAt == null
                 || replacement == this || id == null || replacement.id != null
                 || publicId.equals(replacement.publicId)
                 || !festivalId.equals(replacement.festivalId)
-                || mapKind != MapKind.IMAGE
                 || replacement.mapKind != MapKind.IMAGE
                 || storageStatus != FestivalMapStorageStatus.UPLOADED
                 || !current

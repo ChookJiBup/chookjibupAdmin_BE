@@ -14,6 +14,7 @@ import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJobStatus;
 import com.example.chookjibupadmin.map.command.application.FestivalMapService;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
@@ -67,6 +68,7 @@ class MapAnalysisResultApplicationServiceTest {
                 roadmapService,
                 nodeService,
                 new MapGeometryValidator(),
+                new MapAnchorProjector(),
                 objectMapper
         );
         festivalMap = festivalMap();
@@ -123,6 +125,70 @@ class MapAnalysisResultApplicationServiceTest {
         then(jobService).should().save(job);
         then(nodeService).should(never()).saveAll(any());
         then(roadmapService).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("앵커가 없는 도면은 AI가 준 이미지 좌표(1.0)를 그대로 저장한다")
+    void success_Complete_KeepsImageGeometryWithoutAnchor() throws Exception {
+        // given
+        MapAnalysisJob job = processingJob("analysis-key", "c".repeat(64));
+        given(jobService.getByPublicId(job.getPublicId())).willReturn(job);
+        given(mapService.getById(10L)).willReturn(festivalMap);
+        given(roadmapService.getByFestivalId(1L)).willReturn(roadmap);
+
+        // when
+        resultService.complete(
+                job.getPublicId(),
+                new MapAnalysisResult(List.of(analyzedNode()))
+        );
+
+        // then
+        then(nodeService).should().saveAll(argThat(nodes -> {
+            RoadmapNode node = (RoadmapNode) ((List<?>) nodes).get(0);
+            return "1.0".equals(node.getGeometrySchemaVersion())
+                    && node.getGeometryType() == GeometryType.RECTANGLE;
+        }));
+    }
+
+    @Test
+    @DisplayName("앵커가 있는 도면은 AI가 준 영역 도형을 위경도 POINT(2.0)로 옮겨 저장한다")
+    void success_Complete_ProjectsToWgs84PointWithAnchor() throws Exception {
+        // given
+        festivalMap.assignImageAnchor(MapImageAnchor.of(
+                new BigDecimal("37.0000000"),
+                new BigDecimal("127.0000000"),
+                new BigDecimal("300.00"),
+                new BigDecimal("0.000")
+        ));
+        MapAnalysisJob job = processingJob("analysis-key", "c".repeat(64));
+        given(jobService.getByPublicId(job.getPublicId())).willReturn(job);
+        given(mapService.getById(10L)).willReturn(festivalMap);
+        given(roadmapService.getByFestivalId(1L)).willReturn(roadmap);
+
+        // when
+        resultService.complete(
+                job.getPublicId(),
+                new MapAnalysisResult(List.of(analyzedNode()))
+        );
+
+        // then
+        then(nodeService).should().saveAll(argThat(nodes -> {
+            RoadmapNode node = (RoadmapNode) ((List<?>) nodes).get(0);
+            if (!"2.0".equals(node.getGeometrySchemaVersion())
+                    || node.getGeometryType() != GeometryType.POINT) {
+                return false;
+            }
+            try {
+                var geometry = objectMapper.readTree(node.getGeometryData());
+                // RECTANGLE(0.1,0.2,0.3x0.2)의 중심은 정규화 (0.25, 0.3)이다.
+                return geometry.has("lat") && geometry.has("lng")
+                        && geometry.get("lat").doubleValue() > 37.0
+                        && geometry.get("lng").doubleValue() < 127.0;
+            } catch (Exception exception) {
+                return false;
+            }
+        }));
+        assertThat(job.getAcceptedCount()).isEqualTo(1);
     }
 
     private MapAnalysisJob processingJob(String key, String checksum) {
