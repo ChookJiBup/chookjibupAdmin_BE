@@ -233,10 +233,12 @@ public class FestivalApplicationService {
                 FestivalAddress.of(representativeAddress(primaryLocation)),
                 FestivalDetailAddress.of(primaryLocation.detailAddress()),
                 FestivalPeriod.of(command.startDate(), command.endDate()),
-                FestivalOperationTime.of(
-                        command.operationStartTime(),
-                        command.operationEndTime()
-                )
+                command.operationStartTime() == null && command.operationEndTime() == null
+                        ? festival.getOperationTime()
+                        : FestivalOperationTime.of(
+                                command.operationStartTime(),
+                                command.operationEndTime()
+                        )
         );
         if (command.visitorCountInputMode() != null) {
             FestivalVisitorCountInputMode nextMode =

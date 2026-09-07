@@ -1,5 +1,9 @@
 package com.example.chookjibupadmin.festival.command.application;
 
+import org.springframework.test.util.ReflectionTestUtils;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.ParameterizedTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -57,6 +61,9 @@ class FestivalApplicationServiceIntegrationTest {
 
     @Autowired
     private FestivalLocationService festivalLocationService;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Nested
     @DisplayName("create")
@@ -156,6 +163,41 @@ class FestivalApplicationServiceIntegrationTest {
     @Nested
     @DisplayName("update")
     class Update {
+
+        @ParameterizedTest
+        @ValueSource(booleans = {false, true})
+        @DisplayName("시간 없는 기본 정보 수정은 기존 시간 또는 null을 DB에 유지한다")
+        void success_Update_OmittedOperationTime_Persisted(boolean missingTime) {
+            // given
+            AdminAccount admin = adminAccountService.save(unassignedAdmin());
+            Festival festival = festivalApplicationService.create(createCommand(), principal(admin));
+            if (missingTime) {
+                ReflectionTestUtils.setField(festival, "operationTime", null);
+            }
+            Long id = festival.getId();
+            java.util.UUID publicId = festival.getPublicId();
+            LocalTime beforeStart = festival.getOperationStartTime();
+            LocalTime beforeEnd = festival.getOperationEndTime();
+            CreateFestivalCommand original = createCommand();
+            UpdateFestivalCommand command = new UpdateFestivalCommand(
+                    "수정한 축제 이름", "수정한 축제 설명", original.locations(),
+                    original.startDate(), original.endDate(), null, null, null
+            );
+            AdminPrincipal actor = principal(admin);
+            entityManager.flush();
+            entityManager.clear();
+
+            // when
+            festivalApplicationService.update(publicId, command, actor);
+            entityManager.flush();
+            entityManager.clear();
+
+            // then
+            Festival saved = festivalService.getById(id);
+            assertThat(saved.getNameValue()).isEqualTo(command.name());
+            assertThat(saved.getOperationStartTime()).isEqualTo(beforeStart);
+            assertThat(saved.getOperationEndTime()).isEqualTo(beforeEnd);
+        }
 
         @Test
         @DisplayName("장소 주소를 수정해도 장소 UUID를 유지한다")

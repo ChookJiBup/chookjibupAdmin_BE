@@ -38,12 +38,10 @@ public record UpdateFestivalRequest(
         @NotNull
         LocalDate endDate,
 
-        @Schema(description = "운영 시작 시간", example = "10:00:00")
-        @NotNull
+        @Schema(description = "운영 시작 시간. 시작·종료 시간을 모두 생략하거나 null이면 기존 값 유지", example = "10:00:00")
         LocalTime operationStartTime,
 
-        @Schema(description = "운영 종료 시간", example = "21:00:00")
-        @NotNull
+        @Schema(description = "운영 종료 시간. 변경 시 시작·종료 시간을 함께 제공", example = "21:00:00")
         LocalTime operationEndTime,
 
         @Schema(description = "방문 인원 입력 모드. null이면 변경하지 않음", example = "TOTAL", allowableValues = {"DAILY", "TOTAL"})

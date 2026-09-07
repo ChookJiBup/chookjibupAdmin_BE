@@ -1,5 +1,8 @@
 package com.example.chookjibupadmin.festival.command.application;
 
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.ParameterizedTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -773,6 +776,61 @@ class FestivalApplicationServiceTest {
     @DisplayName("update")
     class Update {
 
+        @ParameterizedTest
+        @ValueSource(booleans = {false, true})
+        @DisplayName("운영 시간을 생략하면 기존 시간 또는 미설정 상태를 유지한다")
+        void success_Update_OmittedOperationTime(boolean missingTime) {
+            // given
+            Festival festival = festival(1L);
+            if (missingTime) {
+                ReflectionTestUtils.setField(festival, "operationTime", null);
+            }
+            FestivalOperationTime before = festival.getOperationTime();
+            UpdateFestivalCommand valid = updateCommand();
+            UpdateFestivalCommand command = new UpdateFestivalCommand(
+                    valid.name(), valid.description(), valid.locations(),
+                    valid.startDate(), valid.endDate(), null, null,
+                    valid.visitorCountInputMode()
+            );
+            given(adminAccountService.getById(1L)).willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(festival.getPublicId()))
+                    .willReturn(festival);
+            givenOwnerRole(1L, 1L);
+
+            // when
+            Festival updated = festivalApplicationService.update(
+                    festival.getPublicId(), command, principal());
+
+            // then
+            assertThat(updated.getNameValue()).isEqualTo(command.name());
+            assertThat(updated.getOperationTime()).isSameAs(before);
+        }
+
+        @ParameterizedTest
+        @CsvSource({",21:00", "10:00,", "21:00,10:00", "10:00,10:00"})
+        @DisplayName("운영 시간은 함께 제공해야 하며 시작이 종료보다 빨라야 한다")
+        void fail_Update_InvalidOperationTime_CustomException(LocalTime start, LocalTime end) {
+            // given
+            Festival festival = festival(1L);
+            UpdateFestivalCommand valid = updateCommand();
+            UpdateFestivalCommand command = new UpdateFestivalCommand(
+                    valid.name(), valid.description(), valid.locations(),
+                    valid.startDate(), valid.endDate(), start, end,
+                    valid.visitorCountInputMode()
+            );
+            given(adminAccountService.getById(1L)).willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(festival.getPublicId()))
+                    .willReturn(festival);
+            givenOwnerRole(1L, 1L);
+
+            // when & then
+            assertThatThrownBy(() -> festivalApplicationService.update(
+                    festival.getPublicId(), command, principal()))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+            assertThat(festival.getNameValue()).isEqualTo("마포나루 새우젓축제");
+        }
+
         @Test
         @DisplayName("1관리자는 담당 축제 기본 정보를 수정한다")
         void success_Update_FestivalOwner() {
@@ -796,6 +854,8 @@ class FestivalApplicationServiceTest {
             );
 
             // then
+            assertThat(updated.getOperationStartTime()).isEqualTo(command.operationStartTime());
+            assertThat(updated.getOperationEndTime()).isEqualTo(command.operationEndTime());
             assertThat(updated.getNameValue()).isEqualTo(command.name());
             assertThat(updated.getAddressValue()).isEqualTo(command.address());
             assertThat(updated.getDetailAddressValue())
