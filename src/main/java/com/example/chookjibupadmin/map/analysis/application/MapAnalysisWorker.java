@@ -73,14 +73,19 @@ public class MapAnalysisWorker {
             String message,
             boolean retryable
     ) {
-        if (retryable
-                && job.getAttemptCount() < properties.maxAttemptsOrDefault()) {
+        boolean retrying = retryable
+                && job.getAttemptCount() < properties.maxAttemptsOrDefault();
+        if (retrying) {
             job.retry(code, message);
         } else {
             job.fail(code, message);
         }
 
         jobService.save(job);
+        // 더 시도하지 않을 작업이면 로드맵을 ANALYZING에 가둔 채 두지 않는다.
+        if (!retrying) {
+            resultService.releaseRoadmapAfterFailure(job.getMapId());
+        }
         log.warn(
                 "Map analysis job failed: jobId={}, code={}, retryable={}",
                 job.getPublicId(),

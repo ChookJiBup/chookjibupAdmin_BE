@@ -95,6 +95,56 @@ class FestivalRoadmapTest {
     }
 
     @Test
+    @DisplayName("분석 중에는 관리자 편집을 거부한다")
+    void fail_ApplyAdminEdit_WhileAnalyzing() {
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+
+        assertThatThrownBy(() -> roadmap.applyAdminEdit(0L))
+                .isInstanceOfSatisfying(CustomException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.FESTIVAL_MAP_INVALID_STATUS)
+                );
+    }
+
+    @Test
+    @DisplayName("분석이 중단되면 편집 상태로 되돌리고 리비전은 유지한다")
+    void success_AnalysisAborted() {
+        // given
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+
+        // when
+        roadmap.analysisAborted();
+
+        // then
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.EDITING);
+        assertThat(roadmap.getEditRevision()).isZero();
+    }
+
+    @Test
+    @DisplayName("분석이 중단된 뒤에는 관리자가 부스를 저장할 수 있다")
+    void success_ApplyAdminEdit_AfterAnalysisAborted() {
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+        roadmap.analysisAborted();
+
+        long revision = roadmap.applyAdminEdit(0L);
+
+        assertThat(revision).isEqualTo(1L);
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.EDITING);
+    }
+
+    @Test
+    @DisplayName("분석 중이 아니면 중단 처리가 상태를 바꾸지 않는다")
+    void success_AnalysisAborted_KeepsNonAnalyzingStatus() {
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+        roadmap.analysisCompleted();
+
+        roadmap.analysisAborted();
+
+        assertThat(roadmap.getStatus())
+                .isEqualTo(RoadmapStatus.REVIEW_REQUIRED);
+    }
+
+    @Test
     @DisplayName("오래된 리비전으로 편집하면 충돌 예외를 던진다")
     void fail_ApplyAdminEdit_RevisionConflict() {
         FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
