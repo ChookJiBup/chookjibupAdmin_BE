@@ -1,10 +1,15 @@
 package com.example.chookjibupadmin.map.command.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
+import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
+import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
+import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueApplicationService;
 import com.example.chookjibupadmin.map.command.domain.FestivalMapStorageStatus;
@@ -15,6 +20,15 @@ import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
 import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
+import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
+import com.example.chookjibupadmin.map.roadmap.application.RoadmapNodeService;
+import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
+import com.example.chookjibupadmin.map.roadmap.domain.GeometryType;
+import com.example.chookjibupadmin.map.roadmap.domain.NodeType;
+import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNode;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +50,12 @@ class FestivalMapLifecycleApplicationServiceTest {
     @Mock
     private FestivalService festivalService;
     @Mock
+    private FestivalLocationService festivalLocationService;
+    @Mock
+    private FestivalRoadmapService festivalRoadmapService;
+    @Mock
+    private RoadmapNodeService roadmapNodeService;
+    @Mock
     private MapAnalysisQueueApplicationService mapAnalysisQueueService;
 
     @Test
@@ -48,6 +68,8 @@ class FestivalMapLifecycleApplicationServiceTest {
         );
         ReflectionTestUtils.setField(current, "id", 10L);
         current.assignLocation(30L);
+        given(festivalRoadmapService.findByFestivalId(20L)).willReturn(Optional.empty());
+        given(festivalLocationService.findAllByFestivalId(20L)).willReturn(List.of());
         given(festivalMapService.getByPublicIdForUpdate(currentMapId))
                 .willReturn(current);
         given(festivalMapService.save(replacement)).willAnswer(invocation -> {
@@ -67,6 +89,84 @@ class FestivalMapLifecycleApplicationServiceTest {
         order.verify(festivalMapService).getByPublicIdForUpdate(currentMapId);
         org.mockito.Mockito.verify(mapAnalysisQueueService)
                 .enqueueReplacement(current, replacement);
+    }
+
+    @Test
+    @DisplayName("좌표 전용 지도도 배치도 이미지로 교체할 수 있고 기본 앵커가 붙는다")
+    void success_Replace_CoordinateMapWithDefaultAnchor() {
+        UUID currentMapId = UUID.randomUUID();
+        FestivalMap current = FestivalMap.coordinateOnly(
+                20L, 30L, FestivalMapName.of("본행사 배치"), 1L
+        );
+        ReflectionTestUtils.setField(current, "publicId", currentMapId);
+        ReflectionTestUtils.setField(current, "id", 10L);
+        FestivalMap replacement = festivalMap(
+                UUID.randomUUID(), "new-original", "new-display"
+        );
+        // 중첩 스텁은 Mockito가 미완성 스텁으로 오인하므로 먼저 만들어 둔다.
+        FestivalLocation primary = primaryLocation();
+        given(festivalRoadmapService.findByFestivalId(20L)).willReturn(Optional.empty());
+        given(festivalLocationService.findAllByFestivalId(20L))
+                .willReturn(List.of(primary));
+        given(festivalMapService.getByPublicIdForUpdate(currentMapId))
+                .willReturn(current);
+        given(festivalMapService.save(replacement)).willReturn(replacement);
+
+        FestivalMap result = service.replace(currentMapId, 20L, replacement);
+
+        assertThat(result.hasImageAnchor()).isTrue();
+        assertThat(result.geometrySchemaVersion()).isEqualTo("2.0");
+        assertThat(result.getImageAnchor().getCenterLatitude())
+                .isEqualByComparingTo("37.5");
+        assertThat(result.getImageAnchor().getGroundWidthMeters())
+                .isEqualByComparingTo("300");
+        assertThat(current.getStorageStatus())
+                .isEqualTo(FestivalMapStorageStatus.REPLACED);
+    }
+
+    @Test
+    @DisplayName("승인된 부스가 연결된 지도는 교체를 막는다")
+    void fail_Replace_ApprovedBoothExists() {
+        UUID currentMapId = UUID.randomUUID();
+        FestivalMap current = festivalMap(currentMapId, "current-original", "current-display");
+        ReflectionTestUtils.setField(current, "id", 10L);
+        FestivalMap replacement = festivalMap(
+                UUID.randomUUID(), "new-original", "new-display"
+        );
+        FestivalRoadmap roadmap = FestivalRoadmap.create(20L, 10L, 1L);
+        ReflectionTestUtils.setField(roadmap, "id", 40L);
+        given(festivalMapService.getByPublicIdForUpdate(currentMapId))
+                .willReturn(current);
+        given(festivalRoadmapService.findByFestivalId(20L))
+                .willReturn(Optional.of(roadmap));
+        given(roadmapNodeService.findAll(40L, 10L))
+                .willReturn(List.of(approvedBoothNode()));
+
+        assertThatThrownBy(() -> service.replace(currentMapId, 20L, replacement))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue(
+                        "errorCode",
+                        ErrorCode.FESTIVAL_MAP_REPLACE_BLOCKED_BY_BOOTH
+                );
+        assertThat(current.getStorageStatus())
+                .isEqualTo(FestivalMapStorageStatus.UPLOADED);
+    }
+
+    private RoadmapNode approvedBoothNode() {
+        RoadmapNode node = RoadmapNode.admin(
+                40L, 10L, NodeType.BOOTH, "부스 1", GeometryType.POINT,
+                "{\"lat\":37.5,\"lng\":127.0}", 0, 1L, "2.0"
+        );
+        node.approveBooth(99L, 1L);
+        return node;
+    }
+
+    private FestivalLocation primaryLocation() {
+        FestivalLocation location = org.mockito.Mockito.mock(FestivalLocation.class);
+        given(location.isPrimary()).willReturn(true);
+        given(location.getLatitude()).willReturn(new BigDecimal("37.5000000"));
+        given(location.getLongitude()).willReturn(new BigDecimal("127.0000000"));
+        return location;
     }
 
     private FestivalMap festivalMap(

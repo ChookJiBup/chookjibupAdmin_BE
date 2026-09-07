@@ -108,6 +108,38 @@ public class RoadmapNode extends BaseTimeEntity {
             String recognizedText,
             int sortOrder
     ) {
+        return ai(
+                roadmapId,
+                mapId,
+                jobId,
+                type,
+                name,
+                geometryType,
+                geometryData,
+                confidence,
+                recognizedText,
+                sortOrder,
+                "1.0"
+        );
+    }
+
+    /**
+     * AI가 찾은 노드를 만든다. 지도에 앵커가 있으면 호출자가 정규화 좌표를 위경도로
+     * 투영한 뒤 geometrySchemaVersion "2.0"으로 저장한다.
+     */
+    public static RoadmapNode ai(
+            Long roadmapId,
+            Long mapId,
+            Long jobId,
+            NodeType type,
+            String name,
+            GeometryType geometryType,
+            String geometryData,
+            BigDecimal confidence,
+            String recognizedText,
+            int sortOrder,
+            String geometrySchemaVersion
+    ) {
         RoadmapNode node = new RoadmapNode();
         node.publicId = UUID.randomUUID();
         node.roadmapId = roadmapId;
@@ -117,7 +149,9 @@ public class RoadmapNode extends BaseTimeEntity {
         node.nodeName = name;
         node.geometryType = geometryType;
         node.geometryData = geometryData;
-        node.geometrySchemaVersion = "1.0";
+        node.geometrySchemaVersion = geometrySchemaVersion == null
+                ? "1.0"
+                : geometrySchemaVersion;
         node.confidence = confidence;
         node.recognizedText = recognizedText;
         node.source = NodeSource.AI;

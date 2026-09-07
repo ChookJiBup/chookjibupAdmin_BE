@@ -27,6 +27,7 @@ import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueAppl
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService;
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -175,6 +176,14 @@ public class FestivalApplicationService {
                     .findFirst()
                     .orElseThrow();
             uploadedFestivalMap.assignLocation(primary.getId());
+            // 앵커가 있어야 AI가 찾은 이미지 좌표를 위경도로 옮겨 편집 화면에 그릴 수 있다.
+            // 앵커 조정 UI가 없는 동안에는 대표 위치를 이미지 중심으로 보는 기본값을 쓴다.
+            if (primary.getLatitude() != null && primary.getLongitude() != null) {
+                uploadedFestivalMap.assignImageAnchor(MapImageAnchor.defaultAt(
+                        primary.getLatitude(),
+                        primary.getLongitude()
+                ));
+            }
             festivalMap = festivalMapService.save(uploadedFestivalMap);
             analysisJob = mapAnalysisQueueService.enqueueInitial(festivalMap);
         }
