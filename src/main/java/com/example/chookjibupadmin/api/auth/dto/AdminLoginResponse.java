@@ -13,7 +13,7 @@ public record AdminLoginResponse(
         @Schema(hidden = true)
         String accessToken,
 
-        @Schema(description = "Access Token 만료 시간 초", example = "1800")
+        @Schema(description = "Access Token 만료 시간 초", example = "28800")
         long expiresIn,
 
         @Schema(description = "로그인 관리자 정보")
