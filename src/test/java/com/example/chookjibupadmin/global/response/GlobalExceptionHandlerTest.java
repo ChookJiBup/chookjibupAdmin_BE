@@ -9,6 +9,20 @@ import org.springframework.http.ResponseEntity;
 class GlobalExceptionHandlerTest {
 
     @Test
+    @DisplayName("JSON 본문 타입 변환 실패를 잘못된 요청으로 응답한다")
+    void success_HandleUnreadableMessageException() {
+        // given
+        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+
+        // when
+        ResponseEntity<ApiResponse<Void>> response = handler.handleUnreadableMessageException();
+
+        // then
+        assertThat(response.getStatusCode()).isEqualTo(ErrorCode.INVALID_REQUEST.getHttpStatus());
+        assertThat(response.getBody()).isEqualTo(ApiResponse.error(ErrorCode.INVALID_REQUEST));
+    }
+
+    @Test
     @DisplayName("요청 파라미터 타입 변환 실패를 잘못된 요청으로 응답한다")
     void success_HandleTypeMismatchException() {
         // given

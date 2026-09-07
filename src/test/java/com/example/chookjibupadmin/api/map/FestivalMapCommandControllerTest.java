@@ -1,5 +1,13 @@
 package com.example.chookjibupadmin.api.map;
 
+import org.mockito.Mockito;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import com.example.chookjibupadmin.global.response.GlobalExceptionHandler;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.ParameterizedTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -62,6 +70,36 @@ class FestivalMapCommandControllerTest {
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "node-944b0fa2-3d4f-430b-809b-a1e99a6c8e33", "not-a-uuid"
+    })
+    @DisplayName("삭제된 부스의 잘못된 구역 UUID는 서버 오류 대신 잘못된 요청으로 응답한다")
+    void fail_SaveEditor_InvalidZoneUuid_InvalidRequest(String invalidId) throws Exception {
+        // given
+        var mvc = MockMvcBuilders
+                .standaloneSetup(controller)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
+        String body = """
+                {"baseRevision":2,"nodes":[
+                  {"nodeId":"944b0fa2-3d4f-430b-809b-a1e99a6c8e33","deleted":true}
+                ],"zones":[
+                  {"zoneId":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","name":"테스트 구역", "sortOrder":0,
+                   "boothNodeIds":["3de7aeb9-947a-45db-83b4-19db435db9fb","%s"]}
+                ]}
+                """.formatted(invalidId);
+
+        // when & then
+        mvc.perform(MockMvcRequestBuilders
+                        .put("/api/festivals/{festivalId}/maps/{mapId}/editor", UUID.randomUUID(), UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(40001));
+        Mockito.verifyNoInteractions(roadmapDraftService);
+    }
 
     @Test
     @DisplayName("좌표 전용 지도 준비 요청을 등록 서비스로 전달한다")
