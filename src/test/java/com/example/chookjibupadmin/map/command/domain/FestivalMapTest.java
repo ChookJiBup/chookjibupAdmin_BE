@@ -5,12 +5,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
 import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
+import java.math.BigDecimal;
 import java.util.UUID;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
@@ -141,6 +143,75 @@ class FestivalMapTest {
 
         assertThatThrownBy(current::validateReadable)
                 .isInstanceOf(CustomException.class);
+    }
+
+    @Test
+    @DisplayName("앵커가 없는 이미지 배치도는 이미지 정규화 좌표(1.0)를 쓴다")
+    void success_GeometrySchemaVersion_WithoutAnchor() {
+        FestivalMap festivalMap = festivalMap();
+
+        assertThat(festivalMap.hasImageAnchor()).isFalse();
+        assertThat(festivalMap.geometrySchemaVersion()).isEqualTo("1.0");
+    }
+
+    @Test
+    @DisplayName("앵커가 붙은 이미지 배치도는 위경도(2.0)로 전환된다")
+    void success_GeometrySchemaVersion_WithAnchor() {
+        FestivalMap festivalMap = festivalMap();
+
+        festivalMap.assignImageAnchor(anchor());
+
+        assertThat(festivalMap.hasImageAnchor()).isTrue();
+        assertThat(festivalMap.geometrySchemaVersion()).isEqualTo("2.0");
+        assertThat(festivalMap.getImageAnchor().getGroundWidthMeters())
+                .isEqualByComparingTo("300");
+    }
+
+    @Test
+    @DisplayName("이미지가 없는 좌표 전용 지도에는 앵커를 붙일 수 없다")
+    void fail_AssignImageAnchor_CoordinateMap() {
+        FestivalMap coordinateMap = FestivalMap.coordinateOnly(
+                1L, 5L, FestivalMapName.of("본행사 배치"), 2L
+        );
+
+        assertThatThrownBy(() -> coordinateMap.assignImageAnchor(anchor()))
+                .isInstanceOf(CustomException.class);
+    }
+
+    @Test
+    @DisplayName("좌표 전용 지도도 배치도 이미지로 교체할 수 있다")
+    void success_ReplaceWith_CoordinateMapReplacedByImage() {
+        FestivalMap coordinateMap = FestivalMap.coordinateOnly(
+                1L, 5L, FestivalMapName.of("본행사 배치"), 2L
+        );
+        ReflectionTestUtils.setField(coordinateMap, "id", 10L);
+        FestivalMap replacement = festivalMap();
+
+        coordinateMap.replaceWith(replacement, LocalDateTime.now());
+
+        assertThat(coordinateMap.getStorageStatus())
+                .isEqualTo(FestivalMapStorageStatus.REPLACED);
+        assertThat(replacement.getReplacesMapId()).isEqualTo(10L);
+    }
+
+    @Test
+    @DisplayName("분석할 이미지가 없는 좌표 전용 지도로는 교체할 수 없다")
+    void fail_ReplaceWith_CoordinateReplacement() {
+        FestivalMap current = festivalMap();
+        ReflectionTestUtils.setField(current, "id", 10L);
+        FestivalMap replacement = FestivalMap.coordinateOnly(
+                1L, 5L, FestivalMapName.of("본행사 배치"), 2L
+        );
+
+        assertThatThrownBy(() -> current.replaceWith(replacement, LocalDateTime.now()))
+                .isInstanceOf(CustomException.class);
+    }
+
+    private MapImageAnchor anchor() {
+        return MapImageAnchor.defaultAt(
+                new BigDecimal("37.5000000"),
+                new BigDecimal("127.0000000")
+        );
     }
 
     private FestivalMap festivalMap() {
