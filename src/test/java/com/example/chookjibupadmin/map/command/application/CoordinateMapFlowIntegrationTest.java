@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
@@ -51,6 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 class CoordinateMapFlowIntegrationTest {
 
     @Autowired private AdminAccountService adminAccountService;
+    @Autowired private AdminFestivalRoleService adminFestivalRoleService;
     @Autowired private FestivalApplicationService festivalApplicationService;
     @Autowired private FestivalLocationService festivalLocationService;
     @Autowired private FestivalMapCoordinateRegistrationApplicationService coordinateRegistrationService;
@@ -130,6 +132,47 @@ class CoordinateMapFlowIntegrationTest {
                 festival.getPublicId(), "다른 이름", principal
         );
         assertThat(reused.mapId()).isEqualTo(mapView.mapId());
+    }
+
+    @Test
+    @DisplayName("제2관리자는 총괄관리자가 만든 현재 좌표 지도를 조회할 수 있다")
+    void success_SubAdminReadCurrentCoordinateMap() {
+        Festival festival = festivalApplicationService.create(
+                createFestivalCommand(new BigDecimal("37.5665"), new BigDecimal("126.9780")),
+                principal
+        );
+        var ownerMap = coordinateRegistrationService.ensureCoordinateMap(
+                festival.getPublicId(),
+                "본행사 배치",
+                principal
+        );
+        AdminPrincipal subAdminPrincipal = assignSubAdmin(festival);
+
+        var currentMap = coordinateRegistrationService.getCurrentCoordinateMap(
+                festival.getPublicId(),
+                subAdminPrincipal
+        );
+
+        assertThat(currentMap.mapId()).isEqualTo(ownerMap.mapId());
+        assertThat(currentMap.center().lat()).isEqualByComparingTo("37.5665");
+    }
+
+    @Test
+    @DisplayName("제2관리자는 좌표 지도를 생성할 수 없다")
+    void fail_SubAdminEnsureCoordinateMap() {
+        Festival festival = festivalApplicationService.create(
+                createFestivalCommand(new BigDecimal("37.5665"), new BigDecimal("126.9780")),
+                principal
+        );
+        AdminPrincipal subAdminPrincipal = assignSubAdmin(festival);
+
+        assertThatThrownBy(() -> coordinateRegistrationService.ensureCoordinateMap(
+                festival.getPublicId(),
+                "변경 시도",
+                subAdminPrincipal
+        )).isInstanceOfSatisfying(CustomException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN)
+        );
     }
 
     @Test
@@ -244,6 +287,22 @@ class CoordinateMapFlowIntegrationTest {
                 false,
                 sortOrder
         );
+    }
+
+    private AdminPrincipal assignSubAdmin(Festival festival) {
+        AdminAccount subAdmin = adminAccountService.save(AdminAccount.createAdmin(
+                AdminEmail.of("coord-sub@mapo.go.kr"),
+                AdminName.of("좌표조회"),
+                AdminOrganization.of("관광정책과"),
+                AdminRank.of("주무관"),
+                AdminPasswordHash.of("encoded-password")
+        ));
+        adminFestivalRoleService.assignSubAdmin(
+                subAdmin.getId(),
+                festival.getId(),
+                admin.getId()
+        );
+        return new AdminPrincipal(subAdmin.getId(), subAdmin.getEmailValue());
     }
 
     private CreateFestivalCommand createFestivalCommand(BigDecimal lat, BigDecimal lng) {

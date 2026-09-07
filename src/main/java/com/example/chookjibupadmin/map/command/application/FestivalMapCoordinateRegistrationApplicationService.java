@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 이미지 없이 카카오맵 위경도 편집용 지도 버전을 준비한다. */
+/** 이미지 없이 카카오맵 위경도 편집용 지도 버전을 준비하고 조회한다. */
 @Service
 @RequiredArgsConstructor
 public class FestivalMapCoordinateRegistrationApplicationService {
@@ -36,13 +36,16 @@ public class FestivalMapCoordinateRegistrationApplicationService {
     private final FestivalMapService mapService;
     private final FestivalRoadmapService roadmapService;
 
+    /**
+     * 총괄관리자가 DRAFT 축제의 현재 좌표 지도를 조회하거나 새로 생성한다.
+     */
     @Transactional
     public CoordinateMapView ensureCoordinateMap(
             UUID festivalPublicId,
             String mapName,
             AdminPrincipal principal
     ) {
-        AuthorizedEdit authorized = authorize(festivalPublicId, principal, true);
+        AuthorizedFestivalAccess authorized = authorizeWrite(festivalPublicId, principal);
         return mapService.findCurrentByFestivalId(authorized.festivalId())
                 .map(map -> toView(map, authorized.festivalId()))
                 .orElseGet(() -> createCoordinateMap(
@@ -52,12 +55,15 @@ public class FestivalMapCoordinateRegistrationApplicationService {
                 ));
     }
 
+    /**
+     * 운영 리포트 조회 권한이 있는 관리자가 현재 좌표 지도와 중심 좌표를 조회한다.
+     */
     @Transactional(readOnly = true)
     public CoordinateMapView getCurrentCoordinateMap(
             UUID festivalPublicId,
             AdminPrincipal principal
     ) {
-        AuthorizedEdit authorized = authorize(festivalPublicId, principal, false);
+        AuthorizedFestivalAccess authorized = authorizeRead(festivalPublicId, principal);
         FestivalMap map = mapService.findCurrentByFestivalId(authorized.festivalId())
                 .orElseThrow(() -> new CustomException(ErrorCode.FESTIVAL_MAP_NOT_FOUND));
         return toView(map, authorized.festivalId());
@@ -120,10 +126,34 @@ public class FestivalMapCoordinateRegistrationApplicationService {
                 .orElseThrow(() -> new CustomException(ErrorCode.FESTIVAL_MAP_LOCATION_REQUIRED));
     }
 
-    private AuthorizedEdit authorize(
+    private AuthorizedFestivalAccess authorizeRead(
             UUID festivalPublicId,
-            AdminPrincipal principal,
-            boolean requireDraft
+            AdminPrincipal principal
+    ) {
+        FestivalAccess access = resolveAccess(festivalPublicId, principal);
+        if (!access.role().canViewOperationReport()) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+        return access.authorized();
+    }
+
+    private AuthorizedFestivalAccess authorizeWrite(
+            UUID festivalPublicId,
+            AdminPrincipal principal
+    ) {
+        FestivalAccess access = resolveAccess(festivalPublicId, principal);
+        if (!access.role().canModifyFestivalInfo()) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+        if (access.festival().getStatus() != FestivalStatus.DRAFT) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
+        }
+        return access.authorized();
+    }
+
+    private FestivalAccess resolveAccess(
+            UUID festivalPublicId,
+            AdminPrincipal principal
     ) {
         if (principal == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
@@ -133,19 +163,24 @@ public class FestivalMapCoordinateRegistrationApplicationService {
             throw new CustomException(ErrorCode.AUTH_ADMIN_INACTIVE);
         }
         Festival festival = festivalService.getByPublicId(festivalPublicId);
-        if (requireDraft && festival.getStatus() != FestivalStatus.DRAFT) {
-            throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
-        }
         AdminFestivalRole role = roleService.getByAdminAccountIdAndFestivalId(
                 admin.getId(),
                 festival.getId()
         );
-        if (!role.canModifyFestivalInfo()) {
-            throw new CustomException(ErrorCode.FORBIDDEN);
-        }
-        return new AuthorizedEdit(festival.getId(), admin.getId());
+        return new FestivalAccess(festival, admin.getId(), role);
     }
 
-    private record AuthorizedEdit(Long festivalId, Long adminId) {
+    private record FestivalAccess(
+            Festival festival,
+            Long adminId,
+            AdminFestivalRole role
+    ) {
+
+        private AuthorizedFestivalAccess authorized() {
+            return new AuthorizedFestivalAccess(festival.getId(), adminId);
+        }
+    }
+
+    private record AuthorizedFestivalAccess(Long festivalId, Long adminId) {
     }
 }

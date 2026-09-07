@@ -187,4 +187,59 @@ class FestivalMapCoordinateRegistrationApplicationServiceTest {
         then(mapService).should().save(org.mockito.ArgumentMatchers.any(FestivalMap.class));
         then(roadmapService).should().save(org.mockito.ArgumentMatchers.any(FestivalRoadmap.class));
     }
+
+    @Test
+    @DisplayName("제2관리자는 현재 좌표 지도를 조회할 수 있다")
+    void success_GetCurrentCoordinateMap_AsSubAdmin() {
+        FestivalMap current = FestivalMap.coordinateOnly(
+                20L, 5L, FestivalMapName.of("본행사 배치"), 1L
+        );
+        ReflectionTestUtils.setField(current, "id", 10L);
+        FestivalRoadmap roadmap = FestivalRoadmap.createForCoordinateMap(20L, 10L, 1L);
+        given(roleService.getByAdminAccountIdAndFestivalId(1L, 20L))
+                .willReturn(AdminFestivalRole.createSubAdmin(1L, 20L, 2L));
+        given(mapService.findCurrentByFestivalId(20L)).willReturn(Optional.of(current));
+        given(roadmapService.getByFestivalId(20L)).willReturn(roadmap);
+        given(festivalLocationService.findAllByFestivalId(20L))
+                .willReturn(List.of(primaryLocation));
+
+        var view = service.getCurrentCoordinateMap(festivalPublicId, principal);
+
+        assertThat(view.mapId()).isEqualTo(current.getPublicId());
+        assertThat(view.center().lat()).isEqualByComparingTo("37.5665");
+        assertThat(view.center().lng()).isEqualByComparingTo("126.9780");
+    }
+
+    @Test
+    @DisplayName("제2관리자 조회 시 현재 지도가 없으면 404 예외를 반환한다")
+    void fail_GetCurrentCoordinateMap_NotFoundAsSubAdmin() {
+        given(roleService.getByAdminAccountIdAndFestivalId(1L, 20L))
+                .willReturn(AdminFestivalRole.createSubAdmin(1L, 20L, 2L));
+        given(mapService.findCurrentByFestivalId(20L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getCurrentCoordinateMap(
+                festivalPublicId,
+                principal
+        )).isInstanceOfSatisfying(CustomException.class, exception ->
+                assertThat(exception.getErrorCode())
+                        .isEqualTo(ErrorCode.FESTIVAL_MAP_NOT_FOUND)
+        );
+    }
+
+    @Test
+    @DisplayName("제2관리자는 좌표 지도를 생성할 수 없다")
+    void fail_EnsureCoordinateMap_ForbiddenAsSubAdmin() {
+        given(roleService.getByAdminAccountIdAndFestivalId(1L, 20L))
+                .willReturn(AdminFestivalRole.createSubAdmin(1L, 20L, 2L));
+
+        assertThatThrownBy(() -> service.ensureCoordinateMap(
+                festivalPublicId,
+                "본행사 배치",
+                principal
+        )).isInstanceOfSatisfying(CustomException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN)
+        );
+
+        then(mapService).should(never()).findCurrentByFestivalId(20L);
+    }
 }
