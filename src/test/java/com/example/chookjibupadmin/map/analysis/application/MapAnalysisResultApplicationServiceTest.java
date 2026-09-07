@@ -111,6 +111,7 @@ class MapAnalysisResultApplicationServiceTest {
         MapAnalysisJob job = processingJob("analysis-key", "d".repeat(64));
         given(jobService.getByPublicId(job.getPublicId())).willReturn(job);
         given(mapService.getById(10L)).willReturn(festivalMap);
+        given(roadmapService.getByFestivalId(1L)).willReturn(roadmap);
 
         // when
         resultService.complete(
@@ -122,7 +123,9 @@ class MapAnalysisResultApplicationServiceTest {
         assertThat(job.getStatus()).isEqualTo(MapAnalysisJobStatus.CANCELLED);
         then(jobService).should().save(job);
         then(nodeService).should(never()).saveAll(any());
-        then(roadmapService).shouldHaveNoInteractions();
+        // 취소된 작업이 로드맵을 ANALYZING에 가둔 채 두지 않는다.
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.EDITING);
+        then(roadmapService).should().save(roadmap);
     }
 
     private MapAnalysisJob processingJob(String key, String checksum) {

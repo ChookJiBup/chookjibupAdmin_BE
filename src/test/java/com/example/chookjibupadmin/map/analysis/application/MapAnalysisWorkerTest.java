@@ -145,6 +145,7 @@ class MapAnalysisWorkerTest {
         assertThat(job.getStatus()).isEqualTo(MapAnalysisJobStatus.FAILED);
         assertThat(job.getFailureCode()).isEqualTo("OPENAI_REFUSAL");
         then(jobService).should().save(job);
-        then(resultService).shouldHaveNoInteractions();
+        // 더 시도하지 않을 작업이므로 로드맵을 편집 가능한 상태로 되돌린다.
+        then(resultService).should().releaseRoadmapAfterFailure(10L);
     }
 }
