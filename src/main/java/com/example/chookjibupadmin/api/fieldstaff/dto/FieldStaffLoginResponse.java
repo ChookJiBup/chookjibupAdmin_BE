@@ -16,7 +16,7 @@ public record FieldStaffLoginResponse(
         @Schema(description = "토큰 타입", example = "Bearer")
         String tokenType,
 
-        @Schema(description = "Access Token 만료 시간 초", example = "1800")
+        @Schema(description = "Access Token 만료 시간 초", example = "28800")
         long expiresIn,
 
         @Schema(description = "현장 스태프 UUID", example = "550e8400-e29b-41d4-a716-446655440000")

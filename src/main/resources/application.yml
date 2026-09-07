@@ -66,14 +66,14 @@ app:
       reply-to: ${APP_EMAIL_REPLY_TO:}
   jwt:
     secret: ${APP_JWT_SECRET}
-    access-token-expiration-seconds: 1800
+    access-token-expiration-seconds: ${APP_JWT_EXPIRATION_SECONDS:28800}
     cookie-name: ${APP_JWT_COOKIE_NAME:chookjibup_admin_access}
     cookie-secure: ${APP_JWT_COOKIE_SECURE:false}
     cookie-same-site: ${APP_JWT_COOKIE_SAME_SITE:Strict}
   field-staff:
     jwt:
       secret: ${APP_FIELD_STAFF_JWT_SECRET:${APP_JWT_SECRET}}
-      access-token-expiration-seconds: ${APP_FIELD_STAFF_JWT_EXPIRATION_SECONDS:1800}
+      access-token-expiration-seconds: ${APP_FIELD_STAFF_JWT_EXPIRATION_SECONDS:28800}
       cookie-name: ${APP_FIELD_STAFF_JWT_COOKIE_NAME:chookjibup_staff_access}
       cookie-secure: ${APP_FIELD_STAFF_JWT_COOKIE_SECURE:false}
       cookie-same-site: ${APP_FIELD_STAFF_JWT_COOKIE_SAME_SITE:Strict}

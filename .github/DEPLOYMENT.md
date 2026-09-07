@@ -90,6 +90,12 @@ Environment Variable로 관리한다.
 관리자 JWT secret을 fallback으로 사용하지만 서명키 노출 범위를 분리할 수 없으므로
 운영 설정으로 권장하지 않는다.
 
+로그인 세션 유지 시간은 관리자 `APP_JWT_EXPIRATION_SECONDS`, 현장 스태프
+`APP_FIELD_STAFF_JWT_EXPIRATION_SECONDS`로 조정한다. 두 값의 기본값은
+`28800`(8시간)이며, 별도 설정 없이도 기본값이 적용된다. 리프레시 토큰이 없어
+만료 시 재로그인이 필요하므로 근무 시간보다 짧게 설정하지 않는다. 쿠키의
+`Max-Age`는 이 값과 동일하게 발급된다.
+
 관리자 로그인 JWT는 `HttpOnly` 쿠키로 전달한다. 운영용
 `ADMIN_APPLICATION_SECRET_YML`의 `app.jwt.cookie-secure`는 반드시 `true`로
 설정한다. 프론트엔드가 같은 출처의 `/api` 프록시를 사용하므로 별도의 쿠키
