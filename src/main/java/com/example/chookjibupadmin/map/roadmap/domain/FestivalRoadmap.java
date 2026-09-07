@@ -92,6 +92,17 @@ public class FestivalRoadmap extends BaseTimeEntity {
         editRevision++;
     }
 
+    /**
+     * 분석이 최종 실패하거나 취소되면 편집 가능한 상태로 되돌린다.
+     * ANALYZING으로 남겨두면 관리자가 부스를 영영 저장할 수 없다({@link #applyAdminEdit}).
+     * 노드가 바뀌지 않았으므로 editRevision은 올리지 않는다.
+     */
+    public void analysisAborted() {
+        if (status == RoadmapStatus.ANALYZING) {
+            status = RoadmapStatus.EDITING;
+        }
+    }
+
     /** 카카오맵 위경도 편집용 roadmap을 EDITING 상태로 생성한다. */
     public static FestivalRoadmap createForCoordinateMap(
             Long festivalId,

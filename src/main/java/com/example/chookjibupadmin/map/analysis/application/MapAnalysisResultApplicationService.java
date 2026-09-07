@@ -116,9 +116,42 @@ public class MapAnalysisResultApplicationService {
                 == map.getAnalysisImageDimensions().getHeight();
     }
 
+    /**
+     * 분석이 최종 실패했을 때 로드맵을 편집 가능한 상태로 되돌린다.
+     * 워커가 job을 FAILED로 확정한 뒤 호출한다.
+     */
+    @Transactional
+    public void releaseRoadmapAfterFailure(Long mapId) {
+        releaseRoadmap(mapId);
+    }
+
     private void cancel(MapAnalysisJob job) {
         job.cancel();
         jobService.save(job);
+        releaseRoadmap(job.getMapId());
+    }
+
+    /**
+     * 끝내 분석되지 못한 지도의 로드맵이 ANALYZING으로 남지 않게 한다.
+     * 이 상태로 방치되면 관리자가 부스를 저장할 때마다 409를 맞는다.
+     */
+    private void releaseRoadmap(Long mapId) {
+        FestivalMap map;
+        try {
+            map = mapService.getById(mapId);
+        } catch (RuntimeException exception) {
+            return;
+        }
+
+        FestivalRoadmap roadmap = roadmapService.getByFestivalId(
+                map.getFestivalId()
+        );
+        if (!map.getId().equals(roadmap.getCurrentMapId())) {
+            return;
+        }
+
+        roadmap.analysisAborted();
+        roadmapService.save(roadmap);
     }
 
     private Map<String, Object> rejected(int index, String reason) {
