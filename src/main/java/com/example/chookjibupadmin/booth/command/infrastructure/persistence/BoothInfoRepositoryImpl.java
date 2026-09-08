@@ -43,4 +43,20 @@ public class BoothInfoRepositoryImpl implements BoothInfoRepository {
     public long countByFestivalId(Long festivalId) {
         return jpaRepository.countByFestivalId(festivalId);
     }
+
+    @Override
+    public List<BoothInfo> findAllByRoadmapNodeIdIn(List<Long> roadmapNodeIds) {
+        if (roadmapNodeIds == null || roadmapNodeIds.isEmpty()) {
+            return List.of();
+        }
+        return jpaRepository.findAllByRoadmapNodeIdIn(roadmapNodeIds);
+    }
+
+    @Override
+    public void deleteAll(List<BoothInfo> booths) {
+        if (booths == null || booths.isEmpty()) {
+            return;
+        }
+        jpaRepository.deleteAll(booths);
+    }
 }

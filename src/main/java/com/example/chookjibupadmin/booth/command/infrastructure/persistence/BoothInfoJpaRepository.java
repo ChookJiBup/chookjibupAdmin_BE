@@ -15,4 +15,6 @@ public interface BoothInfoJpaRepository extends JpaRepository<BoothInfo, Long> {
     );
 
     long countByFestivalId(Long festivalId);
+
+    List<BoothInfo> findAllByRoadmapNodeIdIn(List<Long> roadmapNodeIds);
 }

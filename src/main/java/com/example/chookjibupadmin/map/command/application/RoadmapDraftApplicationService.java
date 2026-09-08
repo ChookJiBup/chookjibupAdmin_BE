@@ -5,6 +5,8 @@ import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleSe
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
+import com.example.chookjibupadmin.booth.command.application.BoothInfoService;
+import com.example.chookjibupadmin.booth.command.domain.BoothInfo;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalStatus;
@@ -54,6 +56,7 @@ public class RoadmapDraftApplicationService {
     private final FestivalRoadmapService roadmapService;
     private final RoadmapNodeService nodeService;
     private final FestivalMapPresentationService presentationService;
+    private final BoothInfoService boothInfoService;
     private final MapGeometryValidator geometryValidator;
     private final MapBoundaryValidator boundaryValidator;
     private final ObjectMapper objectMapper;
@@ -122,6 +125,12 @@ public class RoadmapDraftApplicationService {
         if (!changedNodes.isEmpty()) {
             nodeService.saveAll(changedNodes);
         }
+        /*
+          승인된 부스는 지도 노드와 운영 데이터(booth_info)가 짝을 이룬다. 지도만 고치고
+          운영 쪽을 두면 대시보드에 지워진 부스가 남거나 옛 이름이 그대로 보인다.
+        */
+        syncApprovedBooths(changedNodes);
+        removeApprovedBooths(deletedNodes);
         if (!deletedNodes.isEmpty()) {
             nodeService.deleteAll(deletedNodes);
         }
@@ -134,6 +143,43 @@ public class RoadmapDraftApplicationService {
             applyPresentation(map, command.presentation());
         }
         return new SavedRoadmapDraft(editRevision);
+    }
+
+    /** 이름이 바뀐 노드의 운영 부스 이름도 함께 바꾼다. */
+    private void syncApprovedBooths(List<RoadmapNode> changedNodes) {
+        List<Long> nodeIds = changedNodes.stream()
+                .filter(node -> node.getId() != null)
+                .map(RoadmapNode::getId)
+                .toList();
+        if (nodeIds.isEmpty()) {
+            return;
+        }
+        Map<Long, RoadmapNode> nodeById = new HashMap<>();
+        changedNodes.forEach(node -> {
+            if (node.getId() != null) {
+                nodeById.put(node.getId(), node);
+            }
+        });
+        List<BoothInfo> booths = boothInfoService.findAllByRoadmapNodeIdIn(nodeIds);
+        booths.forEach(booth -> {
+            RoadmapNode node = nodeById.get(booth.getRoadmapNodeId());
+            if (node != null) {
+                booth.renameFrom(node.getNodeName());
+                boothInfoService.save(booth);
+            }
+        });
+    }
+
+    /** 지도에서 지운 노드의 운영 부스도 함께 지운다. 남겨 두면 대시보드에 유령 부스가 뜬다. */
+    private void removeApprovedBooths(List<RoadmapNode> deletedNodes) {
+        List<Long> nodeIds = deletedNodes.stream()
+                .filter(node -> node != null && node.getId() != null)
+                .map(RoadmapNode::getId)
+                .toList();
+        if (nodeIds.isEmpty()) {
+            return;
+        }
+        boothInfoService.deleteAll(boothInfoService.findAllByRoadmapNodeIdIn(nodeIds));
     }
 
     private void applyPresentation(

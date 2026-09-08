@@ -17,4 +17,8 @@ public interface BoothInfoRepository {
     List<BoothInfo> findAllByFestivalId(Long festivalId);
 
     long countByFestivalId(Long festivalId);
+
+    List<BoothInfo> findAllByRoadmapNodeIdIn(List<Long> roadmapNodeIds);
+
+    void deleteAll(List<BoothInfo> booths);
 }
