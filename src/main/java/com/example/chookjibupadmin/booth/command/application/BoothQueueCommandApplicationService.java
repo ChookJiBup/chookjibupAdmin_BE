@@ -70,7 +70,7 @@ public class BoothQueueCommandApplicationService {
         }
         BoothInfo booth = boothInfoService.getById(queue.getBoothId());
         validateTailCoordinates(command.tailLatitude(), command.tailLongitude());
-        List<Map<String, BigDecimal>> path = toPathGeometry(command.path());
+        List<Map<String, BigDecimal>> path = resolvePathGeometry(queue, command);
 
         CongestionModifier modifier = switch (principal) {
             case AdminPrincipal adminPrincipal -> updateAsAdmin(
@@ -200,22 +200,49 @@ public class BoothQueueCommandApplicationService {
         }
     }
 
-    private List<Map<String, BigDecimal>> toPathGeometry(List<QueuePathPointCommand> path) {
-        if (path == null || path.isEmpty()) {
+    private List<Map<String, BigDecimal>> resolvePathGeometry(
+            BoothQueue queue,
+            UpdateBoothQueueCommand command
+    ) {
+        List<QueuePathPointCommand> path = command.path();
+        if (path == null) {
+            return queue.getPathGeometry();
+        }
+        if (path.isEmpty()) {
             return null;
         }
-        return path.stream()
-                .map(point -> {
-                    if (point == null || point.lat() == null || point.lng() == null) {
-                        throw new CustomException(ErrorCode.INVALID_REQUEST);
-                    }
-                    validateTailCoordinates(point.lat(), point.lng());
-                    Map<String, BigDecimal> map = new LinkedHashMap<>();
-                    map.put("lat", point.lat());
-                    map.put("lng", point.lng());
-                    return map;
-                })
-                .toList();
+        if (path.size() == 1) {
+            throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
+        }
+        if (path.size() > 500) {
+            throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
+        }
+
+        List<Map<String, BigDecimal>> resolved = new java.util.ArrayList<>(path.size());
+        QueuePathPointCommand previous = null;
+        for (QueuePathPointCommand point : path) {
+            if (point == null || point.lat() == null || point.lng() == null) {
+                throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
+            }
+            validateTailCoordinates(point.lat(), point.lng());
+            if (previous != null
+                    && previous.lat().compareTo(point.lat()) == 0
+                    && previous.lng().compareTo(point.lng()) == 0) {
+                throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
+            }
+            Map<String, BigDecimal> map = new LinkedHashMap<>();
+            map.put("lat", point.lat());
+            map.put("lng", point.lng());
+            resolved.add(map);
+            previous = point;
+        }
+
+        QueuePathPointCommand last = path.get(path.size() - 1);
+        if (last.lat().compareTo(command.tailLatitude()) != 0
+                || last.lng().compareTo(command.tailLongitude()) != 0) {
+            throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
+        }
+        return List.copyOf(resolved);
     }
 
     private record CongestionModifier(

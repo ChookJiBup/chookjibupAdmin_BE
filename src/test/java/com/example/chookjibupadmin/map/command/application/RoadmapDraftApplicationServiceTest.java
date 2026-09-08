@@ -26,6 +26,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationT
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.map.analysis.application.MapBoundaryValidator;
 import com.example.chookjibupadmin.map.analysis.application.MapGeometryValidator;
 import com.example.chookjibupadmin.map.command.application.dto.RoadmapNodeChangeCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
@@ -72,9 +73,12 @@ class RoadmapDraftApplicationServiceTest {
     @Mock private FestivalMapService mapService;
     @Mock private FestivalRoadmapService roadmapService;
     @Mock private RoadmapNodeService nodeService;
+    @Mock private FestivalMapPresentationService presentationService;
 
     private final MapGeometryValidator geometryValidator =
             new MapGeometryValidator();
+    private final MapBoundaryValidator boundaryValidator =
+            new MapBoundaryValidator();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final UUID festivalPublicId = UUID.randomUUID();
     private final UUID mapPublicId = UUID.randomUUID();
@@ -87,6 +91,7 @@ class RoadmapDraftApplicationServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(service, "geometryValidator", geometryValidator);
+        ReflectionTestUtils.setField(service, "boundaryValidator", boundaryValidator);
         ReflectionTestUtils.setField(service, "objectMapper", objectMapper);
 
         AdminAccount admin = AdminAccount.createAdmin(

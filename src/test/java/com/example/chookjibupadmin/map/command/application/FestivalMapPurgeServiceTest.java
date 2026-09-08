@@ -31,6 +31,7 @@ class FestivalMapPurgeServiceTest {
     @Mock private MapAnalysisJobService mapAnalysisJobService;
     @Mock private FestivalRoadmapService festivalRoadmapService;
     @Mock private RoadmapNodeService roadmapNodeService;
+    @Mock private FestivalMapPresentationService festivalMapPresentationService;
     @Mock private FestivalMap festivalMap;
     @Mock private FestivalRoadmap roadmap;
 
@@ -40,6 +41,8 @@ class FestivalMapPurgeServiceTest {
         given(festivalMapService.getAllByFestivalIdForUpdate(20L))
                 .willReturn(List.of(festivalMap));
         given(festivalMap.getId()).willReturn(30L);
+        given(festivalMapPresentationService.findByMapId(30L))
+                .willReturn(Optional.empty());
         given(festivalMap.getOriginalImageKey())
                 .willReturn(MapImageObjectKey.of("original-key"));
         given(festivalMap.getDisplayImageKey())
@@ -74,11 +77,13 @@ class FestivalMapPurgeServiceTest {
                 roadmapNodeService,
                 festivalRoadmapService,
                 mapAnalysisJobService,
+                festivalMapPresentationService,
                 festivalMapService
         );
         inOrder.verify(roadmapNodeService).deleteAllByRoadmapId(40L);
         inOrder.verify(festivalRoadmapService).delete(roadmap);
         inOrder.verify(mapAnalysisJobService).deleteAllByMapIds(List.of(30L));
+        inOrder.verify(festivalMapPresentationService).deleteByMapIdIn(List.of(30L));
         inOrder.verify(festivalMapService).deleteAll(List.of(festivalMap));
     }
 }

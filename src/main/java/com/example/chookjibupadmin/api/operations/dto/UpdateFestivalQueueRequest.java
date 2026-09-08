@@ -29,9 +29,20 @@ public record UpdateFestivalQueueRequest(
         @PositiveOrZero
         Integer queueTailMeters,
 
-        @Schema(description = "대기열 경로 점 목록(선택)")
+        /**
+         * 대기열 경로.
+         * <ul>
+         *   <li>필드 생략({@code null}) — 기존 경로 유지</li>
+         *   <li>빈 배열 — 경로 삭제</li>
+         *   <li>2점 이상 — 경로 교체(마지막 점은 줄끝과 동일)</li>
+         * </ul>
+         */
+        @Schema(description = "대기열 경로. null=유지, []=삭제, 2점 이상=교체")
         List<@Valid PathPointRequest> path
 ) {
+    /**
+     * {@code path == null}이면 기존 경로 유지, 빈 목록이면 삭제로 해석한다.
+     */
     public UpdateBoothQueueCommand toCommand() {
         return new UpdateBoothQueueCommand(
                 tailLatitude,

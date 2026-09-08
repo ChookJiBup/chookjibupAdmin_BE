@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
@@ -37,12 +38,14 @@ import com.example.chookjibupadmin.map.command.application.port.MapImagePreparat
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
 import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -214,6 +217,50 @@ class FestivalMapManagementApplicationServiceTest {
                 Sha256Checksum.of("b".repeat(64)),
                 Sha256Checksum.of("c".repeat(64)), 1L
         );
+    }
+
+    @Test
+    @DisplayName("앵커 요청 값을 VO로 바꿔 라이프사이클 서비스에 넘긴다")
+    void success_UpdateImageAnchor() {
+        given(lifecycleService.updateImageAnchor(any(), any(), any()))
+                .willAnswer(invocation -> invocation.getArgument(2));
+
+        MapImageAnchor anchor = service.updateImageAnchor(
+                festivalPublicId,
+                currentMapId,
+                new BigDecimal("37.5665"),
+                new BigDecimal("126.9780"),
+                new BigDecimal("420.5"),
+                new BigDecimal("12.25"),
+                principal
+        );
+
+        assertThat(anchor.getCenterLatitude()).isEqualByComparingTo("37.5665");
+        assertThat(anchor.getGroundWidthMeters()).isEqualByComparingTo("420.50");
+        assertThat(anchor.getRotationDegrees()).isEqualByComparingTo("12.250");
+        then(lifecycleService).should()
+                .updateImageAnchor(eq(currentMapId), eq(20L), any());
+    }
+
+    @Test
+    @DisplayName("허용 범위를 벗어난 앵커 값은 VO 검증에서 걸러 저장하지 않는다")
+    void fail_UpdateImageAnchor_InvalidValue() {
+        assertThatThrownBy(() -> service.updateImageAnchor(
+                festivalPublicId,
+                currentMapId,
+                new BigDecimal("37.5665"),
+                new BigDecimal("126.9780"),
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                principal
+        ))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue(
+                        "errorCode",
+                        ErrorCode.INVALID_REQUEST
+                );
+        then(lifecycleService).should(never())
+                .updateImageAnchor(any(), any(), any());
     }
 
     private Festival festival() {

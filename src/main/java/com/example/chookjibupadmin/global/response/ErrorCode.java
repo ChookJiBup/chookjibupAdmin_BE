@@ -66,6 +66,21 @@ public enum ErrorCode {
             HttpStatus.BAD_REQUEST,
             "축제 장소 좌표는 대한민국 인근 허용 범위 안이어야 합니다."
     ),
+    MAP_PRESENTATION_BOUNDARY_INVALID(
+            40015,
+            HttpStatus.BAD_REQUEST,
+            "축제 부지 경계 폴리곤이 올바르지 않습니다."
+    ),
+    MAP_PRESENTATION_OVERLAY_INVALID(
+            40016,
+            HttpStatus.BAD_REQUEST,
+            "축제 지도 오버레이 설정이 올바르지 않습니다."
+    ),
+    BOOTH_QUEUE_PATH_INVALID(
+            40017,
+            HttpStatus.BAD_REQUEST,
+            "부스 대기열 경로가 올바르지 않습니다."
+    ),
     FESTIVAL_MAP_INVALID_STATUS(40908, HttpStatus.CONFLICT, "현재 상태에서는 축제 배치도를 변경할 수 없습니다."),
     FESTIVAL_MAP_READ_URL_FAILED(50203, HttpStatus.BAD_GATEWAY, "축제 배치도 조회 URL 생성에 실패했습니다."),
     FESTIVAL_MAP_READ_FAILED(50204, HttpStatus.BAD_GATEWAY, "축제 배치도 분석 이미지 조회에 실패했습니다."),

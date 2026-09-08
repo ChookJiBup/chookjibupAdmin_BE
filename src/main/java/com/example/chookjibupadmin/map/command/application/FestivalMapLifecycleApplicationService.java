@@ -95,6 +95,26 @@ public class FestivalMapLifecycleApplicationService {
                 ));
     }
 
+    /**
+     * 총괄관리자가 보정한 배치도 이미지 앵커를 저장한다.
+     *
+     * <p>좌표 전용 지도에는 얹을 이미지가 없어 앵커가 의미를 갖지 못하므로 거부한다.
+     * 교체·삭제로 더 이상 현재본이 아닌 지도도 같은 이유로 막는다.</p>
+     */
+    public MapImageAnchor updateImageAnchor(
+            UUID mapId,
+            Long festivalId,
+            MapImageAnchor anchor
+    ) {
+        FestivalMap festivalMap = ownedMapForUpdate(mapId, festivalId);
+        if (festivalMap.isCoordinateMap()) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
+        }
+        festivalMap.validateReadable();
+        festivalMap.assignImageAnchor(anchor);
+        return festivalMap.getImageAnchor();
+    }
+
     public FestivalMapDeletionTarget beginDeletion(
             UUID mapId,
             Long festivalId

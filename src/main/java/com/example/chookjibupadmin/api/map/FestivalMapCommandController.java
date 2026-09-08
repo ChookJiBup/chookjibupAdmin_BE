@@ -3,13 +3,17 @@ package com.example.chookjibupadmin.api.map;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalMapResponse;
 import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapRequest;
 import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapResponse;
+import com.example.chookjibupadmin.api.map.dto.MapImageAnchorResponse;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftRequest;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftResponse;
+import com.example.chookjibupadmin.api.map.dto.UpdateMapImageAnchorRequest;
+import com.example.chookjibupadmin.api.map.dto.UploadMapOverlayResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import com.example.chookjibupadmin.map.command.application.FestivalMapCoordinateRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapManagementApplicationService;
+import com.example.chookjibupadmin.map.command.application.FestivalMapOverlayUploadApplicationService;
 import com.example.chookjibupadmin.map.command.application.RoadmapDraftApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * AI 분석용 축제 도면의 교체와 삭제 API를 제공한다.
+ * AI 분석용 축제 도면의 교체·삭제와 배치도 이미지 앵커·오버레이 수정 API를 제공한다.
  */
 @Tag(name = "Festival Map", description = "축제 배치도 관리 API")
 @RestController
@@ -42,6 +46,7 @@ public class FestivalMapCommandController {
 
     private final FestivalMapManagementApplicationService managementService;
     private final FestivalMapCoordinateRegistrationApplicationService coordinateRegistrationService;
+    private final FestivalMapOverlayUploadApplicationService overlayUploadService;
     private final RoadmapDraftApplicationService roadmapDraftService;
     private final ObjectMapper objectMapper;
 
@@ -78,6 +83,57 @@ public class FestivalMapCommandController {
                         festivalId,
                         mapId,
                         request.toCommand(objectMapper),
+                        principal
+                ))
+        );
+    }
+
+    @Operation(summary = "축제 배치도 이미지 앵커 수정")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/{mapId}/image-anchor")
+    public ApiResponse<MapImageAnchorResponse> updateImageAnchor(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @Valid @RequestBody UpdateMapImageAnchorRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_ANCHOR_UPDATE_SUCCESS,
+                MapImageAnchorResponse.of(mapId, managementService.updateImageAnchor(
+                        festivalId,
+                        mapId,
+                        request.centerLat(),
+                        request.centerLng(),
+                        request.groundWidthMeters(),
+                        request.rotationDegrees(),
+                        principal
+                ))
+        );
+    }
+
+    @Operation(summary = "축제 지도 오버레이 이미지 등록")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping(
+            value = "/{mapId}/overlay",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ApiResponse<UploadMapOverlayResponse> uploadOverlay(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @RequestPart("image") MultipartFile overlayImage,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_OVERLAY_UPLOAD_SUCCESS,
+                UploadMapOverlayResponse.from(overlayUploadService.upload(
+                        festivalId,
+                        mapId,
+                        new MapImageUploadCommand(
+                                overlayImage.getOriginalFilename(),
+                                overlayImage.getContentType(),
+                                overlayImage.getSize(),
+                                overlayImage::getInputStream
+                        ),
                         principal
                 ))
         );

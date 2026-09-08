@@ -24,6 +24,9 @@ import org.hibernate.type.SqlTypes;
 
 /**
  * 승인 부스의 대기열(줄끝) 운영 상태이다. 부스당 최대 1행이다.
+ *
+ * <p>{@link #updateTail}의 {@code pathGeometry}는 호출측에서 해석한 최종 값이다.
+ * null이면 경로 없음, non-null이면 교체. 기존 유지가 필요하면 호출측이 현재 값을 넘긴다.</p>
  */
 @Entity
 @Getter

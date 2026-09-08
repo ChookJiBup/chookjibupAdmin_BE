@@ -53,6 +53,25 @@ class MapAnchorProjectorTest {
     }
 
     @Test
+    @DisplayName("corners는 정규화 네 귀퉁이를 WGS84로 투영한다")
+    void success_Corners_NormalizedImageBounds() {
+        MapAnchorProjector.ProjectedCorners corners = projector.corners(
+                anchor("300.00", "0.000"),
+                1000,
+                500
+        );
+
+        assertThat(corners.topLeft().lat().doubleValue())
+                .isCloseTo(37.0006737334, within(TOLERANCE));
+        assertThat(corners.topLeft().lng().doubleValue())
+                .isCloseTo(126.9983127888, within(TOLERANCE));
+        assertThat(corners.bottomRight().lat().doubleValue())
+                .isCloseTo(36.9993262666, within(TOLERANCE));
+        assertThat(corners.bottomRight().lng().doubleValue())
+                .isCloseTo(127.0016872112, within(TOLERANCE));
+    }
+
+    @Test
     @DisplayName("회전 90도면 이미지 위쪽이 동쪽을 가리킨다")
     void success_Project_Rotated90Degrees() {
         MapAnchorProjector.ProjectedGeometry projected = projector.project(

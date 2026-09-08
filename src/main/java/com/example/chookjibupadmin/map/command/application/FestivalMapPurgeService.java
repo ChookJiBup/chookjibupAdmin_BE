@@ -6,6 +6,7 @@ import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapServic
 import com.example.chookjibupadmin.map.roadmap.application.RoadmapNodeService;
 import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class FestivalMapPurgeService {
     private final MapAnalysisJobService mapAnalysisJobService;
     private final FestivalRoadmapService festivalRoadmapService;
     private final RoadmapNodeService roadmapNodeService;
+    private final FestivalMapPresentationService festivalMapPresentationService;
 
     /**
      * 분석 작업을 취소하고 배치도를 삭제 중 상태로 바꾼 뒤 파일 키를 반환한다.
@@ -31,17 +33,30 @@ public class FestivalMapPurgeService {
         List<FestivalMap> festivalMaps =
                 festivalMapService.getAllByFestivalIdForUpdate(festivalId);
 
+        List<Long> mapIds = festivalMaps.stream()
+                .map(FestivalMap::getId)
+                .toList();
+        List<String> overlayKeys = mapIds.stream()
+                .map(festivalMapPresentationService::findByMapId)
+                .flatMap(Optional::stream)
+                .filter(presentation -> presentation.getOverlayImageKey() != null)
+                .map(presentation -> presentation.getOverlayImageKey().getValue())
+                .toList();
+
         festivalMaps.forEach(festivalMap -> {
             mapAnalysisJobService.cancelActive(festivalMap.getId());
             festivalMap.beginDeletion();
         });
 
-        return festivalMaps.stream()
-                .flatMap(festivalMap -> Stream.of(
-                        festivalMap.getOriginalImageKey().getValue(),
-                        festivalMap.getDisplayImageKey().getValue(),
-                        festivalMap.getAnalysisImageKey().getValue()
-                ))
+        return Stream.concat(
+                        festivalMaps.stream()
+                                .flatMap(festivalMap -> Stream.of(
+                                        festivalMap.getOriginalImageKey().getValue(),
+                                        festivalMap.getDisplayImageKey().getValue(),
+                                        festivalMap.getAnalysisImageKey().getValue()
+                                )),
+                        overlayKeys.stream()
+                )
                 .distinct()
                 .toList();
     }
@@ -60,6 +75,7 @@ public class FestivalMapPurgeService {
                 .toList();
 
         mapAnalysisJobService.deleteAllByMapIds(mapIds);
+        festivalMapPresentationService.deleteByMapIdIn(mapIds);
         festivalMapService.deleteAll(festivalMaps);
     }
 
