@@ -44,6 +44,15 @@ public class BoothInfoService {
         return boothInfoRepository.findAllByFestivalId(festivalId);
     }
 
+    /** 지도 노드에 딸린 운영 부스들. 노드를 지우거나 이름을 바꿀 때 함께 손보려고 쓴다. */
+    public List<BoothInfo> findAllByRoadmapNodeIdIn(List<Long> roadmapNodeIds) {
+        return boothInfoRepository.findAllByRoadmapNodeIdIn(roadmapNodeIds);
+    }
+
+    public void deleteAll(List<BoothInfo> booths) {
+        boothInfoRepository.deleteAll(booths);
+    }
+
     public long countByFestivalId(Long festivalId) {
         return boothInfoRepository.countByFestivalId(festivalId);
     }

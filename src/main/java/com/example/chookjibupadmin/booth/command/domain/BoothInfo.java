@@ -60,6 +60,19 @@ public class BoothInfo extends BaseTimeEntity {
         return booth;
     }
 
+    /**
+     * 지도 노드 이름이 바뀌면 운영 부스 이름도 따라간다.
+     *
+     * <p>승인 시점에 이름을 복사해 두기만 해서, 지도에서 부스 이름을 고쳐도 대시보드·
+     * 혼잡도 화면에는 옛 이름이 남아 있었다.</p>
+     */
+    public void renameFrom(String nodeName) {
+        if (nodeName == null || nodeName.isBlank()) {
+            return;
+        }
+        this.boothName = nodeName.trim();
+    }
+
     public boolean belongsTo(Long festivalId) {
         return this.festivalId.equals(festivalId);
     }

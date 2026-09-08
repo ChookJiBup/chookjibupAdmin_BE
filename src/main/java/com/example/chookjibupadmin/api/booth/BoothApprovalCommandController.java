@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.api.booth;
 
 import com.example.chookjibupadmin.api.booth.dto.ApproveBoothResponse;
+import com.example.chookjibupadmin.api.booth.dto.ApproveBoothsResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.booth.command.application.BoothApprovalApplicationService;
 import com.example.chookjibupadmin.global.response.ApiResponse;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @Tag(name = "Festival Booth", description = "축제 부스 승인·혼잡 API")
 @RestController
-@RequestMapping("/api/festivals/{festivalId}/maps/{mapId}/nodes/{nodeId}")
+@RequestMapping("/api/festivals/{festivalId}/maps/{mapId}")
 @RequiredArgsConstructor
 public class BoothApprovalCommandController {
 
@@ -29,7 +30,7 @@ public class BoothApprovalCommandController {
 
     @Operation(summary = "지도 부스 노드 승인")
     @SecurityRequirement(name = "bearerAuth")
-    @PostMapping("/approve-booth")
+    @PostMapping("/nodes/{nodeId}/approve-booth")
     public ApiResponse<ApproveBoothResponse> approveBooth(
             @PathVariable UUID festivalId,
             @PathVariable UUID mapId,
@@ -45,6 +46,22 @@ public class BoothApprovalCommandController {
                                 nodeId,
                                 principal
                         )
+                )
+        );
+    }
+
+    @Operation(summary = "지도 부스 노드 일괄 승인")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/approve-booths")
+    public ApiResponse<ApproveBoothsResponse> approveBooths(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.BOOTH_APPROVE_SUCCESS,
+                ApproveBoothsResponse.from(
+                        boothApprovalApplicationService.approveAll(festivalId, mapId, principal)
                 )
         );
     }
