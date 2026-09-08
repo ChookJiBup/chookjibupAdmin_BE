@@ -145,6 +145,48 @@ class FestivalRoadmapTest {
     }
 
     @Test
+    @DisplayName("공개하면 PUBLISHED가 되고 공개 버전이 현재 리비전을 따른다")
+    void success_Publish() {
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+        roadmap.analysisCompleted();
+        roadmap.applyAdminEdit(1L);
+
+        roadmap.publish();
+
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.PUBLISHED);
+        assertThat(roadmap.isPublished()).isTrue();
+        assertThat(roadmap.getPublishedVersion())
+                .isEqualTo(roadmap.getEditRevision());
+    }
+
+    @Test
+    @DisplayName("분석 중에는 공개를 거부한다")
+    void fail_Publish_WhileAnalyzing() {
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+
+        assertThatThrownBy(roadmap::publish)
+                .isInstanceOfSatisfying(CustomException.class, exception ->
+                        assertThat(exception.getErrorCode())
+                                .isEqualTo(ErrorCode.FESTIVAL_MAP_INVALID_STATUS)
+                );
+        assertThat(roadmap.isPublished()).isFalse();
+    }
+
+    @Test
+    @DisplayName("공개한 뒤 편집을 저장하면 다시 비공개(EDITING)로 돌아간다")
+    void success_ApplyAdminEdit_AfterPublish_HidesAgain() {
+        FestivalRoadmap roadmap = FestivalRoadmap.createForCoordinateMap(1L, 10L, 2L);
+        roadmap.publish();
+
+        roadmap.applyAdminEdit(0L);
+
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.EDITING);
+        assertThat(roadmap.isPublished()).isFalse();
+        // 공개 버전은 방문객이 마지막으로 본 리비전이므로 편집으로 바뀌지 않는다.
+        assertThat(roadmap.getPublishedVersion()).isZero();
+    }
+
+    @Test
     @DisplayName("오래된 리비전으로 편집하면 충돌 예외를 던진다")
     void fail_ApplyAdminEdit_RevisionConflict() {
         FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);

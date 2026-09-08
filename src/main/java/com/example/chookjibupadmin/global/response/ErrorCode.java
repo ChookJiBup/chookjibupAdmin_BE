@@ -108,6 +108,7 @@ public enum ErrorCode {
     ROADMAP_NODE_NOT_BOOTH(40918, HttpStatus.CONFLICT, "부스 유형 노드만 승인할 수 있습니다."),
     ROADMAP_NODE_ALREADY_APPROVED(40919, HttpStatus.CONFLICT, "이미 승인되어 부스와 연결된 노드입니다."),
     FESTIVAL_MAP_REPLACE_BLOCKED_BY_BOOTH(40920, HttpStatus.CONFLICT, "승인된 부스가 연결된 지도는 교체할 수 없습니다. 부스 승인을 먼저 해제해 주세요."),
+    ROADMAP_PUBLISH_NO_BOOTH(40921, HttpStatus.CONFLICT, "방문객에게 보일 부스가 없습니다. 부스를 찍어 저장한 뒤 다시 공개해 주세요."),
     FESTIVAL_REPORT_ANALYSIS_FAILED(50206, HttpStatus.BAD_GATEWAY, "축제 결과 보고서 분석에 실패했습니다."),
     FESTIVAL_REPORT_ANALYSIS_NOT_CONFIGURED(50302, HttpStatus.SERVICE_UNAVAILABLE, "축제 결과 보고서 분석 설정이 필요합니다."),
 
