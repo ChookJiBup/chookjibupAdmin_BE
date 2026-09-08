@@ -15,7 +15,10 @@ public record FestivalOperationsMapResponse(
         long editRevision,
         String mapKind,
         PresentationResponse presentation,
-        List<BoothMarkerResponse> booths
+        @Schema(description = "승인 부스 마커")
+        List<BoothMarkerResponse> booths,
+        @Schema(description = "부스가 아닌 확정 시설 마커(화장실·입구·출구 등). 없으면 빈 배열")
+        List<FacilityMarkerResponse> facilities
 ) {
     public static FestivalOperationsMapResponse from(FestivalOperationsMapView view) {
         return new FestivalOperationsMapResponse(
@@ -30,8 +33,18 @@ public record FestivalOperationsMapResponse(
                                 booth.boothId(),
                                 booth.nodeId(),
                                 booth.name(),
+                                booth.nodeType(),
                                 booth.lat(),
                                 booth.lng()
+                        ))
+                        .toList(),
+                view.facilities().stream()
+                        .map(facility -> new FacilityMarkerResponse(
+                                facility.nodeId(),
+                                facility.name(),
+                                facility.nodeType(),
+                                facility.lat(),
+                                facility.lng()
                         ))
                         .toList()
         );
@@ -41,6 +54,19 @@ public record FestivalOperationsMapResponse(
             Long boothId,
             UUID nodeId,
             String name,
+            @Schema(description = "노드 유형. 부스로 승인된 노드라 보통 BOOTH", example = "BOOTH")
+            String nodeType,
+            BigDecimal lat,
+            BigDecimal lng
+    ) {
+    }
+
+    @Schema(description = "부스가 아닌 시설 마커")
+    public record FacilityMarkerResponse(
+            UUID nodeId,
+            String name,
+            @Schema(description = "노드 유형", example = "RESTROOM")
+            String nodeType,
             BigDecimal lat,
             BigDecimal lng
     ) {
