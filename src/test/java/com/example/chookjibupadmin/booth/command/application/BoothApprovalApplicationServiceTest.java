@@ -30,13 +30,16 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.application.FestivalMapService;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
 import com.example.chookjibupadmin.map.roadmap.application.RoadmapNodeService;
+import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
 import com.example.chookjibupadmin.map.roadmap.domain.GeometryType;
 import com.example.chookjibupadmin.map.roadmap.domain.NodeType;
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNode;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -71,6 +74,9 @@ class BoothApprovalApplicationServiceTest {
     @Mock
     private BoothInfoService boothInfoService;
 
+    @Mock
+    private FestivalRoadmapService festivalRoadmapService;
+
     @Test
     @DisplayName("이미 같은 노드로 승인된 부스가 있으면 거절한다")
     void fail_Approve_AlreadyLinkedBooth() {
@@ -101,6 +107,48 @@ class BoothApprovalApplicationServiceTest {
                 .hasMessage(ErrorCode.ROADMAP_NODE_ALREADY_APPROVED.getMessage());
 
         then(boothInfoService).should(never()).save(any());
+    }
+
+    @Test
+    @DisplayName("일괄 승인은 아직 승인되지 않은 부스 노드만 등록한다")
+    void success_ApproveAll_OnlyUnapprovedBooths() {
+        Festival festival = festival(10L);
+        FestivalMap map = map(10L, 5L);
+        AdminAccount admin = admin();
+        AdminPrincipal principal = new AdminPrincipal(admin.getId(), "hong@korea.kr");
+
+        RoadmapNode newBooth = boothNode(5L);
+        ReflectionTestUtils.setField(newBooth, "id", 77L);
+        RoadmapNode approvedBooth = boothNode(5L);
+        ReflectionTestUtils.setField(approvedBooth, "id", 78L);
+        approvedBooth.approveBooth(100L, admin.getId());
+        RoadmapNode restroom = boothNode(5L);
+        ReflectionTestUtils.setField(restroom, "id", 79L);
+        ReflectionTestUtils.setField(restroom, "nodeType", NodeType.RESTROOM);
+
+        FestivalRoadmap roadmap = FestivalRoadmap.create(10L, 5L, admin.getId());
+        ReflectionTestUtils.setField(roadmap, "id", 30L);
+        BoothInfo saved = BoothInfo.create(10L, 77L, "김밥부스");
+        ReflectionTestUtils.setField(saved, "id", 9L);
+
+        given(adminAccountService.getById(admin.getId())).willReturn(admin);
+        given(festivalService.getByPublicId(festival.getPublicId())).willReturn(festival);
+        given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(admin.getId(), 10L))
+                .willReturn(AdminFestivalRole.createFestivalOwner(admin.getId(), 10L));
+        given(festivalMapService.getByPublicId(map.getPublicId())).willReturn(map);
+        given(festivalRoadmapService.getByFestivalId(10L)).willReturn(roadmap);
+        given(roadmapNodeService.findAll(30L, 5L))
+                .willReturn(List.of(newBooth, approvedBooth, restroom));
+        given(boothInfoService.save(any())).willReturn(saved);
+
+        var result = service.approveAll(festival.getPublicId(), map.getPublicId(), principal);
+
+        assertThat(result.approved()).hasSize(1);
+        assertThat(newBooth.getRelatedBoothId()).isEqualTo(9L);
+        // 이미 승인된 노드와 부스가 아닌 노드는 건드리지 않는다.
+        assertThat(approvedBooth.getRelatedBoothId()).isEqualTo(100L);
+        assertThat(restroom.getRelatedBoothId()).isNull();
+        then(roadmapNodeService).should().save(newBooth);
     }
 
     @Test
