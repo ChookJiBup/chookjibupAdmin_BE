@@ -24,6 +24,7 @@ import com.example.chookjibupadmin.festival.location.application.FestivalLocatio
 import com.example.chookjibupadmin.map.analysis.application.MapAnalysisJobService;
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJobStatus;
+import com.example.chookjibupadmin.map.command.application.FestivalMapPresentationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageReadUrl;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
@@ -47,6 +48,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -73,6 +75,8 @@ class FestivalMapAnalysisQueryApplicationServiceTest {
     @Mock private MapAnalysisJobService jobService;
     @Mock private FestivalRoadmapService roadmapService;
     @Mock private RoadmapNodeService nodeService;
+    @Mock private FestivalMapPresentationService presentationService;
+    @Mock private MapPresentationViewAssembler presentationViewAssembler;
     @Mock private MapImageStoragePort storagePort;
     @Spy private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -100,6 +104,7 @@ class FestivalMapAnalysisQueryApplicationServiceTest {
                 .willReturn(AdminFestivalRole.createFestivalOwner(1L, 20L));
         given(festivalLocationService.findAllByFestivalId(20L))
                 .willReturn(List.of());
+        given(presentationService.findByMapId(10L)).willReturn(Optional.empty());
     }
 
     @Test
