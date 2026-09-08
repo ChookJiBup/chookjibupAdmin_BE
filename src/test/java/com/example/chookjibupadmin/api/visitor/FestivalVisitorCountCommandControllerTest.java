@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.api.visitor;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -101,6 +102,98 @@ class FestivalVisitorCountCommandControllerTest extends AdminHttpIntegrationTest
                                     """.formatted(created.locationId())))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value(40917));
+        }
+    }
+
+    @Nested
+    @DisplayName("update visitor count input mode")
+    class UpdateVisitorCountInputMode {
+
+        @Test
+        @DisplayName("전용 API로 집계 방식만 바꾸고 장소는 그대로 둔다")
+        void success_UpdateVisitorCountInputMode() throws Exception {
+            AdminAccount owner = persistOwner();
+            CreatedFestival created = createFestival(
+                    owner,
+                    "집계방식변경축제-" + UUID.randomUUID(),
+                    LocalDate.of(2026, 8, 20),
+                    LocalDate.of(2026, 8, 22),
+                    "DAILY"
+            );
+
+            mockMvc.perform(patch(
+                            "/api/festivals/{festivalId}/visitor-count-input-mode",
+                            created.festivalId()
+                    )
+                            .header("Authorization", bearer(owner))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"visitorCountInputMode\":\"TOTAL\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.visitorCountInputMode").value("TOTAL"));
+
+            mockMvc.perform(get(
+                            "/api/festivals/{festivalId}/locations",
+                            created.festivalId()
+                    )
+                            .header("Authorization", bearer(owner)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[0].locationId")
+                            .value(created.locationId().toString()));
+        }
+
+        @Test
+        @DisplayName("방문 인원 데이터가 있으면 전용 API도 40917을 반환한다")
+        void fail_UpdateVisitorCountInputMode_40917() throws Exception {
+            AdminAccount owner = persistOwner();
+            CreatedFestival created = createFestival(
+                    owner,
+                    "집계방식고정축제-" + UUID.randomUUID(),
+                    LocalDate.of(2026, 8, 20),
+                    LocalDate.of(2026, 8, 22),
+                    "DAILY"
+            );
+
+            mockMvc.perform(put(
+                            "/api/festivals/{festivalId}/operations/visitors/daily/{visitDate}",
+                            created.festivalId(),
+                            "2026-08-20"
+                    )
+                            .header("Authorization", bearer(owner))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"visitorCount\":100}"))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(patch(
+                            "/api/festivals/{festivalId}/visitor-count-input-mode",
+                            created.festivalId()
+                    )
+                            .header("Authorization", bearer(owner))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"visitorCountInputMode\":\"TOTAL\"}"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value(40917));
+        }
+
+        @Test
+        @DisplayName("집계 방식이 없으면 400을 반환한다")
+        void fail_UpdateVisitorCountInputMode_NullMode() throws Exception {
+            AdminAccount owner = persistOwner();
+            CreatedFestival created = createFestival(
+                    owner,
+                    "집계방식누락축제-" + UUID.randomUUID(),
+                    LocalDate.of(2026, 8, 20),
+                    LocalDate.of(2026, 8, 22),
+                    "DAILY"
+            );
+
+            mockMvc.perform(patch(
+                            "/api/festivals/{festivalId}/visitor-count-input-mode",
+                            created.festivalId()
+                    )
+                            .header("Authorization", bearer(owner))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest());
         }
     }
 

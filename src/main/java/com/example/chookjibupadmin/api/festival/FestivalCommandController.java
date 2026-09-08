@@ -3,6 +3,8 @@ package com.example.chookjibupadmin.api.festival;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalResponse;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalWithMapResponse;
+import com.example.chookjibupadmin.api.festival.dto.FestivalVisitorCountInputModeResponse;
+import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalVisitorCountInputModeRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
@@ -139,6 +141,33 @@ public class FestivalCommandController {
                         festival,
                         locationQueryService.getLocations(
                                 festivalId,
+                                principal
+                        )
+                )
+        );
+    }
+
+    /**
+     * 1관리자 권한으로 방문 인원 집계 방식만 변경한다.
+     */
+    @Operation(
+            summary = "축제 방문 인원 집계 방식 변경",
+            description = "장소 등 다른 기본 정보는 건드리지 않는다. "
+                    + "방문 인원 데이터가 이미 있으면 40917."
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/{festivalId}/visitor-count-input-mode")
+    public ApiResponse<FestivalVisitorCountInputModeResponse> updateVisitorCountInputMode(
+            @PathVariable UUID festivalId,
+            @Valid @RequestBody UpdateFestivalVisitorCountInputModeRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_VISITOR_COUNT_INPUT_MODE_UPDATE_SUCCESS,
+                FestivalVisitorCountInputModeResponse.from(
+                        festivalApplicationService.changeVisitorCountInputMode(
+                                festivalId,
+                                request.visitorCountInputMode(),
                                 principal
                         )
                 )
