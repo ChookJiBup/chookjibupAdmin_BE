@@ -44,6 +44,7 @@ public enum SuccessCode {
     FESTIVAL_DAILY_VISITOR_COUNT_UPDATE_SUCCESS(22019, "축제 일자별 방문 인원 수가 저장되었습니다."),
     FESTIVAL_TOTAL_VISITOR_COUNT_UPDATE_SUCCESS(22020, "축제 총 방문 인원 수가 저장되었습니다."),
     FESTIVAL_VISITOR_COUNT_READ_SUCCESS(22021, "축제 방문 인원 수 조회가 완료되었습니다."),
+    FESTIVAL_VISITOR_COUNT_INPUT_MODE_UPDATE_SUCCESS(22022, "축제 방문 인원 집계 방식이 변경되었습니다."),
     FESTIVAL_DASHBOARD_READ_SUCCESS(23000, "축제 대시보드 조회가 완료되었습니다."),
     BOOTH_APPROVE_SUCCESS(23010, "지도 노드를 부스로 승인했습니다."),
     BOOTH_CONGESTION_UPDATE_SUCCESS(23011, "부스 혼잡 정보를 저장했습니다."),

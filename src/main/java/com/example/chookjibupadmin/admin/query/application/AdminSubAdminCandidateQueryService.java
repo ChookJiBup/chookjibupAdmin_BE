@@ -18,7 +18,7 @@ public class AdminSubAdminCandidateQueryService {
     private final AdminSubAdminCandidateQueryRepository queryRepository;
 
     /**
-     * 초대 가능한 활성 관리자 계정을 조회한다.
+     * 초대 가능한 활성 계약업체 계정을 조회한다.
      */
     public List<AdminSubAdminCandidateView> findCandidates(Long festivalId) {
         return queryRepository.findCandidates(festivalId);

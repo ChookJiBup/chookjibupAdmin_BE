@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffStatus;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffDepartment;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
@@ -58,6 +59,31 @@ class FieldStaffQueryRepositoryTest {
             assertThat(result)
                     .extracting(FieldStaffView::loginId)
                     .containsExactly("staff01", "staff02", "inactive01");
+        }
+
+        @Test
+        @DisplayName("현장 스태프 근무구역을 함께 조회한다")
+        void success_FindAllByFestivalId_Department() {
+            // given
+            persist(FieldStaffAccount.create(
+                    1L,
+                    FieldStaffLoginId.of("staff01"),
+                    FieldStaffName.of("김스태프"),
+                    FieldStaffDepartment.of("정문 게이트"),
+                    FieldStaffPhoneNumber.of("010-1234-5678"),
+                    FieldStaffPasswordHash.of("encoded-password"),
+                    LocalDateTime.of(2026, 10, 9, 0, 0),
+                    LocalDateTime.of(2026, 10, 18, 23, 59)
+            ));
+            persist(fieldStaffAccount("staff02", 1L));
+
+            // when
+            var result = queryRepository.findAllByFestivalId(1L);
+
+            // then
+            assertThat(result)
+                    .extracting(FieldStaffView::department)
+                    .containsExactly("정문 게이트", null);
         }
 
         @Test

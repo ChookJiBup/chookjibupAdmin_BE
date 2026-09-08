@@ -1,5 +1,6 @@
 package com.example.chookjibupadmin.admin.query.infrastructure.persistence;
 
+import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.AdminStatus;
 import com.example.chookjibupadmin.admin.command.domain.QAdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.QAdminFestivalRole;
@@ -39,7 +40,9 @@ public class AdminSubAdminCandidateQueryRepositoryImpl
                         .and(adminFestivalRole.festivalId.eq(festivalId)))
                 .where(
                         adminFestivalRole.id.isNull(),
-                        adminAccount.status.eq(AdminStatus.ACTIVE)
+                        adminAccount.status.eq(AdminStatus.ACTIVE),
+                        // 배정(AdminSubAdminAssignService)이 계약업체만 허용하므로 후보도 같은 기준으로 좁힌다.
+                        adminAccount.accountKind.eq(AccountKind.CONTRACTOR)
                 )
                 .orderBy(adminAccount.id.asc())
                 .fetch();

@@ -31,6 +31,7 @@ import com.example.chookjibupadmin.operator.command.application.dto.CreateFieldS
 import com.example.chookjibupadmin.operator.command.application.dto.UpdateFieldStaffCommand;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffStatus;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffDepartment;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.infrastructure.FieldStaffPasswordGenerator;
 import java.time.LocalDate;
@@ -114,6 +115,65 @@ class FieldStaffManagementServiceTest {
                     ArgumentCaptor.forClass(FieldStaffAccount.class);
             then(fieldStaffAccountService).should().save(captor.capture());
             assertThat(captor.getValue().getPasswordHashValue()).isEqualTo("encoded-password");
+        }
+
+        @Test
+        @DisplayName("근무구역을 함께 받아 현장 스태프 계정을 생성한다")
+        void success_Create_WithDepartment() {
+            // given
+            Festival festival = festival(1L);
+            given(adminAccountService.getById(1L)).willReturn(adminAccount());
+            given(festivalService.getByPublicId(festival.getPublicId()))
+                    .willReturn(festival);
+            givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
+            given(fieldStaffAccountService.existsByFestivalIdAndLoginId(
+                    1L,
+                    FieldStaffLoginId.of("staff01")
+            )).willReturn(false);
+            given(passwordGenerator.generate()).willReturn("TempPass123!");
+            given(passwordEncoder.encode("TempPass123!")).willReturn("encoded-password");
+            given(fieldStaffAccountService.save(any(FieldStaffAccount.class)))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            CreateFieldStaffResult result = service.create(
+                    festival.getPublicId(),
+                    createCommand("정문 게이트"),
+                    principal()
+            );
+
+            // then
+            assertThat(result.fieldStaffAccount().getDepartmentValue())
+                    .isEqualTo("정문 게이트");
+        }
+
+        @Test
+        @DisplayName("근무구역 없이도 현장 스태프 계정을 생성한다")
+        void success_Create_WithoutDepartmentBoundary() {
+            // given
+            Festival festival = festival(1L);
+            given(adminAccountService.getById(1L)).willReturn(adminAccount());
+            given(festivalService.getByPublicId(festival.getPublicId()))
+                    .willReturn(festival);
+            givenManageRole(festival, AdminRole.FESTIVAL_OWNER);
+            given(fieldStaffAccountService.existsByFestivalIdAndLoginId(
+                    1L,
+                    FieldStaffLoginId.of("staff01")
+            )).willReturn(false);
+            given(passwordGenerator.generate()).willReturn("TempPass123!");
+            given(passwordEncoder.encode("TempPass123!")).willReturn("encoded-password");
+            given(fieldStaffAccountService.save(any(FieldStaffAccount.class)))
+                    .willAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            CreateFieldStaffResult result = service.create(
+                    festival.getPublicId(),
+                    createCommand(null),
+                    principal()
+            );
+
+            // then
+            assertThat(result.fieldStaffAccount().getDepartmentValue()).isNull();
         }
 
         @Test
@@ -391,6 +451,49 @@ class FieldStaffManagementServiceTest {
         }
 
         @Test
+        @DisplayName("담당 축제 스태프 근무구역을 수정한다")
+        void success_Update_Department() {
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(1L);
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getByPublicId(account.getPublicId()))
+                    .willReturn(account);
+
+            service.update(
+                    festival.getPublicId(),
+                    account.getPublicId(),
+                    new UpdateFieldStaffCommand("박스태프", "후문 게이트", "010-9999-8888"),
+                    principal()
+            );
+
+            assertThat(account.getDepartmentValue()).isEqualTo("후문 게이트");
+        }
+
+        @Test
+        @DisplayName("근무구역을 보내지 않은 수정은 기존 근무구역을 유지한다")
+        void success_Update_KeepDepartmentBoundary() {
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(1L);
+            ReflectionTestUtils.setField(
+                    account,
+                    "department",
+                    FieldStaffDepartment.of("정문 게이트")
+            );
+            givenManagePermission(festival);
+            given(fieldStaffAccountService.getByPublicId(account.getPublicId()))
+                    .willReturn(account);
+
+            service.update(
+                    festival.getPublicId(),
+                    account.getPublicId(),
+                    new UpdateFieldStaffCommand("박스태프", "010-9999-8888"),
+                    principal()
+            );
+
+            assertThat(account.getDepartmentValue()).isEqualTo("정문 게이트");
+        }
+
+        @Test
         @DisplayName("담당 축제 스태프 임시 비밀번호를 재발급한다")
         void success_ReissuePassword() {
             Festival festival = festival(1L);
@@ -463,6 +566,15 @@ class FieldStaffManagementServiceTest {
         return new CreateFieldStaffCommand(
                 "staff01",
                 "김스태프",
+                "010-1234-5678"
+        );
+    }
+
+    private CreateFieldStaffCommand createCommand(String department) {
+        return new CreateFieldStaffCommand(
+                "staff01",
+                "김스태프",
+                department,
                 "010-1234-5678"
         );
     }

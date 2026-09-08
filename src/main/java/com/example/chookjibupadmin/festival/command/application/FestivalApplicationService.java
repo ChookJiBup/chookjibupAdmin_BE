@@ -262,6 +262,31 @@ public class FestivalApplicationService {
         return festival;
     }
 
+    /**
+     * 1관리자 권한으로 방문 인원 집계 방식만 변경한다.
+     *
+     * <p>축제 기본 정보 수정({@link #update})과 달리 장소 목록을 건드리지 않는다.
+     * 방문 인원 데이터가 이미 있으면 기존 도메인 규칙대로 변경을 거부한다.</p>
+     */
+    public Festival changeVisitorCountInputMode(
+            UUID festivalId,
+            FestivalVisitorCountInputMode mode,
+            AdminPrincipal principal
+    ) {
+        AdminAccount adminAccount = findAuthenticatedAdmin(principal);
+        Festival festival = festivalService.getByPublicIdForUpdate(festivalId);
+        validateFestivalOwner(festival, adminAccount);
+
+        FestivalVisitorCountInputMode nextMode = requireSelectableVisitorMode(mode);
+        if (festival.getVisitorCountInputMode() == nextMode) {
+            return festival;
+        }
+        ensureVisitorModeChangeAllowed(festival.getId());
+        festival.changeVisitorCountInputMode(nextMode);
+
+        return festival;
+    }
+
     private void ensureVisitorModeChangeAllowed(Long festivalId) {
         boolean hasDaily = !visitorCountService
                 .findDailyByFestivalIdOrderByVisitDateAsc(festivalId)
@@ -288,7 +313,7 @@ public class FestivalApplicationService {
     private FestivalVisitorCountInputMode requireSelectableVisitorMode(
             FestivalVisitorCountInputMode mode
     ) {
-        if (mode == FestivalVisitorCountInputMode.UNSET) {
+        if (mode == null || mode == FestivalVisitorCountInputMode.UNSET) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
         return mode;

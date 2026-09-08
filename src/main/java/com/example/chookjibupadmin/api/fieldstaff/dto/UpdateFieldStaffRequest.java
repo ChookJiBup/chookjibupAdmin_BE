@@ -13,11 +13,16 @@ import jakarta.validation.constraints.Size;
 public record UpdateFieldStaffRequest(
         @Schema(description = "현장 스태프 이름", example = "김스태프")
         @NotBlank @Size(max = 100) String name,
+        @Schema(
+                description = "근무구역. 생략하면 기존 값을 유지하고 빈 문자열이면 값을 지운다.",
+                example = "정문 게이트"
+        )
+        @Size(max = 100) String department,
         @Schema(description = "휴대전화 번호", example = "010-1234-5678")
         @NotBlank @Pattern(regexp = "^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$")
         String phoneNumber
 ) {
     public UpdateFieldStaffCommand toCommand() {
-        return new UpdateFieldStaffCommand(name, phoneNumber);
+        return new UpdateFieldStaffCommand(name, department, phoneNumber);
     }
 }

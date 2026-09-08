@@ -79,7 +79,7 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
             assertThat(result).singleElement().satisfies(candidate -> {
                 assertThat(candidate.name()).isEqualTo("김후보");
                 assertThat(candidate.email()).isEqualTo("candidate1@mapo.go.kr");
-                assertThat(candidate.rank()).isEqualTo("주무관");
+                assertThat(candidate.rank()).isNull();
             });
         }
 
@@ -112,8 +112,38 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
             assertThat(result).singleElement().satisfies(candidate -> {
                 assertThat(candidate.name()).isEqualTo("이학준");
                 assertThat(candidate.email()).isEqualTo("dlgkrwns213@korea.kr");
-                assertThat(candidate.rank()).isEqualTo("주무관");
+                assertThat(candidate.rank()).isNull();
             });
+        }
+
+        @Test
+        @DisplayName("운영자로 등록할 수 없는 공무원 계정은 후보로 내려주지 않는다")
+        void success_SearchCandidates_ExcludeGovernmentAccounts() {
+            // given
+            Festival festival = festivalService.save(festival());
+            AdminAccount owner = persistOwner(festival);
+            adminAccountService.save(government(
+                    "gov-candidate@mapo.go.kr",
+                    "김공무"
+            ));
+            adminAccountService.save(admin(
+                    "contractor-candidate@partner.co.kr",
+                    "김업체",
+                    "가나이벤트"
+            ));
+
+            // when
+            List<AdminSubAdminCandidateView> result =
+                    applicationService.searchCandidates(
+                            festival.getPublicId(),
+                            null,
+                            principal(owner)
+                    );
+
+            // then
+            assertThat(result)
+                    .extracting(AdminSubAdminCandidateView::email)
+                    .containsExactly("contractor-candidate@partner.co.kr");
         }
     }
 
@@ -139,9 +169,21 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
     private AdminAccount admin(
             String email,
             String name,
-            String department
+            String companyName
     ) {
-        return AdminAccount.createAdmin(
+        return AdminAccount.createContractor(
+                AdminEmail.of(email),
+                AdminName.of(name),
+                AdminOrganization.of(companyName),
+                AdminPasswordHash.of("encoded-password")
+        );
+    }
+
+    private AdminAccount government(
+            String email,
+            String name
+    ) {
+        return AdminAccount.createGovernment(
                 AdminEmail.of(email),
                 AdminName.of(name),
                 AdminOrganization.of("관광정책과"),

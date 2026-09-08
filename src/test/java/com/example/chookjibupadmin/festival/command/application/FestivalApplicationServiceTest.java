@@ -1086,6 +1086,152 @@ class FestivalApplicationServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("changeVisitorCountInputMode")
+    class ChangeVisitorCountInputMode {
+
+        @Test
+        @DisplayName("장소를 건드리지 않고 방문 인원 집계 방식만 변경한다")
+        void success_ChangeVisitorCountInputMode() {
+            // given
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            UUID publicId = festival.getPublicId();
+            AdminPrincipal principal = principal();
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(publicId))
+                    .willReturn(festival);
+            givenOwnerRole(1L, festivalId);
+            given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(festivalId))
+                    .willReturn(List.of());
+            given(visitorCountService.findTotalByFestivalId(festivalId))
+                    .willReturn(java.util.Optional.empty());
+
+            // when
+            Festival result = festivalApplicationService.changeVisitorCountInputMode(
+                    publicId,
+                    FestivalVisitorCountInputMode.TOTAL,
+                    principal
+            );
+
+            // then
+            assertThat(result.getVisitorCountInputMode())
+                    .isEqualTo(FestivalVisitorCountInputMode.TOTAL);
+            then(festivalLocationService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("이미 같은 집계 방식이면 방문 인원 데이터가 있어도 그대로 둔다")
+        void success_ChangeVisitorCountInputMode_SameModeBoundary() {
+            // given
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            festival.changeVisitorCountInputMode(FestivalVisitorCountInputMode.DAILY);
+            UUID publicId = festival.getPublicId();
+            AdminPrincipal principal = principal();
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(publicId))
+                    .willReturn(festival);
+            givenOwnerRole(1L, festivalId);
+
+            // when
+            Festival result = festivalApplicationService.changeVisitorCountInputMode(
+                    publicId,
+                    FestivalVisitorCountInputMode.DAILY,
+                    principal
+            );
+
+            // then
+            assertThat(result.getVisitorCountInputMode())
+                    .isEqualTo(FestivalVisitorCountInputMode.DAILY);
+            then(visitorCountService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("방문 인원 데이터가 있으면 집계 방식을 변경할 수 없다")
+        void fail_ChangeVisitorCountInputMode_HasVisitorCount_CustomException() {
+            // given
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            festival.changeVisitorCountInputMode(FestivalVisitorCountInputMode.DAILY);
+            UUID publicId = festival.getPublicId();
+            AdminPrincipal principal = principal();
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(publicId))
+                    .willReturn(festival);
+            givenOwnerRole(1L, festivalId);
+            given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(festivalId))
+                    .willReturn(List.of(FestivalDailyVisitorCount.create(
+                            festivalId,
+                            LocalDate.of(2026, 10, 16),
+                            VisitorCount.of(100)
+                    )));
+
+            // when & then
+            assertThatThrownBy(() -> festivalApplicationService.changeVisitorCountInputMode(
+                    publicId,
+                    FestivalVisitorCountInputMode.TOTAL,
+                    principal
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_VISITOR_INPUT_MODE_CHANGE_FORBIDDEN.getMessage());
+            assertThat(festival.getVisitorCountInputMode())
+                    .isEqualTo(FestivalVisitorCountInputMode.DAILY);
+        }
+
+        @Test
+        @DisplayName("UNSET으로는 변경할 수 없다")
+        void fail_ChangeVisitorCountInputMode_Unset_CustomException() {
+            // given
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            UUID publicId = festival.getPublicId();
+            AdminPrincipal principal = principal();
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(publicId))
+                    .willReturn(festival);
+            givenOwnerRole(1L, festivalId);
+
+            // when & then
+            assertThatThrownBy(() -> festivalApplicationService.changeVisitorCountInputMode(
+                    publicId,
+                    FestivalVisitorCountInputMode.UNSET,
+                    principal
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+        }
+
+        @Test
+        @DisplayName("서브관리자는 집계 방식을 변경할 수 없다")
+        void fail_ChangeVisitorCountInputMode_SubAdmin_CustomException() {
+            // given
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            UUID publicId = festival.getPublicId();
+            AdminPrincipal principal = principal();
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.getByPublicIdForUpdate(publicId))
+                    .willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(1L, festivalId))
+                    .willReturn(AdminFestivalRole.createSubAdmin(1L, festivalId, 2L));
+
+            // when & then
+            assertThatThrownBy(() -> festivalApplicationService.changeVisitorCountInputMode(
+                    publicId,
+                    FestivalVisitorCountInputMode.TOTAL,
+                    principal
+            ))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FORBIDDEN.getMessage());
+        }
+    }
+
     private CreateFestivalCommand createCommand() {
         return createCommand(null);
     }

@@ -13,6 +13,7 @@ import com.example.chookjibupadmin.operator.command.application.dto.CreateFieldS
 import com.example.chookjibupadmin.operator.command.application.dto.CreateFieldStaffResult;
 import com.example.chookjibupadmin.operator.command.application.dto.UpdateFieldStaffCommand;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffDepartment;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
@@ -73,6 +74,7 @@ public class FieldStaffManagementService {
                 festival.getId(),
                 loginId,
                 FieldStaffName.of(command.name()),
+                FieldStaffDepartment.of(command.department()),
                 FieldStaffPhoneNumber.of(command.phoneNumber()),
                 FieldStaffPasswordHash.of(passwordEncoder.encode(temporaryPassword)),
                 validFrom(festival),
@@ -106,7 +108,9 @@ public class FieldStaffManagementService {
     }
 
     /**
-     * 담당 축제의 현장 스태프 이름과 전화번호를 수정한다.
+     * 담당 축제의 현장 스태프 이름, 근무구역, 전화번호를 수정한다.
+     *
+     * <p>근무구역은 요청에 없으면(null) 기존 값을 유지하고, 빈 문자열이면 값을 지운다.</p>
      */
     public void update(
             UUID festivalId,
@@ -121,6 +125,9 @@ public class FieldStaffManagementService {
         );
         account.update(
                 FieldStaffName.of(command.name()),
+                command.department() == null
+                        ? account.getDepartment()
+                        : FieldStaffDepartment.of(command.department()),
                 FieldStaffPhoneNumber.of(command.phoneNumber())
         );
     }

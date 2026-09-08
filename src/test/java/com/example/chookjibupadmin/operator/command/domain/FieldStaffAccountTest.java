@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffDepartment;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
@@ -241,6 +242,84 @@ class FieldStaffAccountTest {
             assertThatThrownBy(account::activate)
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FIELD_STAFF_NOT_ACTIVE.getMessage());
+        }
+    }
+
+    @Nested
+    @DisplayName("department")
+    class Department {
+
+        @Test
+        @DisplayName("근무구역을 포함해 현장 스태프 계정을 생성한다")
+        void success_Create_WithDepartment() {
+            // when
+            FieldStaffAccount account = FieldStaffAccount.create(
+                    1L,
+                    FieldStaffLoginId.of("staff01"),
+                    FieldStaffName.of("김스태프"),
+                    FieldStaffDepartment.of("정문 게이트"),
+                    FieldStaffPhoneNumber.of("010-1234-5678"),
+                    FieldStaffPasswordHash.of("encoded-password"),
+                    LocalDateTime.of(2026, 10, 9, 0, 0),
+                    LocalDateTime.of(2026, 10, 18, 23, 59)
+            );
+
+            // then
+            assertThat(account.getDepartmentValue()).isEqualTo("정문 게이트");
+        }
+
+        @Test
+        @DisplayName("근무구역 없이 생성하면 값이 없다")
+        void success_Create_WithoutDepartmentBoundary() {
+            // when
+            FieldStaffAccount account = fieldStaffAccount();
+
+            // then
+            assertThat(account.getDepartmentValue()).isNull();
+        }
+
+        @Test
+        @DisplayName("근무구역을 함께 수정한다")
+        void success_Update_Department() {
+            // given
+            FieldStaffAccount account = fieldStaffAccount();
+
+            // when
+            account.update(
+                    FieldStaffName.of("박스태프"),
+                    FieldStaffDepartment.of("후문 게이트"),
+                    FieldStaffPhoneNumber.of("010-9999-8888")
+            );
+
+            // then
+            assertThat(account.getNameValue()).isEqualTo("박스태프");
+            assertThat(account.getDepartmentValue()).isEqualTo("후문 게이트");
+            assertThat(account.getPhoneNumberValue()).isEqualTo("010-9999-8888");
+        }
+
+        @Test
+        @DisplayName("근무구역을 넘기지 않은 수정은 기존 근무구역을 유지한다")
+        void success_Update_KeepDepartment() {
+            // given
+            FieldStaffAccount account = FieldStaffAccount.create(
+                    1L,
+                    FieldStaffLoginId.of("staff01"),
+                    FieldStaffName.of("김스태프"),
+                    FieldStaffDepartment.of("정문 게이트"),
+                    FieldStaffPhoneNumber.of("010-1234-5678"),
+                    FieldStaffPasswordHash.of("encoded-password"),
+                    LocalDateTime.of(2026, 10, 9, 0, 0),
+                    LocalDateTime.of(2026, 10, 18, 23, 59)
+            );
+
+            // when
+            account.update(
+                    FieldStaffName.of("박스태프"),
+                    FieldStaffPhoneNumber.of("010-9999-8888")
+            );
+
+            // then
+            assertThat(account.getDepartmentValue()).isEqualTo("정문 게이트");
         }
     }
 
