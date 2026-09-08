@@ -13,6 +13,8 @@ public record FestivalReportStatusView(
         String generationStatus,
         Integer progressDayIndex,
         String progressMessage,
+        String failureCode,
+        String failureMessage,
         boolean performanceAvailable,
         boolean evaluationAvailable,
         UUID previousFestivalId,

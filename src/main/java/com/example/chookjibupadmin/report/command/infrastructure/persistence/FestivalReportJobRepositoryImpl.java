@@ -38,6 +38,18 @@ public class FestivalReportJobRepositoryImpl
     }
 
     @Override
+    public List<FestivalReportJob> findProcessingStartedBefore(
+            LocalDateTime startedBefore,
+            int limit
+    ) {
+        return jpaRepository.findProcessingForUpdate(
+                FestivalReportJobStatus.PROCESSING,
+                startedBefore,
+                PageRequest.of(0, limit)
+        );
+    }
+
+    @Override
     public Optional<FestivalReportJob> findByPublicId(UUID publicId) {
         return jpaRepository.findByPublicId(publicId);
     }

@@ -44,6 +44,11 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 55MB
+  task:
+    scheduling:
+      pool:
+        # 배치도·결과 보고서 분석 워커와 타임아웃 회수 작업이 서로를 막지 않도록 한다.
+        size: ${APP_TASK_SCHEDULING_POOL_SIZE:3}
 
 app:
   auth:
@@ -120,3 +125,6 @@ app:
       read-timeout: ${APP_OPENAI_READ_TIMEOUT:90s}
       max-attempts: ${APP_REPORT_ANALYSIS_MAX_ATTEMPTS:3}
       poll-delay-millis: ${APP_REPORT_ANALYSIS_POLL_DELAY_MILLIS:3000}
+      # 이 시간을 넘겨 처리 중으로 남은 작업은 재시도 대기 또는 실패로 회수한다.
+      job-timeout: ${APP_REPORT_ANALYSIS_JOB_TIMEOUT:7m}
+      timeout-scan-delay-millis: ${APP_REPORT_ANALYSIS_TIMEOUT_SCAN_DELAY_MILLIS:30000}

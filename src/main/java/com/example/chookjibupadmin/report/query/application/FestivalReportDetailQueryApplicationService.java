@@ -125,6 +125,8 @@ public class FestivalReportDetailQueryApplicationService {
                 generationStatus,
                 job.map(FestivalReportJob::getProgressDayIndex).orElse(null),
                 job.map(FestivalReportJob::getProgressMessage).orElse(null),
+                job.map(FestivalReportJob::getFailureCode).orElse(null),
+                job.map(FestivalReportJob::getFailureMessage).orElse(null),
                 performanceAvailable,
                 evaluationAvailable,
                 previousFestivalId,

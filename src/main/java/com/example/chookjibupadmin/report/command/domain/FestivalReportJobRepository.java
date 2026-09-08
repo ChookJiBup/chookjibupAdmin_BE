@@ -1,5 +1,7 @@
 package com.example.chookjibupadmin.report.command.domain;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,6 +13,14 @@ public interface FestivalReportJobRepository {
     FestivalReportJob save(FestivalReportJob job);
 
     Optional<FestivalReportJob> findFirstPending();
+
+    /**
+     * 기준 시각보다 먼저 시작되어 아직 처리 중인 작업을 조회한다.
+     */
+    List<FestivalReportJob> findProcessingStartedBefore(
+            LocalDateTime startedBefore,
+            int limit
+    );
 
     Optional<FestivalReportJob> findByPublicId(UUID publicId);
 

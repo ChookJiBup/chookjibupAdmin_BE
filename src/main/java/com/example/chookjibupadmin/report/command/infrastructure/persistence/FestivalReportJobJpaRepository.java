@@ -43,4 +43,18 @@ public interface FestivalReportJobJpaRepository
             LocalDateTime now,
             Pageable pageable
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select j
+        from FestivalReportJob j
+        where j.status = :status
+          and (j.startedAt is null or j.startedAt <= :startedBefore)
+        order by j.id
+        """)
+    List<FestivalReportJob> findProcessingForUpdate(
+            FestivalReportJobStatus status,
+            LocalDateTime startedBefore,
+            Pageable pageable
+    );
 }
