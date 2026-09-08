@@ -1,11 +1,15 @@
 package com.example.chookjibupadmin.map.analysis.application;
 
+import com.example.chookjibupadmin.global.response.CustomException;
+import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.roadmap.domain.GeometryType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -26,6 +30,18 @@ public class MapAnchorProjector {
 
     /** 투영 결과. 축약이 일어나면 geometryType이 입력과 달라진다. */
     public record ProjectedGeometry(GeometryType geometryType, ObjectNode geometry) {
+    }
+
+    /** 표시용 오버레이 네 귀퉁이 위경도. */
+    public record ProjectedCorners(
+            GeoPoint topLeft,
+            GeoPoint topRight,
+            GeoPoint bottomRight,
+            GeoPoint bottomLeft
+    ) {
+    }
+
+    public record GeoPoint(BigDecimal lat, BigDecimal lng) {
     }
 
     /**
@@ -67,6 +83,30 @@ public class MapAnchorProjector {
         return new ProjectedGeometry(
                 GeometryType.POINT,
                 projection.toPointNode(center)
+        );
+    }
+
+    /**
+     * 정규화 이미지 네 귀퉁이 (0,0),(1,0),(1,1),(0,1)를 WGS84로 투영한다.
+     * 극점 근처처럼 경도 환산이 불안정하면 클램프하지 않고 거절한다.
+     */
+    public ProjectedCorners corners(
+            MapImageAnchor anchor,
+            int imageWidth,
+            int imageHeight
+    ) {
+        if (anchor == null || imageWidth <= 0 || imageHeight <= 0) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        Projection projection = new Projection(anchor, imageWidth, imageHeight);
+        if (Math.abs(projection.metersPerDegreeLongitude) < 1e-9) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        return new ProjectedCorners(
+                projection.toGeoPoint(new NormalizedPoint(0, 0)),
+                projection.toGeoPoint(new NormalizedPoint(1, 0)),
+                projection.toGeoPoint(new NormalizedPoint(1, 1)),
+                projection.toGeoPoint(new NormalizedPoint(0, 1))
         );
     }
 
@@ -152,7 +192,7 @@ public class MapAnchorProjector {
     }
 
     /** 앵커와 이미지 종횡비로 정해지는 하나의 좌표 변환. */
-    private static final class Projection {
+    static final class Projection {
 
         private final double centerLatitude;
         private final double centerLongitude;
@@ -160,9 +200,9 @@ public class MapAnchorProjector {
         private final double groundHeightMeters;
         private final double cos;
         private final double sin;
-        private final double metersPerDegreeLongitude;
+        final double metersPerDegreeLongitude;
 
-        private Projection(MapImageAnchor anchor, int imageWidth, int imageHeight) {
+        Projection(MapImageAnchor anchor, int imageWidth, int imageHeight) {
             centerLatitude = anchor.getCenterLatitude().doubleValue();
             centerLongitude = anchor.getCenterLongitude().doubleValue();
             groundWidthMeters = anchor.getGroundWidthMeters().doubleValue();
@@ -176,6 +216,26 @@ public class MapAnchorProjector {
         }
 
         private ObjectNode toPointNode(NormalizedPoint point) {
+            double[] latLng = projectMeters(point);
+            ObjectNode node = JsonNodeFactory.instance.objectNode();
+            node.put("lat", clamp(latLng[0], 90));
+            node.put("lng", clamp(latLng[1], 180));
+            return node;
+        }
+
+        GeoPoint toGeoPoint(NormalizedPoint point) {
+            double[] latLng = projectMeters(point);
+            if (Math.abs(latLng[0]) > 90 || Math.abs(latLng[1]) > 180
+                    || !Double.isFinite(latLng[0]) || !Double.isFinite(latLng[1])) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+            return new GeoPoint(
+                    BigDecimal.valueOf(latLng[0]).setScale(7, RoundingMode.HALF_UP),
+                    BigDecimal.valueOf(latLng[1]).setScale(7, RoundingMode.HALF_UP)
+            );
+        }
+
+        private double[] projectMeters(NormalizedPoint point) {
             double dx = (point.x() - 0.5) * groundWidthMeters;
             // 이미지 y축은 아래로 자라지만 위도는 위로 자라므로 부호를 뒤집는다.
             double dy = -(point.y() - 0.5) * groundHeightMeters;
@@ -183,15 +243,10 @@ public class MapAnchorProjector {
             double north = -dx * sin + dy * cos;
 
             double latitude = centerLatitude + north / METERS_PER_DEGREE_LATITUDE;
-            // 극점 근처에서는 경도 1도의 실거리가 0으로 수렴해 나눗셈이 발산한다.
             double longitude = Math.abs(metersPerDegreeLongitude) < 1e-9
                     ? centerLongitude
                     : centerLongitude + east / metersPerDegreeLongitude;
-
-            ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.put("lat", clamp(latitude, 90));
-            node.put("lng", clamp(longitude, 180));
-            return node;
+            return new double[]{latitude, longitude};
         }
 
         private double clamp(double value, double limit) {

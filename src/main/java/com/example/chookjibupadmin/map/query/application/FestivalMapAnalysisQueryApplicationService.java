@@ -12,6 +12,7 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.analysis.application.MapAnalysisJobService;
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
+import com.example.chookjibupadmin.map.command.application.FestivalMapPresentationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageReadUrl;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
@@ -20,6 +21,7 @@ import com.example.chookjibupadmin.map.query.application.dto.MapAnalysisStatusVi
 import com.example.chookjibupadmin.map.query.application.dto.MapCenterView;
 import com.example.chookjibupadmin.map.query.application.dto.MapEditorView;
 import com.example.chookjibupadmin.map.query.application.dto.MapImageAnchorView;
+import com.example.chookjibupadmin.map.query.application.dto.MapPresentationView;
 import com.example.chookjibupadmin.map.query.application.dto.RoadmapNodeView;
 import com.example.chookjibupadmin.map.query.application.dto.RoadmapZoneView;
 import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
@@ -53,6 +55,8 @@ public class FestivalMapAnalysisQueryApplicationService {
     private final MapAnalysisJobService jobService;
     private final FestivalRoadmapService roadmapService;
     private final RoadmapNodeService nodeService;
+    private final FestivalMapPresentationService presentationService;
+    private final MapPresentationViewAssembler presentationViewAssembler;
     private final MapImageStoragePort storagePort;
     private final ObjectMapper objectMapper;
 
@@ -88,6 +92,10 @@ public class FestivalMapAnalysisQueryApplicationService {
         ).stream().map(this::view).toList();
 
         MapCenterView center = resolveCenter(map.getFestivalId(), nodes);
+        MapPresentationView presentation = presentationService.findByMapId(map.getId())
+                .map(presentationViewAssembler::toView)
+                .orElse(null);
+        String mapKind = map.getMapKind().name();
 
         if (map.isCoordinateMap()) {
             return new MapEditorView(
@@ -102,7 +110,9 @@ public class FestivalMapAnalysisQueryApplicationService {
                     nodes,
                     zoneViews(roadmap),
                     center,
-                    null
+                    null,
+                    mapKind,
+                    presentation
             );
         }
 
@@ -123,7 +133,9 @@ public class FestivalMapAnalysisQueryApplicationService {
                 nodes,
                 zoneViews(roadmap),
                 center,
-                MapImageAnchorView.from(map.getImageAnchor())
+                MapImageAnchorView.from(map.getImageAnchor()),
+                mapKind,
+                presentation
         );
     }
 
@@ -225,7 +237,8 @@ public class FestivalMapAnalysisQueryApplicationService {
                     node.getSource().name(),
                     node.getReviewStatus().name(),
                     node.getSortOrder(),
-                    node.getGeometrySchemaVersion()
+                    node.getGeometrySchemaVersion(),
+                    node.getRelatedBoothId()
             );
         } catch (Exception exception) {
             throw new IllegalStateException(

@@ -11,11 +11,19 @@ import com.example.chookjibupadmin.festival.command.domain.FestivalStatus;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.analysis.application.MapGeometryValidator;
+import com.example.chookjibupadmin.map.analysis.application.MapBoundaryValidator;
+import com.example.chookjibupadmin.map.analysis.application.MapBoundaryValidator.BoundaryPoint;
 import com.example.chookjibupadmin.map.command.application.dto.RoadmapNodeChangeCommand;
-import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
 import com.example.chookjibupadmin.map.command.application.dto.RoadmapZoneCommand;
+import com.example.chookjibupadmin.map.command.application.dto.SaveMapPresentationCommand;
+import com.example.chookjibupadmin.map.command.application.dto.SaveMapPresentationCommand.BoundaryGeometryCommand;
+import com.example.chookjibupadmin.map.command.application.dto.SaveMapPresentationCommand.LatLngPointCommand;
+import com.example.chookjibupadmin.map.command.application.dto.SaveMapPresentationCommand.OverlayPresentationCommand;
+import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SavedRoadmapDraft;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
+import com.example.chookjibupadmin.map.command.domain.FestivalMapPresentation;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
 import com.example.chookjibupadmin.map.roadmap.application.RoadmapNodeService;
 import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
@@ -26,6 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +53,9 @@ public class RoadmapDraftApplicationService {
     private final FestivalMapService mapService;
     private final FestivalRoadmapService roadmapService;
     private final RoadmapNodeService nodeService;
+    private final FestivalMapPresentationService presentationService;
     private final MapGeometryValidator geometryValidator;
+    private final MapBoundaryValidator boundaryValidator;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -119,7 +130,114 @@ public class RoadmapDraftApplicationService {
         } else if (!deletedNodes.isEmpty()) {
             pruneDeletedZoneMembers(roadmap, deletedNodes);
         }
+        if (command.presentation() != null) {
+            applyPresentation(map, command.presentation());
+        }
         return new SavedRoadmapDraft(editRevision);
+    }
+
+    private void applyPresentation(
+            FestivalMap map,
+            SaveMapPresentationCommand command
+    ) {
+        FestivalMapPresentation presentation = presentationService
+                .getOrCreateForUpdate(map.getId(), map.getFestivalId());
+
+        if (Boolean.TRUE.equals(command.clearBoundary())) {
+            presentation.clearBoundary();
+        } else if (command.boundary() != null) {
+            presentation.updateBoundary(boundaryJson(command.boundary()));
+        }
+
+        if (Boolean.TRUE.equals(command.clearOverlay())) {
+            presentation.clearOverlay();
+        } else if (command.overlay() != null) {
+            applyOverlayPatch(presentation, command.overlay());
+        }
+
+        presentationService.save(presentation);
+    }
+
+    private void applyOverlayPatch(
+            FestivalMapPresentation presentation,
+            OverlayPresentationCommand overlay
+    ) {
+        if (overlay.assetId() != null) {
+            if (!presentation.hasOverlayImage()
+                    || !overlay.assetId().equals(presentation.getOverlayAssetId())) {
+                throw new CustomException(ErrorCode.MAP_PRESENTATION_OVERLAY_INVALID);
+            }
+        }
+        if (hasAnyAnchorField(overlay)) {
+            if (overlay.centerLatitude() == null
+                    || overlay.centerLongitude() == null
+                    || overlay.groundWidthMeters() == null
+                    || overlay.rotationDegrees() == null) {
+                throw new CustomException(ErrorCode.MAP_PRESENTATION_OVERLAY_INVALID);
+            }
+            presentation.updateOverlayAnchor(MapImageAnchor.of(
+                    overlay.centerLatitude(),
+                    overlay.centerLongitude(),
+                    overlay.groundWidthMeters(),
+                    overlay.rotationDegrees()
+            ));
+        }
+        if (overlay.opacity() != null) {
+            presentation.setOverlayOpacity(overlay.opacity());
+        }
+        if (overlay.clipToBoundary() != null) {
+            presentation.setClipToBoundary(overlay.clipToBoundary());
+        }
+        if (overlay.visible() != null) {
+            presentation.setOverlayVisible(overlay.visible());
+        }
+    }
+
+    private boolean hasAnyAnchorField(OverlayPresentationCommand overlay) {
+        return overlay.centerLatitude() != null
+                || overlay.centerLongitude() != null
+                || overlay.groundWidthMeters() != null
+                || overlay.rotationDegrees() != null;
+    }
+
+    private String boundaryJson(BoundaryGeometryCommand boundary) {
+        if (boundary == null
+                || !"POLYGON".equals(boundary.geometryType())
+                || !"2.0".equals(boundary.schemaVersion())
+                || boundary.points() == null) {
+            throw new CustomException(ErrorCode.MAP_PRESENTATION_BOUNDARY_INVALID);
+        }
+        List<BoundaryPoint> validated = boundaryValidator.validateClosedPolygon(
+                boundary.points().stream()
+                        .map(this::toBoundaryPoint)
+                        .toList()
+        );
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("geometryType", "POLYGON");
+        payload.put("schemaVersion", "2.0");
+        payload.put(
+                "points",
+                validated.stream()
+                        .map(point -> {
+                            Map<String, Object> map = new LinkedHashMap<>();
+                            map.put("lat", point.lat());
+                            map.put("lng", point.lng());
+                            return map;
+                        })
+                        .toList()
+        );
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException exception) {
+            throw new CustomException(ErrorCode.MAP_PRESENTATION_BOUNDARY_INVALID);
+        }
+    }
+
+    private BoundaryPoint toBoundaryPoint(LatLngPointCommand point) {
+        if (point == null) {
+            throw new CustomException(ErrorCode.MAP_PRESENTATION_BOUNDARY_INVALID);
+        }
+        return new BoundaryPoint(point.lat(), point.lng());
     }
 
     private AuthorizedEdit authorize(

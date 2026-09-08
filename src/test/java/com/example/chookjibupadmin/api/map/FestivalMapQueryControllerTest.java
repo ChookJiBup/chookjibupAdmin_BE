@@ -100,7 +100,9 @@ class FestivalMapQueryControllerTest {
                         new java.math.BigDecimal("37.5665000"),
                         new java.math.BigDecimal("126.9780000"),
                         new java.math.BigDecimal("420.50"),
-                        new java.math.BigDecimal("12.250"))));
+                        new java.math.BigDecimal("12.250")),
+                "IMAGE",
+                null));
 
         var response=controller.editor(festivalId,mapId,principal);
 

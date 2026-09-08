@@ -75,6 +75,105 @@ class BoothQueueCommandApplicationServiceTest {
     private FieldStaffAccountService fieldStaffAccountService;
 
     @Test
+    @DisplayName("path가 null이면 기존 경로를 유지한다")
+    void success_UpdateTail_NullPath_KeepsExisting() {
+        UUID festivalPublicId = UUID.randomUUID();
+        BoothQueue queue = BoothQueue.createEmpty(10L, 7L);
+        ReflectionTestUtils.setField(queue, "id", 1L);
+        queue.updateTail(
+                new BigDecimal("37.5600"),
+                new BigDecimal("126.9700"),
+                5,
+                List.of(java.util.Map.of(
+                        "lat", new BigDecimal("37.5600"),
+                        "lng", new BigDecimal("126.9700")
+                ), java.util.Map.of(
+                        "lat", new BigDecimal("37.5610"),
+                        "lng", new BigDecimal("126.9710")
+                )),
+                BoothQueueModifierType.STAFF,
+                null,
+                3L
+        );
+        BoothInfo booth = BoothInfo.create(10L, 100L, "김밥부스");
+        ReflectionTestUtils.setField(booth, "id", 7L);
+        FieldStaffPrincipal staff = new FieldStaffPrincipal(3L, 10L, "s1", 0L);
+        UpdateBoothQueueCommand command = new UpdateBoothQueueCommand(
+                new BigDecimal("37.5665"),
+                new BigDecimal("126.9780"),
+                15,
+                null
+        );
+        given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
+                .willReturn(10L);
+        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
+        given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
+        given(boothCongestionService.findLatestByBoothId(7L))
+                .willReturn(Optional.empty());
+
+        BoothQueueResult result = service.updateTail(
+                festivalPublicId,
+                queue.getPublicId(),
+                command,
+                staff
+        );
+
+        assertThat(result.path()).hasSize(2);
+        assertThat(result.tailLatitude()).isEqualByComparingTo("37.5665");
+    }
+
+    @Test
+    @DisplayName("path가 빈 목록이면 기존 경로를 삭제한다")
+    void success_UpdateTail_EmptyPath_ClearsExisting() {
+        UUID festivalPublicId = UUID.randomUUID();
+        BoothQueue queue = BoothQueue.createEmpty(10L, 7L);
+        ReflectionTestUtils.setField(queue, "id", 1L);
+        queue.updateTail(
+                new BigDecimal("37.5600"),
+                new BigDecimal("126.9700"),
+                5,
+                List.of(java.util.Map.of(
+                        "lat", new BigDecimal("37.5600"),
+                        "lng", new BigDecimal("126.9700")
+                ), java.util.Map.of(
+                        "lat", new BigDecimal("37.5610"),
+                        "lng", new BigDecimal("126.9710")
+                )),
+                BoothQueueModifierType.STAFF,
+                null,
+                3L
+        );
+        BoothInfo booth = BoothInfo.create(10L, 100L, "김밥부스");
+        ReflectionTestUtils.setField(booth, "id", 7L);
+        FieldStaffPrincipal staff = new FieldStaffPrincipal(3L, 10L, "s1", 0L);
+        UpdateBoothQueueCommand command = new UpdateBoothQueueCommand(
+                new BigDecimal("37.5665"),
+                new BigDecimal("126.9780"),
+                15,
+                List.of()
+        );
+        given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
+                .willReturn(10L);
+        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
+        given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
+        given(boothCongestionService.findLatestByBoothId(7L))
+                .willReturn(Optional.empty());
+
+        BoothQueueResult result = service.updateTail(
+                festivalPublicId,
+                queue.getPublicId(),
+                command,
+                staff
+        );
+
+        assertThat(result.path()).isNull();
+    }
+
+    @Test
     @DisplayName("스태프는 배정 축제 대기열 줄끝을 수정한다")
     void success_UpdateTail_AsStaff() {
         UUID festivalPublicId = UUID.randomUUID();

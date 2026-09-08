@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.api.operations;
 
 import com.example.chookjibupadmin.api.operations.dto.FestivalCongestionResponse;
 import com.example.chookjibupadmin.api.operations.dto.FestivalOperationSuggestionResponse;
+import com.example.chookjibupadmin.api.operations.dto.FestivalOperationsMapResponse;
 import com.example.chookjibupadmin.api.operations.dto.FestivalQueueListResponse;
 import com.example.chookjibupadmin.api.operations.dto.FestivalQueueResponse;
 import com.example.chookjibupadmin.api.operations.dto.UpdateFestivalQueueRequest;
@@ -14,6 +15,7 @@ import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.global.response.SuccessCode;
+import com.example.chookjibupadmin.map.query.application.FestivalOperationsMapQueryApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,6 +43,23 @@ public class FestivalOperationsController {
     private final BoothQueueQueryApplicationService queueQueryApplicationService;
     private final BoothQueueCommandApplicationService queueCommandApplicationService;
     private final FestivalOperationSuggestionQueryApplicationService suggestionQueryApplicationService;
+    private final FestivalOperationsMapQueryApplicationService operationsMapQueryApplicationService;
+
+    @Operation(summary = "현장 운영 지도 조회")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/map")
+    public ApiResponse<FestivalOperationsMapResponse> getMap(
+            @PathVariable UUID festivalId,
+            @AuthenticationPrincipal Object principal
+    ) {
+        FestivalActorPrincipal actor = requireActor(principal);
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_OPERATIONS_MAP_READ_SUCCESS,
+                FestivalOperationsMapResponse.from(
+                        operationsMapQueryApplicationService.getMap(festivalId, actor)
+                )
+        );
+    }
 
     @Operation(summary = "전체·부스별 혼잡도 조회")
     @SecurityRequirement(name = "bearerAuth")

@@ -17,7 +17,9 @@ public record MapEditorView(
         List<RoadmapNodeView> nodes,
         List<RoadmapZoneView> zones,
         MapCenterView center,
-        MapImageAnchorView imageAnchor
+        MapImageAnchorView imageAnchor,
+        String mapKind,
+        MapPresentationView presentation
 ) {
     public MapEditorView(
             UUID mapId,
@@ -32,6 +34,6 @@ public record MapEditorView(
             MapCenterView center
     ) {
         this(mapId, displayImageUrl, displayImageUrlExpiresAt, imageWidth, imageHeight,
-                editRevision, roadmapStatus, analysis, nodes, List.of(), center, null);
+                editRevision, roadmapStatus, analysis, nodes, List.of(), center, null, null, null);
     }
 }
