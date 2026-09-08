@@ -41,6 +41,11 @@ app:
     jwt:
       secret: test-field-staff-jwt-secret-key-for-local-tests
       access-token-expiration-seconds: 1800
+  report:
+    analysis:
+      # 테스트가 만든 작업을 백그라운드 워커가 먼저 집어가지 않도록 폴링 주기를 늘린다.
+      poll-delay-millis: 3600000
+      timeout-scan-delay-millis: 3600000
   road-address:
     base-url: https://business.juso.go.kr
     confirmation-key:

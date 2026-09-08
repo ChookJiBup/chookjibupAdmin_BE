@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -173,7 +174,8 @@ public class FestivalReportJob extends BaseTimeEntity {
      * 더 이상 재시도하지 않는 실패로 종료한다.
      */
     public void fail(String code, String message) {
-        if (status == FestivalReportJobStatus.CANCELLED) {
+        // 이미 종료된 작업을 실패로 되돌리지 않는다.
+        if (!status.isActive()) {
             return;
         }
 
@@ -195,6 +197,22 @@ public class FestivalReportJob extends BaseTimeEntity {
         status = FestivalReportJobStatus.CANCELLED;
         completedAt = LocalDateTime.now();
         nextAttemptAt = null;
+    }
+
+    /**
+     * 처리 중인 상태로 제한 시간을 넘겼는지 반환한다.
+     */
+    public boolean isTimedOut(LocalDateTime now, Duration timeout) {
+        if (status != FestivalReportJobStatus.PROCESSING
+                || timeout == null
+                || timeout.isZero()
+                || timeout.isNegative()) {
+            return false;
+        }
+
+        // 워커가 죽어 startedAt을 남기지 못한 작업도 회수 대상에 포함한다.
+        LocalDateTime baseline = startedAt == null ? getCreatedAt() : startedAt;
+        return baseline != null && !now.isBefore(baseline.plus(timeout));
     }
 
     private String limit(String message, int maxLength) {

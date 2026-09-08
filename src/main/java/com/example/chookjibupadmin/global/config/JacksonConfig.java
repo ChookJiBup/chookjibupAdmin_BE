@@ -1,6 +1,9 @@
 package com.example.chookjibupadmin.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,6 +12,10 @@ import org.springframework.context.annotation.Configuration;
 public class JacksonConfig {
     @Bean
     ObjectMapper objectMapper() {
-        return new ObjectMapper();
+        // 결과 보고서 지표는 LocalDate를 포함하므로 java.time 모듈이 필요하다.
+        return JsonMapper.builder()
+                .addModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .build();
     }
 }

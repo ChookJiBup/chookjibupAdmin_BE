@@ -13,6 +13,10 @@ public record FestivalReportStatusResponse(
         String generationStatus,
         Integer progressDayIndex,
         String progressMessage,
+        @Schema(description = "생성 실패 사유 코드")
+        String failureCode,
+        @Schema(description = "생성 실패 사유 메시지")
+        String failureMessage,
         boolean performanceAvailable,
         boolean evaluationAvailable,
         UUID previousFestivalId,
@@ -30,6 +34,8 @@ public record FestivalReportStatusResponse(
                 view.generationStatus(),
                 view.progressDayIndex(),
                 view.progressMessage(),
+                view.failureCode(),
+                view.failureMessage(),
                 view.performanceAvailable(),
                 view.evaluationAvailable(),
                 view.previousFestivalId(),
