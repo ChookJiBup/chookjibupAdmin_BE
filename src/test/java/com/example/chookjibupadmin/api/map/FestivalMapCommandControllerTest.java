@@ -25,7 +25,9 @@ import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.map.command.application.FestivalMapCoordinateRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapManagementApplicationService;
 import com.example.chookjibupadmin.map.command.application.RoadmapDraftApplicationService;
+import com.example.chookjibupadmin.map.command.application.RoadmapPublishApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.CoordinateMapView;
+import com.example.chookjibupadmin.map.command.application.dto.PublishedRoadmap;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SavedRoadmapDraft;
@@ -70,6 +72,9 @@ class FestivalMapCommandControllerTest {
 
     @Mock
     private RoadmapDraftApplicationService roadmapDraftService;
+
+    @Mock
+    private RoadmapPublishApplicationService roadmapPublishService;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -204,6 +209,24 @@ class FestivalMapCommandControllerTest {
         );
         assertThat(captor.getValue().originalFileName()).isEqualTo("new-map.png");
         assertThat(captor.getValue().fileSize()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("공개 요청을 축제·배치도 식별자와 함께 전달한다")
+    void success_Publish() {
+        UUID festivalId = UUID.randomUUID();
+        UUID mapId = UUID.randomUUID();
+        AdminPrincipal principal = new AdminPrincipal(1L, "owner@mapo.go.kr");
+        given(roadmapPublishService.publish(festivalId, mapId, principal))
+                .willReturn(new PublishedRoadmap("PUBLISHED", 7L, 12));
+
+        ApiResponse<com.example.chookjibupadmin.api.map.dto.PublishRoadmapResponse> response =
+                controller.publish(festivalId, mapId, principal);
+
+        assertThat(response.data().roadmapStatus()).isEqualTo("PUBLISHED");
+        assertThat(response.data().publishedVersion()).isEqualTo(7L);
+        assertThat(response.data().publishedBoothCount()).isEqualTo(12);
+        then(roadmapPublishService).should().publish(festivalId, mapId, principal);
     }
 
     @Test

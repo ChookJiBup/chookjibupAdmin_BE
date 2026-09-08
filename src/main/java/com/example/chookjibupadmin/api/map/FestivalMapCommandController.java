@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.api.festival.dto.CreateFestivalMapResponse;
 import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapRequest;
 import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapResponse;
 import com.example.chookjibupadmin.api.map.dto.MapImageAnchorResponse;
+import com.example.chookjibupadmin.api.map.dto.PublishRoadmapResponse;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftRequest;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftResponse;
 import com.example.chookjibupadmin.api.map.dto.UpdateMapImageAnchorRequest;
@@ -15,6 +16,7 @@ import com.example.chookjibupadmin.map.command.application.FestivalMapCoordinate
 import com.example.chookjibupadmin.map.command.application.FestivalMapManagementApplicationService;
 import com.example.chookjibupadmin.map.command.application.FestivalMapOverlayUploadApplicationService;
 import com.example.chookjibupadmin.map.command.application.RoadmapDraftApplicationService;
+import com.example.chookjibupadmin.map.command.application.RoadmapPublishApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,6 +50,7 @@ public class FestivalMapCommandController {
     private final FestivalMapCoordinateRegistrationApplicationService coordinateRegistrationService;
     private final FestivalMapOverlayUploadApplicationService overlayUploadService;
     private final RoadmapDraftApplicationService roadmapDraftService;
+    private final RoadmapPublishApplicationService roadmapPublishService;
     private final ObjectMapper objectMapper;
 
     @Operation(summary = "좌표 전용 축제 지도 준비")
@@ -83,6 +86,24 @@ public class FestivalMapCommandController {
                         festivalId,
                         mapId,
                         request.toCommand(objectMapper),
+                        principal
+                ))
+        );
+    }
+
+    @Operation(summary = "축제 부스맵 방문객 공개")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/{mapId}/publish")
+    public ApiResponse<PublishRoadmapResponse> publish(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_PUBLISH_SUCCESS,
+                PublishRoadmapResponse.from(roadmapPublishService.publish(
+                        festivalId,
+                        mapId,
                         principal
                 ))
         );

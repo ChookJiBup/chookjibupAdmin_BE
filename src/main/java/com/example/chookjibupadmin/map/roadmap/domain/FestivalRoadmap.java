@@ -131,6 +131,33 @@ public class FestivalRoadmap extends BaseTimeEntity {
         return ++editRevision;
     }
 
+    /**
+     * 방문객 앱에 배치도를 공개한다.
+     *
+     * <p>사용자 백엔드는 이 상태가 PUBLISHED일 때만 부스·구역·부지 경계·팜플렛을 내려준다.
+     * 분석 중에는 AI가 노드를 통째로 갈아끼우므로, 그 결과를 검수하기 전에 공개하면
+     * 방문객이 검수도 안 된 배치를 보게 된다. 그래서 분석 중에는 거부한다.</p>
+     *
+     * <p>공개한 뒤에도 {@link #applyAdminEdit}이 상태를 EDITING으로 되돌린다. 저장할 때마다
+     * 자동으로 다시 감춰지는 셈이라, 편집 내용을 방문객에게 보이려면 저장 후 다시 공개해야 한다.</p>
+     */
+    public void publish() {
+        ensurePublishable();
+        status = RoadmapStatus.PUBLISHED;
+        publishedVersion = editRevision;
+    }
+
+    /** 공개 전 조건 검사만 한다. 호출자가 더 무거운 검사를 하기 전에 먼저 걸러낼 때 쓴다. */
+    public void ensurePublishable() {
+        if (status == RoadmapStatus.ANALYZING) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
+        }
+    }
+
+    public boolean isPublished() {
+        return status == RoadmapStatus.PUBLISHED;
+    }
+
     public void replaceZones(List<RoadmapZone> zones) {
         this.zones = new ArrayList<>(zones == null ? List.of() : zones);
     }
