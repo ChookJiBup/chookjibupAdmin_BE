@@ -3,8 +3,10 @@ package com.example.chookjibupadmin.api.map;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalMapResponse;
 import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapRequest;
 import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapResponse;
+import com.example.chookjibupadmin.api.map.dto.MapImageAnchorResponse;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftRequest;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftResponse;
+import com.example.chookjibupadmin.api.map.dto.UpdateMapImageAnchorRequest;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
@@ -32,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * AI 분석용 축제 도면의 교체와 삭제 API를 제공한다.
+ * AI 분석용 축제 도면의 교체·삭제와 배치도 이미지 앵커 수정 API를 제공한다.
  */
 @Tag(name = "Festival Map", description = "축제 배치도 관리 API")
 @RestController
@@ -78,6 +80,29 @@ public class FestivalMapCommandController {
                         festivalId,
                         mapId,
                         request.toCommand(objectMapper),
+                        principal
+                ))
+        );
+    }
+
+    @Operation(summary = "축제 배치도 이미지 앵커 수정")
+    @SecurityRequirement(name = "bearerAuth")
+    @PutMapping("/{mapId}/image-anchor")
+    public ApiResponse<MapImageAnchorResponse> updateImageAnchor(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @Valid @RequestBody UpdateMapImageAnchorRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_ANCHOR_UPDATE_SUCCESS,
+                MapImageAnchorResponse.of(mapId, managementService.updateImageAnchor(
+                        festivalId,
+                        mapId,
+                        request.centerLat(),
+                        request.centerLng(),
+                        request.groundWidthMeters(),
+                        request.rotationDegrees(),
                         principal
                 ))
         );

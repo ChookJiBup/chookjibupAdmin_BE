@@ -16,8 +16,10 @@ import static org.mockito.BDDMockito.then;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalMapResponse;
 import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapRequest;
 import com.example.chookjibupadmin.api.map.dto.CreateCoordinateMapResponse;
+import com.example.chookjibupadmin.api.map.dto.MapImageAnchorResponse;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftRequest;
 import com.example.chookjibupadmin.api.map.dto.SaveRoadmapDraftResponse;
+import com.example.chookjibupadmin.api.map.dto.UpdateMapImageAnchorRequest;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.map.command.application.FestivalMapCoordinateRegistrationApplicationService;
@@ -29,6 +31,7 @@ import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftC
 import com.example.chookjibupadmin.map.command.application.dto.SavedRoadmapDraft;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
@@ -213,6 +216,48 @@ class FestivalMapCommandControllerTest {
         controller.delete(festivalId, mapId, principal);
 
         then(managementService).should().delete(festivalId, mapId, principal);
+    }
+
+    @Test
+    @DisplayName("배치도 앵커 수정 요청을 축제·배치도 식별자와 함께 전달한다")
+    void success_UpdateImageAnchor() {
+        UUID festivalId = UUID.randomUUID();
+        UUID mapId = UUID.randomUUID();
+        AdminPrincipal principal = new AdminPrincipal(1L, "owner@mapo.go.kr");
+        given(managementService.updateImageAnchor(
+                festivalId,
+                mapId,
+                new BigDecimal("37.5665"),
+                new BigDecimal("126.9780"),
+                new BigDecimal("420.5"),
+                new BigDecimal("12.25"),
+                principal
+        )).willReturn(MapImageAnchor.of(
+                new BigDecimal("37.5665"),
+                new BigDecimal("126.9780"),
+                new BigDecimal("420.5"),
+                new BigDecimal("12.25")
+        ));
+
+        ApiResponse<MapImageAnchorResponse> response = controller.updateImageAnchor(
+                festivalId,
+                mapId,
+                new UpdateMapImageAnchorRequest(
+                        new BigDecimal("37.5665"),
+                        new BigDecimal("126.9780"),
+                        new BigDecimal("420.5"),
+                        new BigDecimal("12.25")
+                ),
+                principal
+        );
+
+        assertThat(response.data().mapId()).isEqualTo(mapId);
+        assertThat(response.data().centerLat()).isEqualByComparingTo("37.5665");
+        assertThat(response.data().centerLng()).isEqualByComparingTo("126.9780");
+        assertThat(response.data().groundWidthMeters())
+                .isEqualByComparingTo("420.50");
+        assertThat(response.data().rotationDegrees())
+                .isEqualByComparingTo("12.250");
     }
 
     private FestivalMap festivalMap() {

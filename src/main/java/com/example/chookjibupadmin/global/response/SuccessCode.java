@@ -41,6 +41,7 @@ public enum SuccessCode {
     FESTIVAL_MAP_EDITOR_READ_SUCCESS(22012, "축제 지도 편집 데이터 조회가 완료되었습니다."),
     FESTIVAL_LOCATION_READ_SUCCESS(22013, "축제 장소 조회가 완료되었습니다."),
     FESTIVAL_MAP_EDITOR_SAVE_SUCCESS(22014, "축제 지도 편집 내용이 저장되었습니다."),
+    FESTIVAL_MAP_ANCHOR_UPDATE_SUCCESS(22023, "축제 배치도 이미지 기준값이 저장되었습니다."),
     FESTIVAL_DAILY_VISITOR_COUNT_UPDATE_SUCCESS(22019, "축제 일자별 방문 인원 수가 저장되었습니다."),
     FESTIVAL_TOTAL_VISITOR_COUNT_UPDATE_SUCCESS(22020, "축제 총 방문 인원 수가 저장되었습니다."),
     FESTIVAL_VISITOR_COUNT_READ_SUCCESS(22021, "축제 방문 인원 수 조회가 완료되었습니다."),
