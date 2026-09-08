@@ -67,6 +67,44 @@ class FieldStaffSearchMatcherTest {
             // then
             assertThat(result).isFalse();
         }
+
+        @Test
+        @DisplayName("근무구역으로도 매칭한다")
+        void success_Matches_Department() {
+            // given
+            FieldStaffView view = fieldStaffView("staff01", "이해준", "정문 게이트");
+
+            // when & then
+            assertThat(matcher.matches(view, "정문")).isTrue();
+            assertThat(matcher.matches(view, "ㅈㅁ")).isTrue();
+        }
+
+        @Test
+        @DisplayName("근무구역이 없어도 매칭 판단은 실패하지 않는다")
+        void success_Matches_NullDepartmentBoundary() {
+            // given
+            FieldStaffView view = fieldStaffView("staff01", "이해준", null);
+
+            // when & then
+            assertThat(matcher.matches(view, "정문")).isFalse();
+        }
+    }
+
+    private FieldStaffView fieldStaffView(
+            String loginId,
+            String name,
+            String department
+    ) {
+        return new FieldStaffView(
+                UUID.randomUUID(),
+                loginId,
+                name,
+                department,
+                "010-1234-5678",
+                LocalDateTime.of(2026, 10, 9, 0, 0),
+                LocalDateTime.of(2026, 10, 18, 23, 59),
+                FieldStaffStatus.ACTIVE
+        );
     }
 
     private FieldStaffView fieldStaffView(String loginId, String name) {

@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.operator.command.domain;
 import com.example.chookjibupadmin.common.domain.BaseTimeEntity;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffDepartment;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
@@ -87,6 +88,14 @@ public class FieldStaffAccount extends BaseTimeEntity {
     )
     private FieldStaffPhoneNumber phoneNumber;
 
+    /** 담당 근무구역. 기존 계정은 값이 없을 수 있다. */
+    @Embedded
+    @AttributeOverride(
+            name = "value",
+            column = @Column(name = "department", length = 100)
+    )
+    private FieldStaffDepartment department;
+
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -115,6 +124,7 @@ public class FieldStaffAccount extends BaseTimeEntity {
             Long festivalId,
             FieldStaffLoginId loginId,
             FieldStaffName name,
+            FieldStaffDepartment department,
             FieldStaffPhoneNumber phoneNumber,
             FieldStaffPasswordHash passwordHash,
             LocalDateTime validFrom,
@@ -127,6 +137,7 @@ public class FieldStaffAccount extends BaseTimeEntity {
         this.festivalId = festivalId;
         this.loginId = loginId;
         this.name = name;
+        this.department = department;
         this.phoneNumber = phoneNumber;
         this.passwordHash = passwordHash;
         this.authVersion = 0L;
@@ -136,7 +147,7 @@ public class FieldStaffAccount extends BaseTimeEntity {
     }
 
     /**
-     * 축제 기간에 종속되는 현장 스태프 계정을 생성한다.
+     * 근무구역 없이 축제 기간에 종속되는 현장 스태프 계정을 생성한다.
      */
     public static FieldStaffAccount create(
             Long festivalId,
@@ -147,10 +158,36 @@ public class FieldStaffAccount extends BaseTimeEntity {
             LocalDateTime validFrom,
             LocalDateTime validUntil
     ) {
+        return create(
+                festivalId,
+                loginId,
+                name,
+                FieldStaffDepartment.of(null),
+                phoneNumber,
+                passwordHash,
+                validFrom,
+                validUntil
+        );
+    }
+
+    /**
+     * 근무구역을 포함해 축제 기간에 종속되는 현장 스태프 계정을 생성한다.
+     */
+    public static FieldStaffAccount create(
+            Long festivalId,
+            FieldStaffLoginId loginId,
+            FieldStaffName name,
+            FieldStaffDepartment department,
+            FieldStaffPhoneNumber phoneNumber,
+            FieldStaffPasswordHash passwordHash,
+            LocalDateTime validFrom,
+            LocalDateTime validUntil
+    ) {
         return new FieldStaffAccount(
                 festivalId,
                 loginId,
                 name,
+                department,
                 phoneNumber,
                 passwordHash,
                 validFrom,
@@ -202,8 +239,20 @@ public class FieldStaffAccount extends BaseTimeEntity {
             FieldStaffName name,
             FieldStaffPhoneNumber phoneNumber
     ) {
+        update(name, this.department, phoneNumber);
+    }
+
+    /**
+     * 이름, 근무구역, 전화번호를 함께 수정한다.
+     */
+    public void update(
+            FieldStaffName name,
+            FieldStaffDepartment department,
+            FieldStaffPhoneNumber phoneNumber
+    ) {
         ensureNotDeleted();
         this.name = name;
+        this.department = department;
         this.phoneNumber = phoneNumber;
     }
 
@@ -243,6 +292,10 @@ public class FieldStaffAccount extends BaseTimeEntity {
 
     public String getNameValue() {
         return name.getValue();
+    }
+
+    public String getDepartmentValue() {
+        return department == null ? null : department.getValue();
     }
 
     public String getPhoneNumberValue() {

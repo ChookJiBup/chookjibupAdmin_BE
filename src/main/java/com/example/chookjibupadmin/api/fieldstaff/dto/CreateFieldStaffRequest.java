@@ -22,6 +22,10 @@ public record CreateFieldStaffRequest(
         @Size(max = 100)
         String name,
 
+        @Schema(description = "현장 스태프 근무구역", example = "정문 게이트")
+        @Size(max = 100)
+        String department,
+
         @Schema(description = "현장 스태프 전화번호", example = "010-1234-5678")
         @NotBlank
         @Pattern(regexp = "^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$")
@@ -35,6 +39,7 @@ public record CreateFieldStaffRequest(
         return new CreateFieldStaffCommand(
                 loginId,
                 name,
+                department,
                 phoneNumber
         );
     }

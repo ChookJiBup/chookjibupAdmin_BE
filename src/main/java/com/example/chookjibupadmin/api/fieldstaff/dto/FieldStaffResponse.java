@@ -20,6 +20,9 @@ public record FieldStaffResponse(
         @Schema(description = "현장 스태프 이름", example = "김스태프")
         String name,
 
+        @Schema(description = "현장 스태프 근무구역. 등록하지 않았으면 null", example = "정문 게이트")
+        String department,
+
         @Schema(description = "현장 스태프 전화번호", example = "010-1234-5678")
         String phoneNumber,
 
@@ -41,6 +44,7 @@ public record FieldStaffResponse(
                 view.staffId(),
                 view.loginId(),
                 view.name(),
+                view.department(),
                 view.phoneNumber(),
                 view.validFrom(),
                 view.validUntil(),

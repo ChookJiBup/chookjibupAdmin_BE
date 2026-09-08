@@ -20,6 +20,9 @@ public record CreateFieldStaffResponse(
         @Schema(description = "현장 스태프 사용자명", example = "김스태프")
         String name,
 
+        @Schema(description = "현장 스태프 근무구역. 등록하지 않았으면 null", example = "정문 게이트")
+        String department,
+
         @Schema(description = "현장 스태프 전화번호", example = "010-1234-5678")
         String phoneNumber,
 
@@ -42,6 +45,7 @@ public record CreateFieldStaffResponse(
                 fieldStaffAccount.getPublicId(),
                 fieldStaffAccount.getLoginIdValue(),
                 fieldStaffAccount.getNameValue(),
+                fieldStaffAccount.getDepartmentValue(),
                 fieldStaffAccount.getPhoneNumberValue(),
                 fieldStaffAccount.getValidFrom(),
                 fieldStaffAccount.getValidUntil(),

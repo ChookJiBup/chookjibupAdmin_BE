@@ -37,8 +37,10 @@ class FieldStaffSearchMatcher {
 
         return contains(view.loginId(), normalizedKeyword)
                 || contains(view.name(), normalizedKeyword)
+                || contains(view.department(), normalizedKeyword)
                 || contains(view.phoneNumber(), normalizedKeyword)
-                || hangulContains(view.name(), normalizedKeyword);
+                || hangulContains(view.name(), normalizedKeyword)
+                || hangulContains(view.department(), normalizedKeyword);
     }
 
     private boolean contains(String value, String normalizedKeyword) {

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.chookjibupadmin.operator.command.application.dto.CreateFieldStaffResult;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
+import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffDepartment;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffName;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffPasswordHash;
@@ -24,6 +25,7 @@ class CreateFieldStaffResponseTest {
                 1L,
                 FieldStaffLoginId.of("staff01"),
                 FieldStaffName.of("김스태프"),
+                FieldStaffDepartment.of("정문 게이트"),
                 FieldStaffPhoneNumber.of("010-1234-5678"),
                 FieldStaffPasswordHash.of("encoded-password"),
                 validFrom,
@@ -39,6 +41,7 @@ class CreateFieldStaffResponseTest {
         assertThat(response.staffId()).isEqualTo(account.getPublicId());
         assertThat(response.loginId()).isEqualTo("staff01");
         assertThat(response.name()).isEqualTo("김스태프");
+        assertThat(response.department()).isEqualTo("정문 게이트");
         assertThat(response.phoneNumber()).isEqualTo("010-1234-5678");
         assertThat(response.validFrom()).isEqualTo(validFrom);
         assertThat(response.validUntil()).isEqualTo(validUntil);
