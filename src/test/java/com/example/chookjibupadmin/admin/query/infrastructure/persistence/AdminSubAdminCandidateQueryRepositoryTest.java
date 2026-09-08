@@ -35,24 +35,28 @@ class AdminSubAdminCandidateQueryRepositoryTest {
     class FindCandidates {
 
         @Test
-        @DisplayName("아직 축제에 배정되지 않은 활성 관리자만 조회한다")
-        void success_FindCandidates_ActiveUnassignedAdmins() {
+        @DisplayName("아직 축제에 배정되지 않은 활성 계약업체만 조회한다")
+        void success_FindCandidates_ActiveUnassignedContractors() {
             // given
             Long festivalId = 1L;
-            persist(admin("candidate1@mapo.go.kr", "김후보", "마포구청"));
-            persist(admin("candidate2@mapo.go.kr", "이후보", "서울시"));
-            AdminAccount owner = persist(admin("owner@mapo.go.kr", "홍길동", "마포구청"));
+            persist(contractor("candidate1@partner.co.kr", "김후보", "가나이벤트"));
+            persist(contractor("candidate2@partner.co.kr", "이후보", "다라이벤트"));
+            AdminAccount owner = persist(government("owner@mapo.go.kr", "홍길동"));
             entityManager.persist(AdminFestivalRole.createFestivalOwner(
                     owner.getId(),
                     festivalId
             ));
-            AdminAccount subAdmin = persist(admin("sub@mapo.go.kr", "김관리", "마포구청"));
+            AdminAccount subAdmin = persist(contractor(
+                    "sub@partner.co.kr",
+                    "김관리",
+                    "마바이벤트"
+            ));
             entityManager.persist(AdminFestivalRole.createSubAdmin(
                     subAdmin.getId(),
                     festivalId,
                     owner.getId()
             ));
-            AdminAccount deleted = admin("deleted@mapo.go.kr", "박후보", "마포구청");
+            AdminAccount deleted = contractor("deleted@partner.co.kr", "박후보", "사아이벤트");
             deleted.withdraw();
             persist(deleted);
 
@@ -63,17 +67,35 @@ class AdminSubAdminCandidateQueryRepositoryTest {
             assertThat(result)
                     .extracting(AdminSubAdminCandidateView::email)
                     .containsExactly(
-                            "candidate1@mapo.go.kr",
-                            "candidate2@mapo.go.kr"
+                            "candidate1@partner.co.kr",
+                            "candidate2@partner.co.kr"
                     );
         }
 
         @Test
-        @DisplayName("후보자의 이름, 이메일, 소속, 과·팀, 직급을 반환한다")
-        void success_FindCandidates_EmployeeInformation() {
+        @DisplayName("공무원 계정은 배정할 수 없으므로 후보에서 제외한다")
+        void success_FindCandidates_ExcludeGovernmentAccounts() {
             // given
             Long festivalId = 1L;
-            persist(admin("candidate2@seoul.go.kr", "이검색", "서울시"));
+            persist(government("gov1@mapo.go.kr", "김공무"));
+            persist(government("gov2@seoul.go.kr", "이공무"));
+            persist(contractor("partner@partner.co.kr", "박업체", "가나이벤트"));
+
+            // when
+            var result = queryRepository.findCandidates(festivalId);
+
+            // then
+            assertThat(result)
+                    .extracting(AdminSubAdminCandidateView::email)
+                    .containsExactly("partner@partner.co.kr");
+        }
+
+        @Test
+        @DisplayName("후보자의 이름, 이메일, 업체명을 반환한다")
+        void success_FindCandidates_ContractorInformation() {
+            // given
+            Long festivalId = 1L;
+            persist(contractor("candidate2@partner.co.kr", "이검색", "다라이벤트"));
 
             // when
             var result = queryRepository.findCandidates(festivalId);
@@ -81,8 +103,9 @@ class AdminSubAdminCandidateQueryRepositoryTest {
             // then
             assertThat(result).singleElement().satisfies(candidate -> {
                 assertThat(candidate.name()).isEqualTo("이검색");
-                assertThat(candidate.email()).isEqualTo("candidate2@seoul.go.kr");
-                assertThat(candidate.rank()).isEqualTo("주무관");
+                assertThat(candidate.email()).isEqualTo("candidate2@partner.co.kr");
+                assertThat(candidate.organization()).isEqualTo("다라이벤트");
+                assertThat(candidate.rank()).isNull();
             });
         }
 
@@ -100,12 +123,24 @@ class AdminSubAdminCandidateQueryRepositoryTest {
         }
     }
 
-    private AdminAccount admin(
+    private AdminAccount contractor(
             String email,
             String name,
-            String department
+            String companyName
     ) {
-        return AdminAccount.createAdmin(
+        return AdminAccount.createContractor(
+                AdminEmail.of(email),
+                AdminName.of(name),
+                AdminOrganization.of(companyName),
+                AdminPasswordHash.of("encoded-password")
+        );
+    }
+
+    private AdminAccount government(
+            String email,
+            String name
+    ) {
+        return AdminAccount.createGovernment(
                 AdminEmail.of(email),
                 AdminName.of(name),
                 AdminOrganization.of("관광정책과"),
