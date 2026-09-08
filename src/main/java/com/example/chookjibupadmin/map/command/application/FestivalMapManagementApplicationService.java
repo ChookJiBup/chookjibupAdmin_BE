@@ -18,12 +18,14 @@ import com.example.chookjibupadmin.map.command.application.port.MapImagePreparat
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
 import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
+import java.math.BigDecimal;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -122,6 +124,33 @@ public class FestivalMapManagementApplicationService {
                 throw exception;
             }
         }
+    }
+
+    /**
+     * 배치도 이미지를 지도 위 어디에 얹을지 정하는 앵커를 보정한다.
+     *
+     * <p>값 범위 검증은 {@link MapImageAnchor#of}가 하므로 여기서 다시 하지 않는다.</p>
+     */
+    public MapImageAnchor updateImageAnchor(
+            UUID festivalPublicId,
+            UUID mapId,
+            BigDecimal centerLatitude,
+            BigDecimal centerLongitude,
+            BigDecimal groundWidthMeters,
+            BigDecimal rotationDegrees,
+            AdminPrincipal principal
+    ) {
+        AuthorizedFestival authorized = authorize(festivalPublicId, principal);
+        return lifecycleService.updateImageAnchor(
+                mapId,
+                authorized.festivalId(),
+                MapImageAnchor.of(
+                        centerLatitude,
+                        centerLongitude,
+                        groundWidthMeters,
+                        rotationDegrees
+                )
+        );
     }
 
     public void delete(

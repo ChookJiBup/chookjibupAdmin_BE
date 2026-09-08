@@ -19,6 +19,7 @@ import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.query.application.dto.MapAnalysisStatusView;
 import com.example.chookjibupadmin.map.query.application.dto.MapCenterView;
 import com.example.chookjibupadmin.map.query.application.dto.MapEditorView;
+import com.example.chookjibupadmin.map.query.application.dto.MapImageAnchorView;
 import com.example.chookjibupadmin.map.query.application.dto.RoadmapNodeView;
 import com.example.chookjibupadmin.map.query.application.dto.RoadmapZoneView;
 import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
@@ -100,7 +101,8 @@ public class FestivalMapAnalysisQueryApplicationService {
                     null,
                     nodes,
                     zoneViews(roadmap),
-                    center
+                    center,
+                    null
             );
         }
 
@@ -120,7 +122,8 @@ public class FestivalMapAnalysisQueryApplicationService {
                 status(job),
                 nodes,
                 zoneViews(roadmap),
-                center
+                center,
+                MapImageAnchorView.from(map.getImageAnchor())
         );
     }
 

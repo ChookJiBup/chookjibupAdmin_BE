@@ -13,6 +13,7 @@ import com.example.chookjibupadmin.map.query.application.FestivalMapAnalysisQuer
 import com.example.chookjibupadmin.map.query.application.dto.MapAnalysisStatusView;
 import com.example.chookjibupadmin.map.query.application.dto.MapCenterView;
 import com.example.chookjibupadmin.map.query.application.dto.MapEditorView;
+import com.example.chookjibupadmin.map.query.application.dto.MapImageAnchorView;
 import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
@@ -82,5 +83,30 @@ class FestivalMapQueryControllerTest {
         var response=controller.editor(festivalId,mapId,principal);
         assertThat(response.data().imageWidth()).isEqualTo(2000);
         assertThat(response.data().analysis().status()).isEqualTo("COMPLETED");
+        assertThat(response.data().imageAnchor()).isNull();
+    }
+
+    @Test
+    @DisplayName("배치도 이미지를 지도 위에 얹을 앵커를 편집 화면 응답에 담는다")
+    void success_ReadEditor_WithImageAnchor() {
+        UUID festivalId=UUID.randomUUID(); UUID mapId=UUID.randomUUID();
+        AdminPrincipal principal=new AdminPrincipal(1L,"owner@mapo.go.kr");
+        MapAnalysisStatusView status=new MapAnalysisStatusView(UUID.randomUUID(),"COMPLETED",1,0,0,0,null,null,null,null);
+        given(analysisQueryService.editor(festivalId,mapId,principal)).willReturn(new MapEditorView(mapId,
+                URI.create("https://example.com/display.jpg"),Instant.now().plusSeconds(600),
+                2000,1000,1,"REVIEW_REQUIRED",status,List.of(),List.of(),
+                new MapCenterView(new java.math.BigDecimal("37.5665"), new java.math.BigDecimal("126.9780")),
+                new MapImageAnchorView(
+                        new java.math.BigDecimal("37.5665000"),
+                        new java.math.BigDecimal("126.9780000"),
+                        new java.math.BigDecimal("420.50"),
+                        new java.math.BigDecimal("12.250"))));
+
+        var response=controller.editor(festivalId,mapId,principal);
+
+        assertThat(response.data().imageAnchor().centerLat()).isEqualByComparingTo("37.5665");
+        assertThat(response.data().imageAnchor().centerLng()).isEqualByComparingTo("126.9780");
+        assertThat(response.data().imageAnchor().groundWidthMeters()).isEqualByComparingTo("420.50");
+        assertThat(response.data().imageAnchor().rotationDegrees()).isEqualByComparingTo("12.250");
     }
 }

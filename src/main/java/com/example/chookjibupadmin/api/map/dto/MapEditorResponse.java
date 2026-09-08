@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.api.map.dto;
 
 import com.example.chookjibupadmin.map.query.application.dto.MapEditorView;
+import com.example.chookjibupadmin.map.query.application.dto.MapImageAnchorView;
 import com.example.chookjibupadmin.map.query.application.dto.RoadmapNodeView;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
@@ -22,7 +23,8 @@ public record MapEditorResponse(
         MapAnalysisStatusResponse analysis,
         List<NodeResponse> nodes,
         List<ZoneResponse> zones,
-        Center center
+        Center center,
+        ImageAnchor imageAnchor
 ) {
 
     public static MapEditorResponse from(MapEditorView view) {
@@ -44,7 +46,8 @@ public record MapEditorResponse(
                         zone.zoneId(), zone.name(), zone.sortOrder(), zone.boothNodeIds())).toList(),
                 view.center() == null
                         ? null
-                        : new Center(view.center().lat(), view.center().lng())
+                        : new Center(view.center().lat(), view.center().lng()),
+                ImageAnchor.from(view.imageAnchor())
         );
     }
 
@@ -52,6 +55,29 @@ public record MapEditorResponse(
             BigDecimal lat,
             BigDecimal lng
     ) {
+    }
+
+    /**
+     * 배치도 이미지를 지도 위에 얹을 기준값. 좌표 전용 지도이거나 앵커가 아직 없으면 null이다.
+     */
+    public record ImageAnchor(
+            BigDecimal centerLat,
+            BigDecimal centerLng,
+            BigDecimal groundWidthMeters,
+            BigDecimal rotationDegrees
+    ) {
+
+        static ImageAnchor from(MapImageAnchorView view) {
+            if (view == null) {
+                return null;
+            }
+            return new ImageAnchor(
+                    view.centerLat(),
+                    view.centerLng(),
+                    view.groundWidthMeters(),
+                    view.rotationDegrees()
+            );
+        }
     }
 
     public record ZoneResponse(

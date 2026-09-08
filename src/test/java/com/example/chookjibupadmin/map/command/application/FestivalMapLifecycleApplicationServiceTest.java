@@ -14,6 +14,7 @@ import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueApplicationService;
 import com.example.chookjibupadmin.map.command.domain.FestivalMapStorageStatus;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
+import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
@@ -150,6 +151,79 @@ class FestivalMapLifecycleApplicationServiceTest {
                 );
         assertThat(current.getStorageStatus())
                 .isEqualTo(FestivalMapStorageStatus.UPLOADED);
+    }
+
+    @Test
+    @DisplayName("이미지 배치도의 앵커를 관리자가 보정한 값으로 저장한다")
+    void success_UpdateImageAnchor() {
+        UUID mapId = UUID.randomUUID();
+        FestivalMap map = festivalMap(mapId, "original", "display");
+        given(festivalMapService.getByPublicIdForUpdate(mapId)).willReturn(map);
+
+        MapImageAnchor saved = service.updateImageAnchor(
+                mapId,
+                20L,
+                MapImageAnchor.of(
+                        new BigDecimal("37.5665"),
+                        new BigDecimal("126.9780"),
+                        new BigDecimal("420.5"),
+                        new BigDecimal("12.25")
+                )
+        );
+
+        assertThat(map.hasImageAnchor()).isTrue();
+        assertThat(map.geometrySchemaVersion()).isEqualTo("2.0");
+        assertThat(saved.getCenterLatitude()).isEqualByComparingTo("37.5665");
+        assertThat(saved.getCenterLongitude()).isEqualByComparingTo("126.9780");
+        assertThat(saved.getGroundWidthMeters()).isEqualByComparingTo("420.50");
+        assertThat(saved.getRotationDegrees()).isEqualByComparingTo("12.250");
+    }
+
+    @Test
+    @DisplayName("좌표 전용 지도는 얹을 이미지가 없어 앵커 수정을 막는다")
+    void fail_UpdateImageAnchor_CoordinateMap() {
+        UUID mapId = UUID.randomUUID();
+        FestivalMap map = FestivalMap.coordinateOnly(
+                20L, 30L, FestivalMapName.of("본행사 배치"), 1L
+        );
+        ReflectionTestUtils.setField(map, "publicId", mapId);
+        given(festivalMapService.getByPublicIdForUpdate(mapId)).willReturn(map);
+        MapImageAnchor anchor = MapImageAnchor.of(
+                new BigDecimal("37.5665"),
+                new BigDecimal("126.9780"),
+                new BigDecimal("300"),
+                BigDecimal.ZERO
+        );
+
+        assertThatThrownBy(() -> service.updateImageAnchor(mapId, 20L, anchor))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue(
+                        "errorCode",
+                        ErrorCode.FESTIVAL_MAP_INVALID_STATUS
+                );
+        assertThat(map.hasImageAnchor()).isFalse();
+    }
+
+    @Test
+    @DisplayName("다른 축제의 지도에는 앵커를 저장하지 않는다")
+    void fail_UpdateImageAnchor_OtherFestivalMap() {
+        UUID mapId = UUID.randomUUID();
+        FestivalMap map = festivalMap(mapId, "original", "display");
+        given(festivalMapService.getByPublicIdForUpdate(mapId)).willReturn(map);
+        MapImageAnchor anchor = MapImageAnchor.of(
+                new BigDecimal("37.5665"),
+                new BigDecimal("126.9780"),
+                new BigDecimal("300"),
+                BigDecimal.ZERO
+        );
+
+        assertThatThrownBy(() -> service.updateImageAnchor(mapId, 99L, anchor))
+                .isInstanceOf(CustomException.class)
+                .hasFieldOrPropertyWithValue(
+                        "errorCode",
+                        ErrorCode.FESTIVAL_MAP_NOT_FOUND
+                );
+        assertThat(map.hasImageAnchor()).isFalse();
     }
 
     private RoadmapNode approvedBoothNode() {
