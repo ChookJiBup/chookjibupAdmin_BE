@@ -40,7 +40,18 @@ public class FestivalMapPresentationService {
     }
 
     @Transactional
-    public FestivalMapPresentation replaceOverlayImage(
+    /**
+     * 교체 전에 쓰던 이미지 키를 함께 돌려준다. 호출 쪽이 트랜잭션이 끝난 뒤 그 객체를
+     * 지울 수 있게 하기 위해서다 — 예전에는 새 이미지를 올리고 나면 옛 객체가 지도
+     * 삭제(purge) 때까지 스토리지에 그대로 남았다.
+     */
+    public record ReplacedOverlay(
+            FestivalMapPresentation presentation,
+            MapImageObjectKey previousImageKey
+    ) {
+    }
+
+    public ReplacedOverlay replaceOverlayImage(
             Long mapId,
             Long festivalId,
             MapImageObjectKey imageKey,
@@ -50,6 +61,7 @@ public class FestivalMapPresentationService {
             MapImageAnchor fallbackAnchor
     ) {
         FestivalMapPresentation presentation = getOrCreateForUpdate(mapId, festivalId);
+        MapImageObjectKey previousImageKey = presentation.getOverlayImageKey();
         boolean keepExistingAnchor = presentation.getOverlayImageAnchor() != null;
         presentation.updateOverlay(
                 imageKey,
@@ -61,7 +73,7 @@ public class FestivalMapPresentationService {
         // 업로드 직후 조회·FE 병합 전에 이미지가 보이도록 켠다.
         // opacity/clip은 기존 값을 유지하고, 초안 저장에서 FE 편집값을 반영한다.
         presentation.setOverlayVisible(true);
-        return save(presentation);
+        return new ReplacedOverlay(save(presentation), previousImageKey);
     }
 
     @Transactional

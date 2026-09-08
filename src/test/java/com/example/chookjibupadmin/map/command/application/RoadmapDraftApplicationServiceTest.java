@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
@@ -29,9 +30,11 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.analysis.application.MapBoundaryValidator;
 import com.example.chookjibupadmin.map.analysis.application.MapGeometryValidator;
 import com.example.chookjibupadmin.map.command.application.dto.RoadmapNodeChangeCommand;
+import com.example.chookjibupadmin.map.command.application.dto.SaveMapPresentationCommand;
 import com.example.chookjibupadmin.map.command.application.dto.SaveRoadmapDraftCommand;
 import com.example.chookjibupadmin.map.command.application.dto.RoadmapZoneCommand;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
+import com.example.chookjibupadmin.map.command.domain.FestivalMapPresentation;
 import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
@@ -122,7 +125,8 @@ class RoadmapDraftApplicationServiceTest {
                 .willReturn(AdminFestivalRole.createFestivalOwner(1L, 20L));
         given(mapService.getByPublicId(mapPublicId)).willReturn(map);
         given(roadmapService.getByFestivalIdForUpdate(20L)).willReturn(roadmap);
-        given(nodeService.findAll(30L, 10L)).willReturn(List.of(existingNode));
+        // 표시 설정만 저장하거나 요청이 거절되는 경우에는 노드를 읽지 않는다.
+        lenient().when(nodeService.findAll(30L, 10L)).thenReturn(List.of(existingNode));
     }
 
     @Test
@@ -181,6 +185,50 @@ class RoadmapDraftApplicationServiceTest {
         then(nodeService).should().saveAll(saved.capture());
         assertThat(saved.getValue()).hasSize(2);
         then(nodeService).should().deleteAll(List.of(deletedNode));
+    }
+
+    @Test
+    @DisplayName("핀이 없어도 부지 경계만 저장한다")
+    void success_Save_PresentationOnly() {
+        FestivalMapPresentation presentation = FestivalMapPresentation.createEmpty(10L, 20L);
+        given(presentationService.getOrCreateForUpdate(10L, 20L)).willReturn(presentation);
+
+        var result = service.save(
+                festivalPublicId,
+                mapPublicId,
+                new SaveRoadmapDraftCommand(1L, List.of(), null,
+                        new SaveMapPresentationCommand(
+                                null,
+                                new SaveMapPresentationCommand.BoundaryGeometryCommand(
+                                        "POLYGON", "2.0", List.of(
+                                        new SaveMapPresentationCommand.LatLngPointCommand(
+                                                new BigDecimal("37.5665"),
+                                                new BigDecimal("126.9780")),
+                                        new SaveMapPresentationCommand.LatLngPointCommand(
+                                                new BigDecimal("37.5666"),
+                                                new BigDecimal("126.9781")),
+                                        new SaveMapPresentationCommand.LatLngPointCommand(
+                                                new BigDecimal("37.5667"),
+                                                new BigDecimal("126.9779"))
+                                )),
+                                null,
+                                null
+                        )),
+                principal
+        );
+
+        assertThat(result.editRevision()).isEqualTo(2L);
+    }
+
+    @Test
+    @DisplayName("노드도 표시 설정도 없으면 저장을 거절한다")
+    void fail_Save_NothingToSave() {
+        assertThatThrownBy(() -> service.save(
+                festivalPublicId,
+                mapPublicId,
+                new SaveRoadmapDraftCommand(1L, List.of()),
+                principal
+        )).isInstanceOf(CustomException.class);
     }
 
     @Test

@@ -265,12 +265,19 @@ public class RoadmapDraftApplicationService {
         return new AuthorizedEdit(festival.getId(), admin.getId());
     }
 
+    /**
+     * 저장 요청의 최소 조건을 본다.
+     *
+     * <p>노드 목록은 비어 있어도 된다. 부지 경계나 팜플렛만 저장하는 경우가 있어서다 —
+     * 예전에는 노드를 하나 이상 요구해, 핀을 아직 찍지 않은 지도에는 경계를 저장할 수
+     * 없었다. 대신 노드도 표시 설정도 없는 요청은 할 일이 없으므로 거절한다.</p>
+     */
     private void validateCommand(SaveRoadmapDraftCommand command) {
         if (command == null
                 || command.baseRevision() < 0
                 || command.nodes() == null
-                || command.nodes().isEmpty()
-                || command.nodes().size() > 1000) {
+                || command.nodes().size() > 1000
+                || (command.nodes().isEmpty() && command.presentation() == null)) {
             throw new CustomException(ErrorCode.ROADMAP_NODE_INVALID);
         }
     }
