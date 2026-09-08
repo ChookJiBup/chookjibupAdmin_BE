@@ -11,6 +11,7 @@ import com.example.chookjibupadmin.map.roadmap.domain.GeometryType;
 import com.example.chookjibupadmin.map.roadmap.domain.NodeType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
@@ -23,7 +24,7 @@ import java.util.UUID;
 
 public record SaveRoadmapDraftRequest(
         @NotNull @PositiveOrZero Long baseRevision,
-        @NotNull @Size(min = 1, max = 1000)
+        @NotNull @Size(max = 1000)
         List<@Valid NodeChangeRequest> nodes,
         @Size(max = 200) List<@Valid ZoneRequest> zones,
         @Valid PresentationRequest presentation
@@ -39,6 +40,15 @@ public record SaveRoadmapDraftRequest(
             List<ZoneRequest> zones
     ) {
         this(baseRevision, nodes, zones, null);
+    }
+
+    /**
+     * 노드 목록은 비어 있어도 되지만(경계·팜플렛만 저장), 노드도 표시 설정도 없으면
+     * 저장할 것이 없다.
+     */
+    @AssertTrue(message = "저장할 노드나 표시 설정이 필요합니다.")
+    public boolean isSomethingToSave() {
+        return nodes == null || !nodes.isEmpty() || presentation != null;
     }
 
     public SaveRoadmapDraftCommand toCommand(ObjectMapper objectMapper) {

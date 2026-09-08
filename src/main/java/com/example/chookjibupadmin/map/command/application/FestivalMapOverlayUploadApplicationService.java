@@ -76,7 +76,7 @@ public class FestivalMapOverlayUploadApplicationService {
                         prepared.displayContentType(),
                         prepared.displayChecksumSha256()
                 ));
-                FestivalMapPresentation saved = presentationService.replaceOverlayImage(
+                var replaced = presentationService.replaceOverlayImage(
                         map.getId(),
                         map.getFestivalId(),
                         MapImageObjectKey.of(objectKey),
@@ -85,6 +85,9 @@ public class FestivalMapOverlayUploadApplicationService {
                         prepared.displayImageHeight(),
                         resolveFallbackAnchor(map)
                 );
+                FestivalMapPresentation saved = replaced.presentation();
+                // 교체가 끝났으니 이전 이미지는 스토리지에서도 지운다. 실패해도 교체는 유효하다.
+                deleteReplacedImage(replaced.previousImageKey(), objectKey);
                 MapImageReadUrl readUrl = mapImageStoragePort.createReadUrl(objectKey);
                 return new UploadedMapOverlay(
                         saved.getOverlayAssetId(),
@@ -107,6 +110,22 @@ public class FestivalMapOverlayUploadApplicationService {
                 }
                 throw exception;
             }
+        }
+    }
+
+    /** 교체로 밀려난 이전 오버레이 이미지를 지운다. 지우지 못해도 교체 자체는 되돌리지 않는다. */
+    private void deleteReplacedImage(MapImageObjectKey previousImageKey, String newObjectKey) {
+        if (previousImageKey == null) {
+            return;
+        }
+        String previousKey = previousImageKey.getValue();
+        if (previousKey == null || previousKey.equals(newObjectKey)) {
+            return;
+        }
+        try {
+            mapImageStoragePort.delete(previousKey);
+        } catch (RuntimeException exception) {
+            log.warn("Failed to delete replaced overlay image key={}", previousKey, exception);
         }
     }
 
