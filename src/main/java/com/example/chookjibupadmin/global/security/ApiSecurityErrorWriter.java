@@ -25,6 +25,17 @@ public class ApiSecurityErrorWriter {
             HttpServletResponse response,
             ErrorCode errorCode
     ) throws IOException {
+        write(response, errorCode, errorCode.getMessage());
+    }
+
+    /**
+     * 상황별 메시지를 담아 보안 오류 응답을 작성한다.
+     */
+    public void write(
+            HttpServletResponse response,
+            ErrorCode errorCode,
+            String message
+    ) throws IOException {
         if (response.isCommitted()) {
             return;
         }
@@ -32,6 +43,9 @@ public class ApiSecurityErrorWriter {
         response.setStatus(errorCode.getHttpStatus().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(response.getWriter(), ApiResponse.error(errorCode));
+        objectMapper.writeValue(
+                response.getWriter(),
+                ApiResponse.error(errorCode, message)
+        );
     }
 }

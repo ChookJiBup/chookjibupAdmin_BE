@@ -12,6 +12,17 @@ public class CustomException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
+    /**
+     * 같은 ErrorCode 안에서 상황별로 더 구체적인 메시지를 응답할 때 사용한다.
+     */
+    public CustomException(
+            ErrorCode errorCode,
+            String message
+    ) {
+        super(message == null || message.isBlank() ? errorCode.getMessage() : message);
+        this.errorCode = errorCode;
+    }
+
     public CustomException(ErrorCode errorCode, Throwable cause) {
         super(errorCode.getMessage(), cause);
         this.errorCode = errorCode;
