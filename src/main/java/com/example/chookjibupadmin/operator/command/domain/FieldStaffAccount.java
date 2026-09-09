@@ -110,6 +110,17 @@ public class FieldStaffAccount extends BaseTimeEntity {
     )
     private long authVersion;
 
+    /**
+     * 관리자가 발급한 임시 비밀번호를 그대로 쓰고 있어
+     * 스태프 본인이 비밀번호를 바꿔야 하는 상태인지 나타낸다.
+     */
+    @Column(
+            name = "password_change_required",
+            nullable = false,
+            columnDefinition = "boolean default true"
+    )
+    private boolean passwordChangeRequired;
+
     @Column(name = "valid_from", nullable = false)
     private LocalDateTime validFrom;
 
@@ -141,6 +152,7 @@ public class FieldStaffAccount extends BaseTimeEntity {
         this.phoneNumber = phoneNumber;
         this.passwordHash = passwordHash;
         this.authVersion = 0L;
+        this.passwordChangeRequired = true;
         this.validFrom = validFrom;
         this.validUntil = validUntil;
         this.status = FieldStaffStatus.ACTIVE;
@@ -256,7 +268,23 @@ public class FieldStaffAccount extends BaseTimeEntity {
         this.phoneNumber = phoneNumber;
     }
 
-    public void changePassword(FieldStaffPasswordHash passwordHash) {
+    /**
+     * 관리자가 임시 비밀번호를 재발급한다. 스태프는 다시 비밀번호를 바꿔야 한다.
+     */
+    public void reissueTemporaryPassword(FieldStaffPasswordHash passwordHash) {
+        replacePassword(passwordHash);
+        this.passwordChangeRequired = true;
+    }
+
+    /**
+     * 스태프 본인이 비밀번호를 바꾼다. 임시 비밀번호 상태가 해제된다.
+     */
+    public void changePasswordBySelf(FieldStaffPasswordHash passwordHash) {
+        replacePassword(passwordHash);
+        this.passwordChangeRequired = false;
+    }
+
+    private void replacePassword(FieldStaffPasswordHash passwordHash) {
         ensureNotDeleted();
         this.passwordHash = passwordHash;
         authVersion++;
@@ -300,6 +328,13 @@ public class FieldStaffAccount extends BaseTimeEntity {
 
     public String getPhoneNumberValue() {
         return phoneNumber.getValue();
+    }
+
+    /**
+     * 스태프 본인이 비밀번호를 바꿔야 하는 상태인지 확인한다.
+     */
+    public boolean isPasswordChangeRequired() {
+        return passwordChangeRequired;
     }
 
     public String getPasswordHashValue() {

@@ -227,7 +227,9 @@ class SecurityAuthorizationIntegrationTest {
                 fieldStaffAccount()
         );
         String token = fieldStaffTokenProvider.createAccessToken(account);
-        account.changePassword(FieldStaffPasswordHash.of("new-password-hash"));
+        account.reissueTemporaryPassword(
+                FieldStaffPasswordHash.of("new-password-hash")
+        );
 
         mockMvc.perform(get("/api/field-staff/security-probe")
                         .header("Authorization", "Bearer " + token))

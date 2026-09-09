@@ -29,7 +29,13 @@ public record FieldStaffLoginResponse(
         String loginId,
 
         @Schema(description = "현장 스태프 사용자명", example = "김스태프")
-        String name
+        String name,
+
+        @Schema(
+                description = "관리자가 발급한 임시 비밀번호를 아직 바꾸지 않아 변경이 필요한지 여부",
+                example = "true"
+        )
+        boolean passwordChangeRequired
 ) {
 
     /**
@@ -44,7 +50,8 @@ public record FieldStaffLoginResponse(
                 fieldStaffAccount.getPublicId(),
                 result.festivalPublicId(),
                 fieldStaffAccount.getLoginIdValue(),
-                fieldStaffAccount.getNameValue()
+                fieldStaffAccount.getNameValue(),
+                fieldStaffAccount.isPasswordChangeRequired()
         );
     }
 }

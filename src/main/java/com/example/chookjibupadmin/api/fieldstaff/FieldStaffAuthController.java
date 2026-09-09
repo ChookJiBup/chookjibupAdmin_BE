@@ -1,14 +1,18 @@
 package com.example.chookjibupadmin.api.fieldstaff;
 
+import com.example.chookjibupadmin.api.fieldstaff.dto.ChangeFieldStaffPasswordRequest;
 import com.example.chookjibupadmin.api.fieldstaff.dto.FieldStaffLoginRequest;
 import com.example.chookjibupadmin.api.fieldstaff.dto.FieldStaffLoginResponse;
+import com.example.chookjibupadmin.api.fieldstaff.dto.FieldStaffPasswordChangeResponse;
 import com.example.chookjibupadmin.api.fieldstaff.dto.FieldStaffSessionResponse;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import com.example.chookjibupadmin.operator.command.application.FieldStaffLoginService;
 import com.example.chookjibupadmin.operator.command.application.FieldStaffAccountService;
+import com.example.chookjibupadmin.operator.command.application.FieldStaffPasswordChangeService;
 import com.example.chookjibupadmin.operator.command.application.dto.FieldStaffLoginResult;
+import com.example.chookjibupadmin.operator.command.application.dto.FieldStaffPasswordChangeResult;
 import com.example.chookjibupadmin.operator.support.FieldStaffAuthCookieService;
 import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,6 +39,7 @@ public class FieldStaffAuthController {
 
     private final FieldStaffLoginService fieldStaffLoginService;
     private final FieldStaffAccountService fieldStaffAccountService;
+    private final FieldStaffPasswordChangeService fieldStaffPasswordChangeService;
     private final FestivalService festivalService;
     private final FieldStaffAuthCookieService authCookieService;
 
@@ -69,6 +74,27 @@ public class FieldStaffAuthController {
                         festivalService.getById(principal.festivalId()).getPublicId()
                 )
         );
+    }
+
+    /**
+     * 현장 스태프가 임시 비밀번호를 본인 비밀번호로 바꾼다.
+     */
+    @Operation(summary = "현장 스태프 비밀번호 변경")
+    @PostMapping("/auth/password")
+    public ResponseEntity<ApiResponse<FieldStaffPasswordChangeResponse>> changePassword(
+            @AuthenticationPrincipal FieldStaffPrincipal principal,
+            @Valid @RequestBody ChangeFieldStaffPasswordRequest request
+    ) {
+        FieldStaffPasswordChangeResult result = fieldStaffPasswordChangeService
+                .changeOwnPassword(principal, request.toCommand());
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, authCookieService.create(
+                        result.accessToken(), result.expiresIn()
+                ).toString())
+                .body(ApiResponse.success(
+                        SuccessCode.FIELD_STAFF_PASSWORD_CHANGE_SUCCESS,
+                        FieldStaffPasswordChangeResponse.from(result)
+                ));
     }
 
     @Operation(summary = "현장 스태프 로그아웃")

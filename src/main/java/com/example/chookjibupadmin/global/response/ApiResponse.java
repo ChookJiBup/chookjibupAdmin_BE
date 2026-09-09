@@ -38,9 +38,19 @@ public record ApiResponse<T>(
      * 에러 코드로 실패 응답을 생성한다.
      */
     public static ApiResponse<Void> error(ErrorCode errorCode) {
+        return error(errorCode, errorCode.getMessage());
+    }
+
+    /**
+     * 에러 코드와 상황별 메시지로 실패 응답을 생성한다.
+     */
+    public static ApiResponse<Void> error(
+            ErrorCode errorCode,
+            String message
+    ) {
         return new ApiResponse<>(
                 errorCode.getCode(),
-                errorCode.getMessage(),
+                message == null || message.isBlank() ? errorCode.getMessage() : message,
                 null
         );
     }

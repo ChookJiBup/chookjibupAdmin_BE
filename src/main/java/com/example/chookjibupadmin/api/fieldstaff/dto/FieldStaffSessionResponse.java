@@ -10,7 +10,13 @@ public record FieldStaffSessionResponse(
         UUID staffId,
         UUID festivalId,
         String loginId,
-        String name
+        String name,
+
+        @Schema(
+                description = "관리자가 발급한 임시 비밀번호를 아직 바꾸지 않아 변경이 필요한지 여부",
+                example = "true"
+        )
+        boolean passwordChangeRequired
 ) {
     public static FieldStaffSessionResponse of(
             FieldStaffAccount account,
@@ -20,7 +26,8 @@ public record FieldStaffSessionResponse(
                 account.getPublicId(),
                 festivalPublicId,
                 account.getLoginIdValue(),
-                account.getNameValue()
+                account.getNameValue(),
+                account.isPasswordChangeRequired()
         );
     }
 }

@@ -62,6 +62,7 @@ public enum SuccessCode {
     FESTIVAL_REPORT_PERFORMANCE_READ_SUCCESS(24003, "축제 성과 보고서 조회가 완료되었습니다."),
     FESTIVAL_REPORT_EVALUATION_READ_SUCCESS(24004, "축제 방문객 평가 보고서 조회가 완료되었습니다."),
     FIELD_STAFF_LOGIN_SUCCESS(25000, "현장 스태프 로그인에 성공했습니다."),
+    FIELD_STAFF_PASSWORD_CHANGE_SUCCESS(25001, "현장 스태프 비밀번호가 변경되었습니다."),
     INTERNAL_FESTIVAL_READ_SUCCESS(26000, "사용자 서버용 축제 목록 조회가 완료되었습니다."),
     INTERNAL_FESTIVAL_LOCATION_READ_SUCCESS(26001, "사용자 서버용 축제 장소 조회가 완료되었습니다.");
 

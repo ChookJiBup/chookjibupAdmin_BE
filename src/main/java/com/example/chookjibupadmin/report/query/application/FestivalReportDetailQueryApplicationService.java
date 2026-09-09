@@ -229,7 +229,7 @@ public class FestivalReportDetailQueryApplicationService {
                         admin.getId(),
                         festival.getId()
                 );
-        if (!role.canViewOperationReport()) {
+        if (!role.canViewFestivalResultReport()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
         return festival;

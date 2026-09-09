@@ -26,31 +26,68 @@ class BoothCongestionEstimatorTest {
     }
 
     @Test
-    @DisplayName("10미터 경계는 여유와 10분으로 계산한다")
-    void success_Estimate_LowBoundary() {
+    @DisplayName("10미터는 여유와 5분으로 계산한다")
+    void success_Estimate_RoundingUnit() {
         assertThat(estimator.estimate(10))
+                .contains(new BoothCongestionEstimate(BoothCongestionLevel.LOW, 5));
+    }
+
+    @Test
+    @DisplayName("12미터와 18미터는 서로 다른 대기시간으로 계산한다")
+    void success_Estimate_DistinguishesNearbyDistances() {
+        assertThat(estimator.estimate(12))
+                .contains(new BoothCongestionEstimate(BoothCongestionLevel.LOW, 5));
+        assertThat(estimator.estimate(18))
                 .contains(new BoothCongestionEstimate(BoothCongestionLevel.LOW, 10));
     }
 
     @Test
-    @DisplayName("11미터는 보통과 20분으로 계산한다")
-    void success_Estimate_MediumBoundary() {
-        assertThat(estimator.estimate(11))
-                .contains(new BoothCongestionEstimate(BoothCongestionLevel.MEDIUM, 20));
+    @DisplayName("줄이 조금이라도 있으면 최소 5분으로 안내한다")
+    void success_Estimate_ShortDistance() {
+        assertThat(estimator.estimate(1))
+                .contains(new BoothCongestionEstimate(BoothCongestionLevel.LOW, 5));
     }
 
     @Test
-    @DisplayName("30미터 경계는 보통과 30분으로 계산한다")
+    @DisplayName("여유 상한인 24미터는 여유와 10분으로 계산한다")
+    void success_Estimate_LowMaxBoundary() {
+        assertThat(estimator.estimate(24))
+                .contains(new BoothCongestionEstimate(BoothCongestionLevel.LOW, 10));
+    }
+
+    @Test
+    @DisplayName("25미터는 보통과 15분으로 계산한다")
+    void success_Estimate_MediumBoundary() {
+        assertThat(estimator.estimate(25))
+                .contains(new BoothCongestionEstimate(BoothCongestionLevel.MEDIUM, 15));
+    }
+
+    @Test
+    @DisplayName("보통 상한인 64미터는 보통과 30분으로 계산한다")
     void success_Estimate_MediumMaxBoundary() {
-        assertThat(estimator.estimate(30))
+        assertThat(estimator.estimate(64))
                 .contains(new BoothCongestionEstimate(BoothCongestionLevel.MEDIUM, 30));
     }
 
     @Test
-    @DisplayName("31미터는 혼잡과 40분으로 계산한다")
+    @DisplayName("65미터는 혼잡과 35분으로 계산한다")
     void success_Estimate_HighBoundary() {
-        assertThat(estimator.estimate(31))
-                .contains(new BoothCongestionEstimate(BoothCongestionLevel.HIGH, 40));
+        assertThat(estimator.estimate(65))
+                .contains(new BoothCongestionEstimate(BoothCongestionLevel.HIGH, 35));
+    }
+
+    @Test
+    @DisplayName("실제 축제 좌표에서 나온 16미터는 여유와 10분으로 계산한다")
+    void success_Estimate_RealShortQueue() {
+        assertThat(estimator.estimate(16))
+                .contains(new BoothCongestionEstimate(BoothCongestionLevel.LOW, 10));
+    }
+
+    @Test
+    @DisplayName("실제 축제 좌표에서 나온 133미터는 혼잡과 65분으로 계산한다")
+    void success_Estimate_RealLongQueue() {
+        assertThat(estimator.estimate(133))
+                .contains(new BoothCongestionEstimate(BoothCongestionLevel.HIGH, 65));
     }
 
     @Test
@@ -62,10 +99,13 @@ class BoothCongestionEstimatorTest {
     }
 
     @Test
-    @DisplayName("정수 범위를 넘는 추정 대기시간은 거절한다")
-    void fail_Estimate_Overflow_CustomException() {
-        assertThatThrownBy(() -> estimator.estimate(Integer.MAX_VALUE))
-                .isInstanceOf(CustomException.class)
-                .hasMessage(ErrorCode.INVALID_REQUEST.getMessage());
+    @DisplayName("정수 최대 거리도 정수 범위 안의 대기시간으로 계산한다")
+    void success_Estimate_MaxMeters() {
+        assertThat(estimator.estimate(Integer.MAX_VALUE))
+                .hasValueSatisfying(estimate -> {
+                    assertThat(estimate.congestionLevel())
+                            .isEqualTo(BoothCongestionLevel.HIGH);
+                    assertThat(estimate.waitMinutes()).isPositive();
+                });
     }
 }

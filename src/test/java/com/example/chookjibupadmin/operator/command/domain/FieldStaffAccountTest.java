@@ -208,12 +208,40 @@ class FieldStaffAccountTest {
                     FieldStaffName.of("박스태프"),
                     FieldStaffPhoneNumber.of("010-9999-8888")
             );
-            account.changePassword(FieldStaffPasswordHash.of("new-hash"));
+            account.reissueTemporaryPassword(FieldStaffPasswordHash.of("new-hash"));
 
             assertThat(account.getNameValue()).isEqualTo("박스태프");
             assertThat(account.getPhoneNumberValue()).isEqualTo("010-9999-8888");
             assertThat(account.getPasswordHashValue()).isEqualTo("new-hash");
             assertThat(account.getAuthVersion()).isEqualTo(1L);
+            assertThat(account.isPasswordChangeRequired()).isTrue();
+        }
+
+        @Test
+        @DisplayName("생성 직후에는 임시 비밀번호 상태이고 본인이 바꾸면 해제된다")
+        void success_ChangePasswordBySelf_ClearsPasswordChangeRequired() {
+            FieldStaffAccount account = fieldStaffAccount();
+
+            assertThat(account.isPasswordChangeRequired()).isTrue();
+
+            account.changePasswordBySelf(FieldStaffPasswordHash.of("self-hash"));
+
+            assertThat(account.getPasswordHashValue()).isEqualTo("self-hash");
+            assertThat(account.isPasswordChangeRequired()).isFalse();
+            assertThat(account.getAuthVersion()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("본인이 바꾼 뒤 관리자가 재발급하면 다시 변경이 필요해진다")
+        void success_ReissueTemporaryPassword_MarksPasswordChangeRequired() {
+            FieldStaffAccount account = fieldStaffAccount();
+            account.changePasswordBySelf(FieldStaffPasswordHash.of("self-hash"));
+
+            account.reissueTemporaryPassword(FieldStaffPasswordHash.of("temp-hash"));
+
+            assertThat(account.getPasswordHashValue()).isEqualTo("temp-hash");
+            assertThat(account.isPasswordChangeRequired()).isTrue();
+            assertThat(account.getAuthVersion()).isEqualTo(2L);
         }
 
         @Test

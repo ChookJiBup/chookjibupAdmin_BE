@@ -146,7 +146,7 @@ public class FieldStaffManagementService {
                 principal
         );
         String temporaryPassword = passwordGenerator.generate();
-        account.changePassword(FieldStaffPasswordHash.of(
+        account.reissueTemporaryPassword(FieldStaffPasswordHash.of(
                 passwordEncoder.encode(temporaryPassword)
         ));
         return temporaryPassword;

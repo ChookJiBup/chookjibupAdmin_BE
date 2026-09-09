@@ -259,8 +259,8 @@ class BoothQueueCommandApplicationServiceTest {
         );
         verify(boothCongestionService).save(captor.capture());
         assertThat(captor.getValue().getCongestionLevel())
-                .isEqualTo(BoothCongestionLevel.HIGH);
-        assertThat(captor.getValue().getWaitMinutes()).isEqualTo(40);
+                .isEqualTo(BoothCongestionLevel.MEDIUM);
+        assertThat(captor.getValue().getWaitMinutes()).isEqualTo(15);
         assertThat(captor.getValue().getModifierStaffId()).isEqualTo(3L);
     }
 
@@ -364,8 +364,8 @@ class BoothQueueCommandApplicationServiceTest {
         BoothCongestion latest = BoothCongestion.recordByStaff(
                 7L,
                 3L,
-                20,
-                BoothCongestionLevel.MEDIUM
+                10,
+                BoothCongestionLevel.LOW
         );
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
                 .willReturn(10L);

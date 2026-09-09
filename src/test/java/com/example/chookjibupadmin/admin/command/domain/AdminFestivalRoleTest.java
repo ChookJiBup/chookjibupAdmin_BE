@@ -37,6 +37,9 @@ class AdminFestivalRoleTest {
             assertThat(role.canModifyFestivalInfo()).isTrue();
             assertThat(role.canManageFieldStaff()).isTrue();
             assertThat(role.canViewOperationReport()).isTrue();
+            assertThat(role.canUpdateQueueTail()).isTrue();
+            assertThat(role.canViewFestivalResultReport()).isTrue();
+            assertThat(role.canEditFestivalMap()).isTrue();
         }
 
         @Test
@@ -100,6 +103,10 @@ class AdminFestivalRoleTest {
             assertThat(role.canModifyFestivalInfo()).isFalse();
             assertThat(role.canManageFieldStaff()).isTrue();
             assertThat(role.canViewOperationReport()).isTrue();
+            assertThat(role.canUpdateQueueTail()).isTrue();
+            // 결과 보고서와 부스맵 편집기는 총괄관리자 전용이다.
+            assertThat(role.canViewFestivalResultReport()).isFalse();
+            assertThat(role.canEditFestivalMap()).isFalse();
         }
 
         @Test
