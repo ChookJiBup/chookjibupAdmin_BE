@@ -84,8 +84,8 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
         }
 
         @Test
-        @DisplayName("제1 관리자가 이메일 오타로 초대 후보를 검색한다")
-        void success_SearchCandidates_EmailTypo() {
+        @DisplayName("제1 관리자가 이메일 부분 일치로 초대 후보를 검색한다")
+        void success_SearchCandidates_EmailContains() {
             // given
             Festival festival = festivalService.save(festival());
             AdminAccount owner = persistOwner(festival);
@@ -104,7 +104,7 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
             List<AdminSubAdminCandidateView> result =
                     applicationService.searchCandidates(
                             festival.getPublicId(),
-                            "dkkkr",
+                            "DLGKRWNS213",
                             principal(owner)
                     );
 
@@ -114,6 +114,95 @@ class AdminSubAdminCandidateQueryApplicationServiceIntegrationTest {
                 assertThat(candidate.email()).isEqualTo("dlgkrwns213@korea.kr");
                 assertThat(candidate.rank()).isNull();
             });
+        }
+
+        @Test
+        @DisplayName("검색어와 이름의 끝자리만 다른 계정은 후보로 내려주지 않는다")
+        void success_SearchCandidates_ExcludeNeighborName() {
+            // given
+            Festival festival = festivalService.save(festival());
+            AdminAccount owner = persistOwner(festival);
+            adminAccountService.save(admin(
+                    "admin03@seed-event.co.kr",
+                    "연결테스트03",
+                    "씨드이벤트"
+            ));
+            adminAccountService.save(admin(
+                    "admin13@seed-event.co.kr",
+                    "연결테스트13",
+                    "씨드이벤트"
+            ));
+
+            // when
+            List<AdminSubAdminCandidateView> result =
+                    applicationService.searchCandidates(
+                            festival.getPublicId(),
+                            "연결테스트02",
+                            principal(owner)
+                    );
+
+            // then
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("검색어와 무관한 계정은 후보로 내려주지 않는다")
+        void success_SearchCandidates_NoMatchBoundary() {
+            // given
+            Festival festival = festivalService.save(festival());
+            AdminAccount owner = persistOwner(festival);
+            adminAccountService.save(admin(
+                    "candidate1@mapo.go.kr",
+                    "김후보",
+                    "마포구청"
+            ));
+
+            // when
+            List<AdminSubAdminCandidateView> result =
+                    applicationService.searchCandidates(
+                            festival.getPublicId(),
+                            "zzzzz",
+                            principal(owner)
+                    );
+
+            // then
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("이미 축제에 배정된 계정은 검색어가 맞아도 후보에서 제외한다")
+        void success_SearchCandidates_ExcludeAssignedAccounts() {
+            // given
+            Festival festival = festivalService.save(festival());
+            AdminAccount owner = persistOwner(festival);
+            AdminAccount assigned = adminAccountService.save(admin(
+                    "assigned@partner.co.kr",
+                    "김후보",
+                    "가나이벤트"
+            ));
+            adminFestivalRoleService.assignSubAdmin(
+                    assigned.getId(),
+                    festival.getId(),
+                    owner.getId()
+            );
+            adminAccountService.save(admin(
+                    "candidate@partner.co.kr",
+                    "김후보둘",
+                    "다라이벤트"
+            ));
+
+            // when
+            List<AdminSubAdminCandidateView> result =
+                    applicationService.searchCandidates(
+                            festival.getPublicId(),
+                            "김후보",
+                            principal(owner)
+                    );
+
+            // then
+            assertThat(result)
+                    .extracting(AdminSubAdminCandidateView::email)
+                    .containsExactly("candidate@partner.co.kr");
         }
 
         @Test

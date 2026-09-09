@@ -83,8 +83,8 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
         }
 
         @Test
-        @DisplayName("제1 관리자가 이메일 오타로 등록된 운영자를 검색한다")
-        void success_GetSubAdmins_EmailTypo() {
+        @DisplayName("제1 관리자가 이메일 부분 일치로 등록된 운영자를 검색한다")
+        void success_GetSubAdmins_EmailContains() {
             // given
             Festival festival = festivalService.save(festival());
             AdminAccount owner = persistOwner(festival);
@@ -102,7 +102,7 @@ class AdminSubAdminQueryApplicationServiceIntegrationTest {
             // when
             List<AdminSubAdminView> result = applicationService.getSubAdmins(
                     festival.getPublicId(),
-                    "dkkkr",
+                    "dlgkrwns213",
                     principal(owner)
             );
 

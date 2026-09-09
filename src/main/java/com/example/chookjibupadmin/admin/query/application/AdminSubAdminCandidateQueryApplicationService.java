@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 /**
  * 제1 관리자의 서브관리자 초대 후보 조회 유스케이스를 처리한다.
  *
- * <p>클래스에 트랜잭션을 걸지 않는다. 오타 보정 점수 계산은 CPU 작업이라
+ * <p>클래스에 트랜잭션을 걸지 않는다. 검색어 매칭은 CPU 작업이라
  * 트랜잭션 안에서 돌리면 그동안 DB 커넥션을 쥐고 있게 되고, 검색어를 입력할 때마다
  * 요청이 쌓이면 커넥션 풀이 말라 다른 API까지 대기하기 때문이다.
  * 조회에 필요한 트랜잭션은 각 하위 Service가 스스로 연다.
@@ -48,6 +48,7 @@ public class AdminSubAdminCandidateQueryApplicationService {
         Festival festival = festivalService.getByPublicId(festivalId);
         validateOwnerAccess(adminAccount.getId(), festival);
 
+        // 이름 또는 이메일에 검색어가 포함된 후보만 남긴다.
         List<AdminSubAdminCandidateView> matched = searchMatcher.search(
                 candidateQueryService.findCandidates(festival.getId()),
                 keyword
