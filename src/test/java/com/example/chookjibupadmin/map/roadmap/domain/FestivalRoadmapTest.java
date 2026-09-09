@@ -173,16 +173,45 @@ class FestivalRoadmapTest {
     }
 
     @Test
-    @DisplayName("공개한 뒤 편집을 저장하면 다시 비공개(EDITING)로 돌아간다")
-    void success_ApplyAdminEdit_AfterPublish_HidesAgain() {
+    @DisplayName("공개한 뒤 편집을 저장해도 공개가 유지되고 공개 버전이 따라온다")
+    void success_ApplyAdminEdit_AfterPublish_StaysPublished() {
         FestivalRoadmap roadmap = FestivalRoadmap.createForCoordinateMap(1L, 10L, 2L);
         roadmap.publish();
 
+        long revision = roadmap.applyAdminEdit(0L);
+
+        // 저장할 때마다 감춰지면 관리자는 부스맵이 사라진 줄도 모르고 넘어간다.
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.PUBLISHED);
+        assertThat(roadmap.isPublished()).isTrue();
+        assertThat(roadmap.getPublishedVersion()).isEqualTo(revision);
+    }
+
+    @Test
+    @DisplayName("공개를 해제하면 편집 상태로 돌아가고 공개 버전을 지운다")
+    void success_Unpublish() {
+        FestivalRoadmap roadmap = FestivalRoadmap.createForCoordinateMap(1L, 10L, 2L);
         roadmap.applyAdminEdit(0L);
+        roadmap.publish();
+
+        roadmap.unpublish();
 
         assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.EDITING);
         assertThat(roadmap.isPublished()).isFalse();
-        // 공개 버전은 방문객이 마지막으로 본 리비전이므로 편집으로 바뀌지 않는다.
+        assertThat(roadmap.getPublishedVersion()).isZero();
+        // 그려 둔 내용은 그대로 두므로 편집 리비전은 건드리지 않는다.
+        assertThat(roadmap.getEditRevision()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("공개 중이 아니면 공개 해제가 아무것도 바꾸지 않는다")
+    void success_Unpublish_WhenNotPublished() {
+        FestivalRoadmap roadmap = FestivalRoadmap.create(1L, 10L, 2L);
+        roadmap.analysisCompleted();
+
+        roadmap.unpublish();
+
+        assertThat(roadmap.getStatus()).isEqualTo(RoadmapStatus.REVIEW_REQUIRED);
+        assertThat(roadmap.getEditRevision()).isEqualTo(1L);
         assertThat(roadmap.getPublishedVersion()).isZero();
     }
 

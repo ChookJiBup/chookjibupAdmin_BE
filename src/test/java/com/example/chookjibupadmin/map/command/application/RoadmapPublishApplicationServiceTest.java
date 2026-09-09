@@ -211,6 +211,64 @@ class RoadmapPublishApplicationServiceTest {
         );
     }
 
+    @Test
+    @DisplayName("공개한 부스맵을 내리면 편집 상태로 돌아간다")
+    void success_Unpublish() {
+        roadmap.publish();
+
+        PublishedRoadmap unpublished = service.unpublish(
+                festivalPublicId, mapPublicId, principal
+        );
+
+        assertThat(unpublished.roadmapStatus()).isEqualTo(RoadmapStatus.EDITING.name());
+        assertThat(unpublished.publishedVersion()).isZero();
+        assertThat(unpublished.publishedBoothCount()).isZero();
+        assertThat(roadmap.isPublished()).isFalse();
+        // 감추기만 할 뿐이라 부스를 세어 볼 필요가 없다.
+        then(nodeService).should(never()).findAll(anyLong(), anyLong());
+    }
+
+    @Test
+    @DisplayName("공개 중이 아닌 부스맵을 내려도 상태가 그대로다")
+    void success_Unpublish_WhenNotPublished() {
+        PublishedRoadmap unpublished = service.unpublish(
+                festivalPublicId, mapPublicId, principal
+        );
+
+        assertThat(unpublished.roadmapStatus()).isEqualTo(RoadmapStatus.EDITING.name());
+        assertThat(roadmap.isPublished()).isFalse();
+    }
+
+    @Test
+    @DisplayName("현재 지도가 아닌 지도로는 공개를 해제할 수 없다")
+    void fail_Unpublish_NotCurrentMap() {
+        roadmap.publish();
+        ReflectionTestUtils.setField(roadmap, "currentMapId", 11L);
+
+        assertThatThrownBy(() -> service.unpublish(
+                festivalPublicId, mapPublicId, principal
+        )).isInstanceOfSatisfying(CustomException.class, exception ->
+                assertThat(exception.getErrorCode())
+                        .isEqualTo(ErrorCode.FESTIVAL_MAP_INVALID_STATUS)
+        );
+        assertThat(roadmap.isPublished()).isTrue();
+    }
+
+    @Test
+    @DisplayName("축제 정보 수정 권한이 없으면 공개 해제를 거절한다")
+    void fail_Unpublish_Forbidden() {
+        roadmap.publish();
+        given(roleService.getByAdminAccountIdAndFestivalId(1L, 20L))
+                .willReturn(AdminFestivalRole.createSubAdmin(1L, 20L, 2L));
+
+        assertThatThrownBy(() -> service.unpublish(
+                festivalPublicId, mapPublicId, principal
+        )).isInstanceOfSatisfying(CustomException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN)
+        );
+        assertThat(roadmap.isPublished()).isTrue();
+    }
+
     private RoadmapNode adminBooth(String name) {
         return adminNode(NodeType.BOOTH, name);
     }

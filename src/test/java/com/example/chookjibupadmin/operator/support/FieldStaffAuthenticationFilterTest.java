@@ -110,11 +110,12 @@ class FieldStaffAuthenticationFilterTest {
     @Test
     void success_DoFilter_SharedOperationWithAdminAuthentication()
             throws ServletException, IOException {
-        // given
+        // given: 스태프 콘솔 표시는 붙었지만 실려 온 토큰은 관리자 것뿐이다.
         UsernamePasswordAuthenticationToken adminAuthentication =
                 adminAuthentication();
         SecurityContextHolder.getContext().setAuthentication(adminAuthentication);
-        MockHttpServletRequest request = request(
+        MockHttpServletRequest request = fieldStaffConsoleRequest(
+                "PUT",
                 "/api/festivals/festival-id/operations/queues",
                 "Bearer admin-token"
         );
@@ -133,12 +134,13 @@ class FieldStaffAuthenticationFilterTest {
     }
 
     @Test
-    void success_DoFilter_SharedOperationWithBothCredentials_PrefersFieldStaff()
+    void success_DoFilter_SharedOperationWithConsoleHeader_PrefersFieldStaff()
             throws ServletException, IOException {
-        // given
+        // given: 스태프 콘솔에서 보낸 요청이라고 헤더로 알려 온다.
         SecurityContextHolder.getContext().setAuthentication(adminAuthentication());
         FieldStaffPrincipal principal = principal();
-        MockHttpServletRequest request = request(
+        MockHttpServletRequest request = fieldStaffConsoleRequest(
+                "PATCH",
                 "/api/festivals/festival-id/operations/queues/queue-id",
                 "Bearer field-token"
         );
@@ -148,13 +150,37 @@ class FieldStaffAuthenticationFilterTest {
         // when
         filter.doFilter(request, new MockHttpServletResponse(), chain);
 
-        // then
+        // then: 관리자 신원으로 남기면 스태프가 갱신한 줄끝이 관리자 이름으로 기록된다.
         then(fieldStaffAccountService).should().validateAuthentication(
                 principal,
                 NOW
         );
         assertThat(SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal()).isEqualTo(principal);
+        assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    @Test
+    void success_DoFilter_AdminConsoleWrite_KeepsAdminAuthentication()
+            throws ServletException, IOException {
+        // given: 관리자 콘솔에서 보낸 쓰기 요청에는 스태프 콘솔 표시가 붙지 않는다.
+        UsernamePasswordAuthenticationToken adminAuthentication =
+                adminAuthentication();
+        SecurityContextHolder.getContext().setAuthentication(adminAuthentication);
+        MockHttpServletRequest request = request(
+                "PATCH",
+                "/api/festivals/festival-id/operations/queues/queue-id",
+                "Bearer field-token"
+        );
+        MockFilterChain chain = new MockFilterChain();
+
+        // when
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
+
+        // then: 쓰기라는 이유만으로 스태프로 대체하면 관리자가 담당 축제 밖에서 아무것도 못 한다.
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .isSameAs(adminAuthentication);
+        then(tokenProvider).shouldHaveNoInteractions();
         assertThat(chain.getRequest()).isSameAs(request);
     }
 
@@ -185,11 +211,12 @@ class FieldStaffAuthenticationFilterTest {
     @Test
     void success_DoFilter_AdminOnlyVisitorPath_KeepsAdminAuthentication()
             throws ServletException, IOException {
-        // given
+        // given: 스태프 콘솔 표시가 붙어 있어도 방문 인원 입력은 관리자 전용이다.
         UsernamePasswordAuthenticationToken adminAuthentication =
                 adminAuthentication();
         SecurityContextHolder.getContext().setAuthentication(adminAuthentication);
-        MockHttpServletRequest request = request(
+        MockHttpServletRequest request = fieldStaffConsoleRequest(
+                "PUT",
                 "/api/festivals/festival-id/operations/visitors/total",
                 "Bearer field-token"
         );
@@ -206,13 +233,40 @@ class FieldStaffAuthenticationFilterTest {
     }
 
     @Test
+    void success_DoFilter_StaffOnlySession_AuthenticatesWithoutConsoleHeader()
+            throws ServletException, IOException {
+        // given: 관리자 로그인이 없으면 헤더가 없어도 스태프 토큰으로 인증해야 한다.
+        FieldStaffPrincipal principal = principal();
+        MockHttpServletRequest request = request(
+                "PATCH",
+                "/api/festivals/festival-id/operations/queues/queue-id",
+                "Bearer field-token"
+        );
+        MockFilterChain chain = new MockFilterChain();
+        given(tokenProvider.parse("field-token")).willReturn(principal);
+
+        // when
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
+
+        // then
+        then(fieldStaffAccountService).should().validateAuthentication(
+                principal,
+                NOW
+        );
+        assertThat(SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal()).isEqualTo(principal);
+        assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    @Test
     void success_DoFilter_ExpiredFieldStaffToken_KeepsAdminAuthentication()
             throws ServletException, IOException {
         // given
         UsernamePasswordAuthenticationToken adminAuthentication =
                 adminAuthentication();
         SecurityContextHolder.getContext().setAuthentication(adminAuthentication);
-        MockHttpServletRequest request = request(
+        MockHttpServletRequest request = fieldStaffConsoleRequest(
+                "PUT",
                 "/api/festivals/festival-id/dashboard",
                 "Bearer field-token"
         );
@@ -306,6 +360,17 @@ class FieldStaffAuthenticationFilterTest {
         if (authorization != null) {
             request.addHeader("Authorization", authorization);
         }
+        return request;
+    }
+
+    /** 스태프 콘솔 화면에서 보낸 요청. 콘솔 표시 헤더가 붙어 있다. */
+    private MockHttpServletRequest fieldStaffConsoleRequest(
+            String method,
+            String requestUri,
+            String authorization
+    ) {
+        MockHttpServletRequest request = request(method, requestUri, authorization);
+        request.addHeader("X-Chookjibup-Console", "field-staff");
         return request;
     }
 }

@@ -119,6 +119,16 @@ public class FestivalRoadmap extends BaseTimeEntity {
         return roadmap;
     }
 
+    /**
+     * 관리자가 저장한 편집을 반영한다.
+     *
+     * <p>공개 중이면 공개 상태를 건드리지 않는다. 예전에는 저장할 때마다 EDITING으로 되돌려
+     * 방문객에게서 다시 감췄는데, 관리자는 저장한 내용이 그대로 반영된 줄로 알고 넘어가
+     * 부스맵이 조용히 사라지곤 했다. 공개와 비공개는 관리자가 버튼으로 직접 정한다.</p>
+     *
+     * <p>아직 공개하지 않은 로드맵은 EDITING으로 옮긴다. 관리자가 직접 저장한 이상 AI 결과를
+     * 검수한 것이므로 REVIEW_REQUIRED로 남겨 둘 이유가 없다.</p>
+     */
     public long applyAdminEdit(long baseRevision) {
         if (editRevision != baseRevision) {
             throw new CustomException(ErrorCode.ROADMAP_REVISION_CONFLICT);
@@ -127,8 +137,14 @@ public class FestivalRoadmap extends BaseTimeEntity {
             throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
         }
 
-        status = RoadmapStatus.EDITING;
-        return ++editRevision;
+        editRevision++;
+        if (status == RoadmapStatus.PUBLISHED) {
+            // 공개된 지도를 고쳤으면 공개본도 방금 저장한 판으로 따라온다.
+            publishedVersion = editRevision;
+        } else {
+            status = RoadmapStatus.EDITING;
+        }
+        return editRevision;
     }
 
     /**
@@ -138,8 +154,7 @@ public class FestivalRoadmap extends BaseTimeEntity {
      * 분석 중에는 AI가 노드를 통째로 갈아끼우므로, 그 결과를 검수하기 전에 공개하면
      * 방문객이 검수도 안 된 배치를 보게 된다. 그래서 분석 중에는 거부한다.</p>
      *
-     * <p>공개한 뒤에도 {@link #applyAdminEdit}이 상태를 EDITING으로 되돌린다. 저장할 때마다
-     * 자동으로 다시 감춰지는 셈이라, 편집 내용을 방문객에게 보이려면 저장 후 다시 공개해야 한다.</p>
+     * <p>공개한 뒤 저장해도 공개는 유지된다. 감추려면 {@link #unpublish()}로 직접 내린다.</p>
      */
     public void publish() {
         ensurePublishable();
@@ -152,6 +167,20 @@ public class FestivalRoadmap extends BaseTimeEntity {
         if (status == RoadmapStatus.ANALYZING) {
             throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
         }
+    }
+
+    /**
+     * 방문객 앱에서 배치도를 다시 감춘다.
+     *
+     * <p>공개해 두고 보니 잘못 그렸을 때 내릴 방법이 없으면, 관리자는 부스를 전부 지우는
+     * 수밖에 없다. 편집 상태로만 되돌리고 그려 둔 내용은 그대로 둔다.</p>
+     */
+    public void unpublish() {
+        if (status != RoadmapStatus.PUBLISHED) {
+            return;
+        }
+        status = RoadmapStatus.EDITING;
+        publishedVersion = 0;
     }
 
     public boolean isPublished() {

@@ -77,6 +77,39 @@ public class RoadmapPublishApplicationService {
     }
 
     /**
+     * 공개한 배치도를 다시 감춘다.
+     *
+     * <p>잘못 그린 채 공개했을 때 내릴 방법이 없으면 부스를 전부 지우는 수밖에 없다.
+     * 그려 둔 내용은 그대로 두고 방문객에게만 안 보이게 한다.</p>
+     */
+    @Transactional
+    public PublishedRoadmap unpublish(
+            UUID festivalPublicId,
+            UUID mapPublicId,
+            AdminPrincipal principal
+    ) {
+        AuthorizedPublish authorized = authorize(festivalPublicId, principal);
+        FestivalMap map = mapService.getByPublicId(mapPublicId);
+        if (!map.belongsTo(authorized.festivalId())) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_NOT_FOUND);
+        }
+
+        FestivalRoadmap roadmap = roadmapService.getByFestivalIdForUpdate(
+                authorized.festivalId()
+        );
+        if (!roadmap.getCurrentMapId().equals(map.getId())) {
+            throw new CustomException(ErrorCode.FESTIVAL_MAP_INVALID_STATUS);
+        }
+
+        roadmap.unpublish();
+        return new PublishedRoadmap(
+                roadmap.getStatus().name(),
+                roadmap.getPublishedVersion(),
+                0
+        );
+    }
+
+    /**
      * 방문객 지도에 실제로 그려질 부스 수를 센다.
      *
      * <p>사용자 백엔드는 검수가 끝난(CONFIRMED) 노드만 내려주고, 구역 목록도 부스 노드로만
