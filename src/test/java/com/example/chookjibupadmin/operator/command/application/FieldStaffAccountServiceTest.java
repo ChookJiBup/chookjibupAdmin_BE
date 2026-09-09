@@ -188,9 +188,7 @@ class FieldStaffAccountServiceTest {
                             LocalDateTime.of(2026, 10, 8, 23, 59)
                     ))
                     .isInstanceOf(CustomException.class)
-                    .hasMessage(
-                            ErrorCode.FIELD_STAFF_VALID_PERIOD_EXPIRED.getMessage()
-                    );
+                    .hasMessage("2026년 10월 9일부터 로그인할 수 있습니다.");
         }
     }
 

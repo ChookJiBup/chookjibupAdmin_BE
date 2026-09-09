@@ -112,8 +112,8 @@ class FieldStaffLoginServiceTest {
         }
 
         @Test
-        @DisplayName("유효기간 전이면 로그인할 수 없다")
-        void fail_Login_ValidPeriodExpired_CustomException() {
+        @DisplayName("유효기간 전이면 로그인 가능 시작일을 알려 준다")
+        void fail_Login_BeforeValidPeriod_CustomException() {
             // given
             Festival festival = festival(1L);
             FieldStaffAccount account = fieldStaffAccount(1L);
@@ -131,7 +131,54 @@ class FieldStaffLoginServiceTest {
             // when & then
             assertThatThrownBy(() -> service.login(command))
                     .isInstanceOf(CustomException.class)
-                    .hasMessage(ErrorCode.FIELD_STAFF_VALID_PERIOD_EXPIRED.getMessage());
+                    .hasMessage("2026년 10월 9일부터 로그인할 수 있습니다.");
+        }
+
+        @Test
+        @DisplayName("유효기간이 지났으면 로그인 가능했던 마지막 날을 알려 준다")
+        void fail_Login_AfterValidPeriod_CustomException() {
+            // given
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(1L);
+            FieldStaffLoginCommand command = command(festival.getPublicId(), "staff01", "plain");
+            given(festivalService.getByPublicId(festival.getPublicId()))
+                    .willReturn(festival);
+            given(fieldStaffAccountService.getByFestivalIdAndLoginIdForLogin(
+                    1L,
+                    FieldStaffLoginId.of("staff01")
+            )).willReturn(account);
+            given(passwordEncoder.matches("plain", "encoded-password")).willReturn(true);
+            given(clock.instant()).willReturn(Instant.parse("2026-10-19T00:00:00Z"));
+            given(clock.getZone()).willReturn(ZoneId.of("UTC"));
+
+            // when & then
+            assertThatThrownBy(() -> service.login(command))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage("2026년 10월 18일까지만 로그인할 수 있었습니다.");
+        }
+
+        @Test
+        @DisplayName("유효기간을 벗어난 로그인 실패는 403 유효기간 코드로 응답한다")
+        void fail_Login_OutOfValidPeriod_KeepsErrorCode() {
+            // given
+            Festival festival = festival(1L);
+            FieldStaffAccount account = fieldStaffAccount(1L);
+            FieldStaffLoginCommand command = command(festival.getPublicId(), "staff01", "plain");
+            given(festivalService.getByPublicId(festival.getPublicId()))
+                    .willReturn(festival);
+            given(fieldStaffAccountService.getByFestivalIdAndLoginIdForLogin(
+                    1L,
+                    FieldStaffLoginId.of("staff01")
+            )).willReturn(account);
+            given(passwordEncoder.matches("plain", "encoded-password")).willReturn(true);
+            given(clock.instant()).willReturn(Instant.parse("2026-10-08T23:59:59Z"));
+            given(clock.getZone()).willReturn(ZoneId.of("UTC"));
+
+            // when & then
+            assertThatThrownBy(() -> service.login(command))
+                    .isInstanceOf(CustomException.class)
+                    .extracting(exception -> ((CustomException) exception).getErrorCode())
+                    .isEqualTo(ErrorCode.FIELD_STAFF_VALID_PERIOD_EXPIRED);
         }
 
         @Test

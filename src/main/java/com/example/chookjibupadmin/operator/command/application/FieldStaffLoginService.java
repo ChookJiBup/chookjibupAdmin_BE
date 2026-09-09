@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.command.application.dto.FieldStaffLoginCommand;
 import com.example.chookjibupadmin.operator.command.application.dto.FieldStaffLoginResult;
 import com.example.chookjibupadmin.operator.command.domain.FieldStaffAccount;
+import com.example.chookjibupadmin.operator.command.domain.FieldStaffValidPeriodMessage;
 import com.example.chookjibupadmin.operator.command.domain.vo.FieldStaffLoginId;
 import com.example.chookjibupadmin.operator.command.infrastructure.FieldStaffTokenProvider;
 import java.time.Clock;
@@ -52,8 +53,12 @@ public class FieldStaffLoginService {
             throw new CustomException(ErrorCode.FIELD_STAFF_NOT_ACTIVE);
         }
 
-        if (!fieldStaffAccount.isWithinValidPeriod(LocalDateTime.now(clock))) {
-            throw new CustomException(ErrorCode.FIELD_STAFF_VALID_PERIOD_EXPIRED);
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (!fieldStaffAccount.isWithinValidPeriod(now)) {
+            throw new CustomException(
+                    ErrorCode.FIELD_STAFF_VALID_PERIOD_EXPIRED,
+                    FieldStaffValidPeriodMessage.of(fieldStaffAccount, now)
+            );
         }
 
         return new FieldStaffLoginResult(
