@@ -111,20 +111,63 @@ class FieldStaffAuthenticationFilterTest {
     void success_DoFilter_SharedOperationWithAdminAuthentication()
             throws ServletException, IOException {
         // given
-        AdminPrincipal adminPrincipal = new AdminPrincipal(
-                1L,
-                "admin@mapo.go.kr"
-        );
         UsernamePasswordAuthenticationToken adminAuthentication =
-                new UsernamePasswordAuthenticationToken(
-                        adminPrincipal,
-                        null,
-                        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-                );
+                adminAuthentication();
         SecurityContextHolder.getContext().setAuthentication(adminAuthentication);
         MockHttpServletRequest request = request(
                 "/api/festivals/festival-id/operations/queues",
                 "Bearer admin-token"
+        );
+        MockFilterChain chain = new MockFilterChain();
+        given(tokenProvider.parse("admin-token"))
+                .willThrow(new CustomException(ErrorCode.AUTH_TOKEN_INVALID));
+
+        // when
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
+
+        // then
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .isSameAs(adminAuthentication);
+        then(errorWriter).shouldHaveNoInteractions();
+        assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    @Test
+    void success_DoFilter_SharedOperationWithBothCredentials_PrefersFieldStaff()
+            throws ServletException, IOException {
+        // given
+        SecurityContextHolder.getContext().setAuthentication(adminAuthentication());
+        FieldStaffPrincipal principal = principal();
+        MockHttpServletRequest request = request(
+                "/api/festivals/festival-id/operations/queues/queue-id",
+                "Bearer field-token"
+        );
+        MockFilterChain chain = new MockFilterChain();
+        given(tokenProvider.parse("field-token")).willReturn(principal);
+
+        // when
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
+
+        // then
+        then(fieldStaffAccountService).should().validateAuthentication(
+                principal,
+                NOW
+        );
+        assertThat(SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal()).isEqualTo(principal);
+        assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    @Test
+    void success_DoFilter_AdminOnlyVisitorPath_KeepsAdminAuthentication()
+            throws ServletException, IOException {
+        // given
+        UsernamePasswordAuthenticationToken adminAuthentication =
+                adminAuthentication();
+        SecurityContextHolder.getContext().setAuthentication(adminAuthentication);
+        MockHttpServletRequest request = request(
+                "/api/festivals/festival-id/operations/visitors/total",
+                "Bearer field-token"
         );
         MockFilterChain chain = new MockFilterChain();
 
@@ -135,6 +178,35 @@ class FieldStaffAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication())
                 .isSameAs(adminAuthentication);
         then(tokenProvider).shouldHaveNoInteractions();
+        assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    @Test
+    void success_DoFilter_ExpiredFieldStaffToken_KeepsAdminAuthentication()
+            throws ServletException, IOException {
+        // given
+        UsernamePasswordAuthenticationToken adminAuthentication =
+                adminAuthentication();
+        SecurityContextHolder.getContext().setAuthentication(adminAuthentication);
+        MockHttpServletRequest request = request(
+                "/api/festivals/festival-id/dashboard",
+                "Bearer field-token"
+        );
+        MockFilterChain chain = new MockFilterChain();
+        given(tokenProvider.parse("field-token")).willReturn(principal());
+        org.mockito.BDDMockito.willThrow(
+                        new CustomException(ErrorCode.FIELD_STAFF_VALID_PERIOD_EXPIRED)
+                )
+                .given(fieldStaffAccountService)
+                .validateAuthentication(principal(), NOW);
+
+        // when
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
+
+        // then
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .isSameAs(adminAuthentication);
+        then(errorWriter).shouldHaveNoInteractions();
         assertThat(chain.getRequest()).isSameAs(request);
     }
 
@@ -156,7 +228,8 @@ class FieldStaffAuthenticationFilterTest {
         // then
         then(errorWriter).should().write(
                 response,
-                ErrorCode.AUTH_TOKEN_INVALID
+                ErrorCode.AUTH_TOKEN_INVALID,
+                ErrorCode.AUTH_TOKEN_INVALID.getMessage()
         );
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         assertThat(chain.getRequest()).isNull();
@@ -177,6 +250,14 @@ class FieldStaffAuthenticationFilterTest {
         // then
         then(tokenProvider).shouldHaveNoInteractions();
         assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    private UsernamePasswordAuthenticationToken adminAuthentication() {
+        return new UsernamePasswordAuthenticationToken(
+                new AdminPrincipal(1L, "admin@mapo.go.kr"),
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
     }
 
     private FieldStaffPrincipal principal() {
