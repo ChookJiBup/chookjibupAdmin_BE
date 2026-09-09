@@ -73,8 +73,12 @@ public class FestivalSeries extends BaseTimeEntity {
      * 축제명 기반 자동 연결에 사용할 정규화 이름을 만든다.
      */
     public static String normalize(FestivalName name) {
-        return name.getValue()
-                .replaceAll("\\s+", "")
+        return normalize(name.getValue());
+    }
+
+    /** 축제명 문자열을 정규화한다. 공백과 대소문자 차이는 무시한다. */
+    public static String normalize(String name) {
+        return name.replaceAll("\\s+", "")
                 .toLowerCase(Locale.ROOT);
     }
 
