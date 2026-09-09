@@ -27,6 +27,7 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -98,6 +99,47 @@ class AdminSubAdminCandidateQueryApplicationServiceTest {
 
             // then
             assertThat(result).containsExactly(view);
+        }
+
+        @Test
+        @DisplayName("일치하는 후보가 많아도 상위 20건까지만 내려준다")
+        void success_SearchCandidates_LimitsResultSize() {
+            // given
+            Festival festival = festival(1L);
+            AdminAccount owner = owner(festival.getId());
+            AdminPrincipal principal = principal(owner);
+            List<AdminSubAdminCandidateView> views = new ArrayList<>();
+            for (int index = 0; index < 25; index++) {
+                views.add(candidateView());
+            }
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(owner);
+            given(festivalService.getByPublicId(festival.getPublicId()))
+                    .willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    owner.getId(),
+                    festival.getId()
+            ))
+                    .willReturn(AdminFestivalRole.createFestivalOwner(
+                            owner.getId(),
+                            festival.getId()
+                    ));
+            given(candidateQueryService.findCandidates(festival.getId()))
+                    .willReturn(views);
+            given(searchMatcher.search(views, "김"))
+                    .willReturn(views);
+
+            // when
+            List<AdminSubAdminCandidateView> result =
+                    applicationService.searchCandidates(
+                            festival.getPublicId(),
+                            "김",
+                            principal
+                    );
+
+            // then
+            assertThat(result).hasSize(20);
+            assertThat(result).containsExactlyElementsOf(views.subList(0, 20));
         }
 
         @Test

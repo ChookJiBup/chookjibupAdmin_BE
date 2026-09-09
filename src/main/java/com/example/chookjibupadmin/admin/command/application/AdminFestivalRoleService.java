@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminFestivalRoleService {
+
+    /** 잠금 대기로 요청이 무한정 매달리지 않도록 역할 쓰기 트랜잭션에 두는 상한(초)이다. */
+    private static final int ROLE_WRITE_TIMEOUT_SECONDS = 10;
 
     private final AdminFestivalRoleRepository adminFestivalRoleRepository;
 
@@ -50,24 +54,60 @@ public class AdminFestivalRoleService {
         ));
     }
 
-    @Transactional
+    /**
+     * 제2관리자 역할을 부여한다.
+     *
+     * <p>같은 제1관리자가 같은 대상을 다시 배정하면 이미 저장된 역할을 그대로 돌려준다.
+     * 배정이 반영됐는데도 재시도가 실패로 응답되어 화면에 「추가에 실패했습니다」가 뜨는
+     * 상황을 막기 위한 멱등 처리다.
+     */
+    @Transactional(timeout = ROLE_WRITE_TIMEOUT_SECONDS)
     public AdminFestivalRole assignSubAdmin(
             Long adminAccountId,
             Long festivalId,
             Long invitedByAdminId
     ) {
-        if (adminFestivalRoleRepository.existsByAdminAccountIdAndFestivalId(
-                adminAccountId,
-                festivalId
-        )) {
+        return adminFestivalRoleRepository
+                .findByAdminAccountIdAndFestivalId(adminAccountId, festivalId)
+                .map(existing -> reuseSubAdminRole(existing, invitedByAdminId))
+                .orElseGet(() -> save(AdminFestivalRole.createSubAdmin(
+                        adminAccountId,
+                        festivalId,
+                        invitedByAdminId
+                )));
+    }
+
+    /**
+     * 유니크 제약에 걸린 뒤 이미 저장된 제2관리자 역할을 다시 읽는다.
+     *
+     * <p>동시에 들어온 같은 배정 요청 하나가 먼저 커밋하면 나머지는 제약 위반으로 실패한다.
+     * 이때 저장된 결과를 확인해 성공으로 응답하기 위해 사용한다.
+     */
+    public AdminFestivalRole getAssignedSubAdmin(
+            Long adminAccountId,
+            Long festivalId,
+            Long invitedByAdminId
+    ) {
+        return adminFestivalRoleRepository
+                .findByAdminAccountIdAndFestivalId(adminAccountId, festivalId)
+                .map(existing -> reuseSubAdminRole(existing, invitedByAdminId))
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.AUTH_ADMIN_ALREADY_ASSIGNED
+                ));
+    }
+
+    /**
+     * 이미 존재하는 역할이 같은 제1관리자가 부여한 제2관리자 역할인지 확인한다.
+     */
+    private AdminFestivalRole reuseSubAdminRole(
+            AdminFestivalRole existing,
+            Long invitedByAdminId
+    ) {
+        if (existing.getRole() != AdminRole.SUB_ADMIN
+                || !Objects.equals(existing.getInvitedByAdminId(), invitedByAdminId)) {
             throw new CustomException(ErrorCode.AUTH_ADMIN_ALREADY_ASSIGNED);
         }
-
-        return save(AdminFestivalRole.createSubAdmin(
-                adminAccountId,
-                festivalId,
-                invitedByAdminId
-        ));
+        return existing;
     }
 
     public AdminFestivalRole getByAdminAccountIdAndFestivalId(
