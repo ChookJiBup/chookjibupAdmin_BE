@@ -48,6 +48,7 @@ public enum SuccessCode {
     FESTIVAL_VISITOR_COUNT_INPUT_MODE_UPDATE_SUCCESS(22022, "축제 방문 인원 집계 방식이 변경되었습니다."),
     FESTIVAL_MAP_OVERLAY_UPLOAD_SUCCESS(22024, "축제 지도 오버레이 이미지가 등록되었습니다."),
     FESTIVAL_MAP_PUBLISH_SUCCESS(22025, "부스맵이 방문객에게 공개되었습니다."),
+    FESTIVAL_MAP_UNPUBLISH_SUCCESS(22026, "부스맵 공개를 해제했습니다."),
     FESTIVAL_DASHBOARD_READ_SUCCESS(23000, "축제 대시보드 조회가 완료되었습니다."),
     BOOTH_APPROVE_SUCCESS(23010, "지도 노드를 부스로 승인했습니다."),
     BOOTH_CONGESTION_UPDATE_SUCCESS(23011, "부스 혼잡 정보를 저장했습니다."),

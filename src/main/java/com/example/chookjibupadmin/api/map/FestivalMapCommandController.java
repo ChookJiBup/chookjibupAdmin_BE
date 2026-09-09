@@ -109,6 +109,24 @@ public class FestivalMapCommandController {
         );
     }
 
+    @Operation(summary = "축제 부스맵 방문객 공개 해제")
+    @SecurityRequirement(name = "bearerAuth")
+    @DeleteMapping("/{mapId}/publish")
+    public ApiResponse<PublishRoadmapResponse> unpublish(
+            @PathVariable UUID festivalId,
+            @PathVariable UUID mapId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_MAP_UNPUBLISH_SUCCESS,
+                PublishRoadmapResponse.from(roadmapPublishService.unpublish(
+                        festivalId,
+                        mapId,
+                        principal
+                ))
+        );
+    }
+
     @Operation(summary = "축제 배치도 이미지 앵커 수정")
     @SecurityRequirement(name = "bearerAuth")
     @PutMapping("/{mapId}/image-anchor")
