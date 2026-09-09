@@ -159,6 +159,30 @@ class FieldStaffAuthenticationFilterTest {
     }
 
     @Test
+    void success_DoFilter_DashboardReadWithBothCredentials_KeepsAdminAuthentication()
+            throws ServletException, IOException {
+        // given: 스태프 콘솔을 한 번 열어 본 브라우저로 관리자가 대시보드를 조회한다.
+        UsernamePasswordAuthenticationToken adminAuthentication =
+                adminAuthentication();
+        SecurityContextHolder.getContext().setAuthentication(adminAuthentication);
+        MockHttpServletRequest request = request(
+                "GET",
+                "/api/festivals/festival-id/dashboard",
+                "Bearer field-token"
+        );
+        MockFilterChain chain = new MockFilterChain();
+
+        // when
+        filter.doFilter(request, new MockHttpServletResponse(), chain);
+
+        // then: 스태프로 대체하면 담당 축제가 아닌 모든 축제가 403이 된다.
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .isSameAs(adminAuthentication);
+        then(tokenProvider).shouldHaveNoInteractions();
+        assertThat(chain.getRequest()).isSameAs(request);
+    }
+
+    @Test
     void success_DoFilter_AdminOnlyVisitorPath_KeepsAdminAuthentication()
             throws ServletException, IOException {
         // given
@@ -268,7 +292,16 @@ class FieldStaffAuthenticationFilterTest {
             String requestUri,
             String authorization
     ) {
+        return request("PUT", requestUri, authorization);
+    }
+
+    private MockHttpServletRequest request(
+            String method,
+            String requestUri,
+            String authorization
+    ) {
         MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod(method);
         request.setRequestURI(requestUri);
         if (authorization != null) {
             request.addHeader("Authorization", authorization);

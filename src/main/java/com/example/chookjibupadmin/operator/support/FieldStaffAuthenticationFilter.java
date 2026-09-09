@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -47,6 +48,8 @@ public class FieldStaffAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String FIELD_STAFF_AUTHORITY = "ROLE_FIELD_STAFF";
+    /** 기록을 남기지 않는 메서드. 이 요청은 이미 확인된 관리자 신원을 그대로 쓴다. */
+    private static final Set<String> SAFE_METHODS = Set.of("GET", "HEAD", "OPTIONS");
 
     private final FieldStaffTokenProvider tokenProvider;
     private final FieldStaffAccountService fieldStaffAccountService;
@@ -126,7 +129,7 @@ public class FieldStaffAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 관리자 인증이 이미 있어도 스태프 자격을 우선할 경로인지 판단한다.
+     * 관리자 인증이 이미 있어도 스태프 자격을 우선할 요청인지 판단한다.
      *
      * <p>관리자 콘솔과 스태프 콘솔이 같은 브라우저에 함께 로그인되어 있으면
      * 두 쿠키가 모두 전송되어 서버가 호출 화면을 구분할 수 없다.
@@ -134,8 +137,17 @@ public class FieldStaffAuthenticationFilter extends OncePerRequestFilter {
      * 관리자 이름으로 남으므로, 스태프도 쓰는 현장 운영 경로에서는
      * 유효한 스태프 토큰이 있으면 스태프 신원을 우선한다.
      * 다만 방문 인원 입력처럼 관리자 전용 경로는 대체하지 않는다.</p>
+     *
+     * <p>대체하는 것은 <strong>쓰기 요청뿐</strong>이다. 이름이 잘못 남는 문제는
+     * 기록을 남기는 요청에서만 생기는데, 조회까지 스태프로 대체하면 스태프는 담당
+     * 축제 하나만 볼 수 있으므로 관리자가 자기 축제 대시보드를 열어도 403이 난다 —
+     * 스태프 콘솔을 한 번 열어 본 브라우저에서 담당 축제를 뺀 모든 축제의
+     * 대시보드가 «부스 0개»로 보이던 원인이다.</p>
      */
     private boolean canUseFieldStaffIdentity(HttpServletRequest request) {
+        if (SAFE_METHODS.contains(request.getMethod())) {
+            return false;
+        }
         return !ADMIN_ONLY_OPERATION_PATH.matcher(request.getRequestURI()).matches();
     }
 
