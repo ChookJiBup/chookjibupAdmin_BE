@@ -18,6 +18,19 @@ class AdminNameEmailSearchMatcherTest {
     class Search {
 
         @Test
+        @DisplayName("이름의 부분 일치로 검색한다")
+        void success_Search_NameContains() {
+            // given
+            SearchTarget target = target("김관리", "manager@mapo.go.kr");
+
+            // when
+            List<SearchTarget> result = matcher.search(List.of(target), "관리");
+
+            // then
+            assertThat(result).containsExactly(target);
+        }
+
+        @Test
         @DisplayName("이름의 공백과 검색어 대소문자를 정규화해서 검색한다")
         void success_Search_NormalizedName() {
             // given
@@ -31,13 +44,26 @@ class AdminNameEmailSearchMatcherTest {
         }
 
         @Test
-        @DisplayName("이메일의 연속 부분 문자열로 검색한다")
+        @DisplayName("이메일의 부분 일치로 검색한다")
         void success_Search_EmailContains() {
             // given
             SearchTarget target = target("이학준", "dlgkrwns213@korea.kr");
 
             // when
-            List<SearchTarget> result = matcher.search(List.of(target), "Korea.kr");
+            List<SearchTarget> result = matcher.search(List.of(target), "wns213");
+
+            // then
+            assertThat(result).containsExactly(target);
+        }
+
+        @Test
+        @DisplayName("대소문자를 구분하지 않고 이메일을 검색한다")
+        void success_Search_EmailIgnoreCase() {
+            // given
+            SearchTarget target = target("이학준", "dlgkrwns213@korea.kr");
+
+            // when
+            List<SearchTarget> result = matcher.search(List.of(target), "Korea.KR");
 
             // then
             assertThat(result).containsExactly(target);
@@ -60,8 +86,41 @@ class AdminNameEmailSearchMatcherTest {
         }
 
         @Test
-        @DisplayName("문자가 떨어져 있어도 같은 순서로 나타나면 검색한다")
-        void success_Search_EmailSubsequence() {
+        @DisplayName("숫자만 다른 이름은 검색 결과에서 제외한다")
+        void success_Search_ExcludeNeighborNameBoundary() {
+            // given
+            SearchTarget other = target("연결테스트03", "admin03@seed-event.co.kr");
+            SearchTarget matched = target("연결테스트02", "admin02@seed.mapo.go.kr");
+
+            // when
+            List<SearchTarget> result = matcher.search(
+                    List.of(other, matched),
+                    "연결테스트02"
+            );
+
+            // then
+            assertThat(result).containsExactly(matched);
+        }
+
+        @Test
+        @DisplayName("도메인이 다른 이메일 검색어는 결과에서 제외한다")
+        void success_Search_ExcludeOtherDomainBoundary() {
+            // given
+            SearchTarget target = target("연결테스트03", "admin03@seed-event.co.kr");
+
+            // when
+            List<SearchTarget> result = matcher.search(
+                    List.of(target),
+                    "admin02@seed.mapo.go.kr"
+            );
+
+            // then
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("문자가 떨어져 있으면 검색 결과에서 제외한다")
+        void success_Search_ExcludeSubsequenceBoundary() {
             // given
             SearchTarget target = target("이학준", "dlgkrwns213@korea.kr");
 
@@ -69,51 +128,12 @@ class AdminNameEmailSearchMatcherTest {
             List<SearchTarget> result = matcher.search(List.of(target), "dkr");
 
             // then
-            assertThat(result).containsExactly(target);
-        }
-
-        @Test
-        @DisplayName("이메일 로컬 부분의 제한적인 오타를 허용한다")
-        void success_Search_EmailTypo() {
-            // given
-            SearchTarget target = target("이학준", "dlgkrwns213@korea.kr");
-
-            // when
-            List<SearchTarget> result = matcher.search(List.of(target), "dkkkr");
-
-            // then
-            assertThat(result).containsExactly(target);
-        }
-
-        @Test
-        @DisplayName("인접한 두 문자의 입력 순서가 바뀐 이메일 오타를 허용한다")
-        void success_Search_EmailTransposition() {
-            // given
-            SearchTarget target = target("이학준", "dlgkr@korea.kr");
-
-            // when
-            List<SearchTarget> result = matcher.search(List.of(target), "dlkgr");
-
-            // then
-            assertThat(result).containsExactly(target);
-        }
-
-        @Test
-        @DisplayName("두 글자 검색어에는 오타 검색을 적용하지 않는다")
-        void success_Search_TwoCharacterBoundary() {
-            // given
-            SearchTarget target = target("김관리", "ab@korea.kr");
-
-            // when
-            List<SearchTarget> result = matcher.search(List.of(target), "ac");
-
-            // then
             assertThat(result).isEmpty();
         }
 
         @Test
-        @DisplayName("세 글자 검색어부터 한 글자 오타를 허용한다")
-        void success_Search_ThreeCharacterBoundary() {
+        @DisplayName("한 글자만 다른 오타 검색어는 결과에서 제외한다")
+        void success_Search_ExcludeTypoBoundary() {
             // given
             SearchTarget target = target("김관리", "adc@korea.kr");
 
@@ -121,7 +141,7 @@ class AdminNameEmailSearchMatcherTest {
             List<SearchTarget> result = matcher.search(List.of(target), "abc");
 
             // then
-            assertThat(result).containsExactly(target);
+            assertThat(result).isEmpty();
         }
 
         @Test
@@ -172,38 +192,21 @@ class AdminNameEmailSearchMatcherTest {
         }
 
         @Test
-        @DisplayName("정확 일치, 부분 일치, 오타 일치 순서로 정렬한다")
+        @DisplayName("정확 일치, 접두어 일치, 부분 일치 순서로 정렬한다")
         void success_Search_RelevanceOrder() {
-            // given
-            SearchTarget typo = target("이학준", "dlgkrwns213@korea.kr");
-            SearchTarget contains = target("김관리", "admin-dkkkr@mapo.go.kr");
-            SearchTarget exact = target("dkkkr", "other@mapo.go.kr");
-
-            // when
-            List<SearchTarget> result = matcher.search(
-                    List.of(typo, contains, exact),
-                    "dkkkr"
-            );
-
-            // then
-            assertThat(result).containsExactly(exact, contains, typo);
-        }
-
-        @Test
-        @DisplayName("접두어 일치를 일반 부분 일치보다 먼저 정렬한다")
-        void success_Search_PrefixBeforeContains() {
             // given
             SearchTarget contains = target("김관리", "my-admin@mapo.go.kr");
             SearchTarget prefix = target("이관리", "admin-user@mapo.go.kr");
+            SearchTarget exact = target("admin", "other@mapo.go.kr");
 
             // when
             List<SearchTarget> result = matcher.search(
-                    List.of(contains, prefix),
+                    List.of(contains, prefix, exact),
                     "admin"
             );
 
             // then
-            assertThat(result).containsExactly(prefix, contains);
+            assertThat(result).containsExactly(exact, prefix, contains);
         }
 
         @Test
@@ -231,19 +234,6 @@ class AdminNameEmailSearchMatcherTest {
 
             // when
             List<SearchTarget> result = matcher.search(List.of(target), "zzzzz");
-
-            // then
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("오타 유사도가 임계값보다 낮으면 검색 결과에서 제외한다")
-        void success_Search_TypoThresholdBoundary() {
-            // given
-            SearchTarget target = target("김관리", "abxyz@korea.kr");
-
-            // when
-            List<SearchTarget> result = matcher.search(List.of(target), "abcde");
 
             // then
             assertThat(result).isEmpty();

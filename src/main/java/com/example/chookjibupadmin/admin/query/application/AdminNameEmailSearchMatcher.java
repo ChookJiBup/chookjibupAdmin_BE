@@ -7,7 +7,12 @@ import java.util.Locale;
 import org.springframework.stereotype.Component;
 
 /**
- * 관리자 이름과 이메일을 대상으로 부분 일치와 제한적인 오타 검색을 수행한다.
+ * 관리자 이름과 이메일을 대상으로 대소문자를 구분하지 않는 부분 일치 검색을 수행한다.
+ *
+ * <p>이름 또는 이메일에 검색어가 그대로 들어 있는 계정만 결과에 포함한다.
+ * 과거에는 흩어진 문자 일치(subsequence)와 편집 거리 기반 오타 보정까지 허용했으나,
+ * 「연결테스트02」로 검색했을 때 「연결테스트03」이 나오는 것처럼
+ * 검색어와 무관한 계정이 섞여 나와 부분 일치만 남긴다.
  */
 @Component
 public class AdminNameEmailSearchMatcher {
@@ -16,13 +21,10 @@ public class AdminNameEmailSearchMatcher {
     private static final int EXACT_SCORE = 10_000;
     private static final int PREFIX_SCORE = 8_000;
     private static final int CONTAINS_SCORE = 7_000;
-    private static final int SUBSEQUENCE_SCORE = 5_000;
-    private static final int TYPO_SCORE = 3_000;
-    private static final int MIN_TYPO_QUERY_LENGTH = 3;
-    private static final double MIN_TYPO_SIMILARITY = 0.6;
+    private static final int MAX_LENGTH_PENALTY = 1_000;
 
     /**
-     * 검색어와 일치하는 관리자를 관련도순으로 반환한다.
+     * 이름 또는 이메일에 검색어가 포함된 관리자를 관련도순으로 반환한다.
      */
     public <T extends AdminNameEmailSearchTarget> List<T> search(
             List<T> candidates,
@@ -49,6 +51,12 @@ public class AdminNameEmailSearchMatcher {
                 .toList();
     }
 
+    /**
+     * 이름과 이메일 중 더 관련도가 높은 쪽의 점수를 반환한다.
+     *
+     * <p>이름은 「김 관 리」처럼 공백이 섞여 저장될 수 있어 공백을 지운 값끼리 비교한다.
+     * 이메일에는 공백이 없으므로 검색어를 그대로 쓴다.
+     */
     private int score(
             AdminNameEmailSearchTarget candidate,
             String keyword,
@@ -56,14 +64,10 @@ public class AdminNameEmailSearchMatcher {
     ) {
         String name = removeWhitespace(normalize(candidate.name()));
         String email = normalize(candidate.email());
-        String emailLocalPart = extractLocalPart(email);
 
         return Math.max(
                 scoreValue(name, compactKeyword),
-                Math.max(
-                        scoreValue(email, keyword),
-                        scoreValue(emailLocalPart, keyword)
-                )
+                scoreValue(email, keyword)
         );
     }
 
@@ -83,115 +87,11 @@ public class AdminNameEmailSearchMatcher {
             return CONTAINS_SCORE - containsIndex;
         }
 
-        int subsequenceGap = subsequenceGap(value, keyword);
-        if (subsequenceGap >= 0) {
-            return SUBSEQUENCE_SCORE - subsequenceGap;
-        }
-
-        return typoScore(value, keyword);
-    }
-
-    private int typoScore(String value, String keyword) {
-        if (keyword.length() < MIN_TYPO_QUERY_LENGTH) {
-            return NO_MATCH;
-        }
-
-        double similarity = bestPartialSimilarity(value, keyword);
-        if (similarity < MIN_TYPO_SIMILARITY) {
-            return NO_MATCH;
-        }
-
-        return TYPO_SCORE + (int) Math.round(similarity * 100);
-    }
-
-    private double bestPartialSimilarity(String value, String keyword) {
-        int minimumWindowLength = Math.max(1, keyword.length() - 1);
-        int maximumWindowLength = Math.min(value.length(), keyword.length() + 1);
-        double bestSimilarity = 0.0;
-
-        for (int windowLength = minimumWindowLength;
-                windowLength <= maximumWindowLength;
-                windowLength++) {
-            for (int start = 0; start + windowLength <= value.length(); start++) {
-                String window = value.substring(start, start + windowLength);
-                int distance = damerauLevenshteinDistance(keyword, window);
-                int maximumLength = Math.max(keyword.length(), window.length());
-                double similarity = 1.0 - ((double) distance / maximumLength);
-                bestSimilarity = Math.max(bestSimilarity, similarity);
-            }
-        }
-
-        return bestSimilarity;
-    }
-
-    private int damerauLevenshteinDistance(String left, String right) {
-        int[][] distances = new int[left.length() + 1][right.length() + 1];
-
-        for (int leftIndex = 0; leftIndex <= left.length(); leftIndex++) {
-            distances[leftIndex][0] = leftIndex;
-        }
-        for (int rightIndex = 0; rightIndex <= right.length(); rightIndex++) {
-            distances[0][rightIndex] = rightIndex;
-        }
-
-        for (int leftIndex = 1; leftIndex <= left.length(); leftIndex++) {
-            for (int rightIndex = 1; rightIndex <= right.length(); rightIndex++) {
-                int substitutionCost = left.charAt(leftIndex - 1)
-                        == right.charAt(rightIndex - 1) ? 0 : 1;
-                distances[leftIndex][rightIndex] = Math.min(
-                        Math.min(
-                                distances[leftIndex - 1][rightIndex] + 1,
-                                distances[leftIndex][rightIndex - 1] + 1
-                        ),
-                        distances[leftIndex - 1][rightIndex - 1] + substitutionCost
-                );
-
-                if (leftIndex > 1
-                        && rightIndex > 1
-                        && left.charAt(leftIndex - 1) == right.charAt(rightIndex - 2)
-                        && left.charAt(leftIndex - 2) == right.charAt(rightIndex - 1)) {
-                    distances[leftIndex][rightIndex] = Math.min(
-                            distances[leftIndex][rightIndex],
-                            distances[leftIndex - 2][rightIndex - 2] + substitutionCost
-                    );
-                }
-            }
-        }
-
-        return distances[left.length()][right.length()];
-    }
-
-    private int subsequenceGap(String value, String keyword) {
-        int keywordIndex = 0;
-        int firstMatchIndex = -1;
-        int lastMatchIndex = -1;
-
-        for (int valueIndex = 0;
-                valueIndex < value.length() && keywordIndex < keyword.length();
-                valueIndex++) {
-            if (value.charAt(valueIndex) == keyword.charAt(keywordIndex)) {
-                if (firstMatchIndex < 0) {
-                    firstMatchIndex = valueIndex;
-                }
-                lastMatchIndex = valueIndex;
-                keywordIndex++;
-            }
-        }
-
-        if (keywordIndex != keyword.length()) {
-            return NO_MATCH;
-        }
-
-        return lastMatchIndex - firstMatchIndex - keyword.length() + 1;
+        return NO_MATCH;
     }
 
     private int lengthDifference(String value, String keyword) {
-        return Math.min(1_000, value.length() - keyword.length());
-    }
-
-    private String extractLocalPart(String email) {
-        int atIndex = email.indexOf('@');
-        return atIndex < 0 ? email : email.substring(0, atIndex);
+        return Math.min(MAX_LENGTH_PENALTY, value.length() - keyword.length());
     }
 
     private String normalize(String value) {
