@@ -50,7 +50,7 @@ public class FestivalReportGenerationApplicationService {
                         admin.getId(),
                         festival.getId()
                 );
-        if (!role.canViewOperationReport()) {
+        if (!role.canViewFestivalResultReport()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
         ensureVisitorInputCompleted(festival);

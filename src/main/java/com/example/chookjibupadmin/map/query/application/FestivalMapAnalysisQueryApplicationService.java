@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.map.query.application;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
+import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
@@ -69,12 +70,18 @@ public class FestivalMapAnalysisQueryApplicationService {
         return status(jobService.getLatestByMapId(map.getId()));
     }
 
+    /**
+     * 부스맵 편집기 데이터를 조회한다.
+     *
+     * <p>편집기는 배치도 저장·공개와 같은 총괄관리자 전용 편집 흐름이므로
+     * 축제에 소속된 관리자라도 운영자(SUB_ADMIN)에게는 열지 않는다.</p>
+     */
     public MapEditorView editor(
             UUID festivalId,
             UUID mapId,
             AdminPrincipal principal
     ) {
-        FestivalMap map = authorize(festivalId, mapId, principal);
+        FestivalMap map = authorize(festivalId, mapId, principal, true);
         map.validateReadable();
 
         FestivalRoadmap roadmap = roadmapService.getByFestivalId(
@@ -181,6 +188,15 @@ public class FestivalMapAnalysisQueryApplicationService {
             UUID mapPublicId,
             AdminPrincipal principal
     ) {
+        return authorize(festivalPublicId, mapPublicId, principal, false);
+    }
+
+    private FestivalMap authorize(
+            UUID festivalPublicId,
+            UUID mapPublicId,
+            AdminPrincipal principal,
+            boolean requireMapEditPermission
+    ) {
         if (principal == null) {
             throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
@@ -193,10 +209,13 @@ public class FestivalMapAnalysisQueryApplicationService {
         }
 
         Festival festival = festivalService.getByPublicId(festivalPublicId);
-        roleService.getByAdminAccountIdAndFestivalId(
+        AdminFestivalRole role = roleService.getByAdminAccountIdAndFestivalId(
                 admin.getId(),
                 festival.getId()
         );
+        if (requireMapEditPermission && !role.canEditFestivalMap()) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
 
         FestivalMap map = mapService.getByPublicId(mapPublicId);
         if (!map.belongsTo(festival.getId())) {

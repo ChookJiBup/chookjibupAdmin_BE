@@ -148,7 +148,7 @@ public class BoothApprovalApplicationService {
     private void requireFestivalManage(Long adminId, Long festivalId) {
         AdminFestivalRole role = adminFestivalRoleService
                 .getByAdminAccountIdAndFestivalId(adminId, festivalId);
-        if (!role.canManageQueueDesign()) {
+        if (!role.canEditFestivalMap()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
     }

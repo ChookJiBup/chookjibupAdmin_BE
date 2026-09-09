@@ -186,6 +186,30 @@ class BoothApprovalApplicationServiceTest {
         then(roadmapNodeService).should().save(node);
     }
 
+    @Test
+    @DisplayName("운영자는 부스맵 편집 흐름인 부스 승인을 할 수 없다")
+    void fail_Approve_SubAdmin_Forbidden() {
+        Festival festival = festival(10L);
+        FestivalMap map = map(10L, 5L);
+        RoadmapNode node = boothNode(5L);
+        AdminAccount admin = admin();
+        AdminPrincipal principal = new AdminPrincipal(admin.getId(), "hong@korea.kr");
+
+        given(adminAccountService.getById(admin.getId())).willReturn(admin);
+        given(festivalService.getByPublicId(festival.getPublicId())).willReturn(festival);
+        given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(admin.getId(), 10L))
+                .willReturn(AdminFestivalRole.createSubAdmin(admin.getId(), 10L, 2L));
+
+        assertThatThrownBy(() -> service.approve(
+                festival.getPublicId(),
+                map.getPublicId(),
+                node.getPublicId(),
+                principal
+        ))
+                .isInstanceOf(CustomException.class)
+                .hasMessage(ErrorCode.FORBIDDEN.getMessage());
+    }
+
     private AdminAccount admin() {
         AdminAccount account = AdminAccount.createAdmin(
                 AdminEmail.of("hong@korea.kr"),

@@ -13,6 +13,8 @@ public enum AdminRole {
             true,
             true,
             true,
+            true,
+            true,
             true
     ),
     SUB_ADMIN(
@@ -21,7 +23,9 @@ public enum AdminRole {
             true,
             true,
             true,
-            true
+            true,
+            false,
+            false
     );
 
     private final boolean canInviteSubAdmin;
@@ -30,6 +34,8 @@ public enum AdminRole {
     private final boolean canManageQueueDesign;
     private final boolean canViewOperationReport;
     private final boolean canUpdateQueueTail;
+    private final boolean canViewFestivalResultReport;
+    private final boolean canEditFestivalMap;
 
     AdminRole(
             boolean canInviteSubAdmin,
@@ -37,7 +43,9 @@ public enum AdminRole {
             boolean canManageFieldStaff,
             boolean canManageQueueDesign,
             boolean canViewOperationReport,
-            boolean canUpdateQueueTail
+            boolean canUpdateQueueTail,
+            boolean canViewFestivalResultReport,
+            boolean canEditFestivalMap
     ) {
         this.canInviteSubAdmin = canInviteSubAdmin;
         this.canModifyFestivalInfo = canModifyFestivalInfo;
@@ -45,6 +53,8 @@ public enum AdminRole {
         this.canManageQueueDesign = canManageQueueDesign;
         this.canViewOperationReport = canViewOperationReport;
         this.canUpdateQueueTail = canUpdateQueueTail;
+        this.canViewFestivalResultReport = canViewFestivalResultReport;
+        this.canEditFestivalMap = canEditFestivalMap;
     }
 
     /**
@@ -87,5 +97,25 @@ public enum AdminRole {
      */
     public boolean canUpdateQueueTail() {
         return canUpdateQueueTail;
+    }
+
+    /**
+     * 축제 결과 보고서 조회와 생성 권한 여부를 반환한다.
+     *
+     * <p>결과 보고서는 축제 전체 성과를 담고 있어 총괄관리자 전용이다.
+     * 운영 중 화면인 대시보드({@link #canViewOperationReport()})와는 구분한다.</p>
+     */
+    public boolean canViewFestivalResultReport() {
+        return canViewFestivalResultReport;
+    }
+
+    /**
+     * 부스맵 편집기 조회와 부스 승인 권한 여부를 반환한다.
+     *
+     * <p>배치도 교체·저장·공개가 총괄관리자 전용이므로,
+     * 같은 편집 흐름인 편집기 조회와 부스 승인도 총괄관리자 전용으로 둔다.</p>
+     */
+    public boolean canEditFestivalMap() {
+        return canEditFestivalMap;
     }
 }
