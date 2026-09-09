@@ -13,10 +13,12 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class AdminSubAdminAssignServiceTest {
@@ -62,6 +64,41 @@ class AdminSubAdminAssignServiceTest {
         given(target.getId()).willReturn(2L);
         given(target.isContractor()).willReturn(true);
         given(roleService.assignSubAdmin(2L, 10L, 1L)).willReturn(assignedRole);
+        AdminSubAdminAssignService service = new AdminSubAdminAssignService(
+                accountService,
+                roleService,
+                festivalService
+        );
+
+        AdminFestivalRole result = service.assign(
+                festivalId,
+                targetId,
+                new AdminPrincipal(1L, "owner@mapo.go.kr")
+        );
+
+        assertThat(result).isSameAs(assignedRole);
+    }
+
+    @Test
+    @DisplayName("동시 요청이 먼저 저장돼 제약 위반이 나도 저장된 배정을 성공으로 돌려준다")
+    void success_Assign_DuplicateKey_ReusesAssignedRole() {
+        UUID festivalId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        given(accountService.getById(1L)).willReturn(owner);
+        given(owner.isActive()).willReturn(true);
+        given(owner.getId()).willReturn(1L);
+        given(festivalService.getByPublicId(festivalId)).willReturn(festival);
+        given(festival.getId()).willReturn(10L);
+        given(roleService.getByAdminAccountIdAndFestivalId(1L, 10L))
+                .willReturn(ownerRole);
+        given(ownerRole.canInviteSubAdmin()).willReturn(true);
+        given(accountService.findByPublicId(targetId)).willReturn(Optional.of(target));
+        given(target.isActive()).willReturn(true);
+        given(target.getId()).willReturn(2L);
+        given(target.isContractor()).willReturn(true);
+        given(roleService.assignSubAdmin(2L, 10L, 1L))
+                .willThrow(new DataIntegrityViolationException("duplicate key"));
+        given(roleService.getAssignedSubAdmin(2L, 10L, 1L)).willReturn(assignedRole);
         AdminSubAdminAssignService service = new AdminSubAdminAssignService(
                 accountService,
                 roleService,

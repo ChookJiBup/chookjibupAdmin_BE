@@ -9,15 +9,18 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 제1관리자가 활성 관리자 계정을 담당 축제의 제2관리자로 배정한다.
+ *
+ * <p>배정 쓰기는 {@link AdminFestivalRoleService} 안에서만 트랜잭션을 연다.
+ * 유니크 제약 충돌을 트랜잭션 밖에서 잡아야 롤백된 세션을 다시 쓰지 않고
+ * 이미 저장된 결과를 다시 읽어 성공으로 응답할 수 있기 때문이다.
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AdminSubAdminAssignService {
 
     private final AdminAccountService adminAccountService;
@@ -56,10 +59,31 @@ public class AdminSubAdminAssignService {
         if (!target.isContractor()) {
             throw new CustomException(ErrorCode.AUTH_GOVERNMENT_ACCOUNT_CANNOT_BE_OPERATOR);
         }
-        return roleService.assignSubAdmin(
-                target.getId(),
-                festival.getId(),
-                owner.getId()
-        );
+        return assignOrReuse(target.getId(), festival.getId(), owner.getId());
+    }
+
+    /**
+     * 배정을 시도하고, 동시 요청이 먼저 커밋해 제약 위반이 나면 저장된 결과를 돌려준다.
+     *
+     * <p>이렇게 해야 서버에는 반영됐는데 화면에는 실패로 보이는 상태가 생기지 않는다.
+     */
+    private AdminFestivalRole assignOrReuse(
+            Long targetAccountId,
+            Long festivalId,
+            Long ownerAccountId
+    ) {
+        try {
+            return roleService.assignSubAdmin(
+                    targetAccountId,
+                    festivalId,
+                    ownerAccountId
+            );
+        } catch (DataIntegrityViolationException exception) {
+            return roleService.getAssignedSubAdmin(
+                    targetAccountId,
+                    festivalId,
+                    ownerAccountId
+            );
+        }
     }
 }

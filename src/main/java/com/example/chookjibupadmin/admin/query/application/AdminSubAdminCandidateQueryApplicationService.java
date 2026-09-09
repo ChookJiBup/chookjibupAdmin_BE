@@ -14,15 +14,21 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 제1 관리자의 서브관리자 초대 후보 조회 유스케이스를 처리한다.
+ *
+ * <p>클래스에 트랜잭션을 걸지 않는다. 오타 보정 점수 계산은 CPU 작업이라
+ * 트랜잭션 안에서 돌리면 그동안 DB 커넥션을 쥐고 있게 되고, 검색어를 입력할 때마다
+ * 요청이 쌓이면 커넥션 풀이 말라 다른 API까지 대기하기 때문이다.
+ * 조회에 필요한 트랜잭션은 각 하위 Service가 스스로 연다.
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminSubAdminCandidateQueryApplicationService {
+
+    /** 자동완성 목록이므로 상위 후보만 내려 응답 크기를 제한한다. */
+    private static final int MAX_RESULT_SIZE = 20;
 
     private final AdminAccountService adminAccountService;
     private final AdminFestivalRoleService adminFestivalRoleService;
@@ -42,10 +48,14 @@ public class AdminSubAdminCandidateQueryApplicationService {
         Festival festival = festivalService.getByPublicId(festivalId);
         validateOwnerAccess(adminAccount.getId(), festival);
 
-        return searchMatcher.search(
+        List<AdminSubAdminCandidateView> matched = searchMatcher.search(
                 candidateQueryService.findCandidates(festival.getId()),
                 keyword
         );
+
+        return matched.size() <= MAX_RESULT_SIZE
+                ? matched
+                : List.copyOf(matched.subList(0, MAX_RESULT_SIZE));
     }
 
     private AdminAccount findAuthenticatedAdmin(AdminPrincipal principal) {

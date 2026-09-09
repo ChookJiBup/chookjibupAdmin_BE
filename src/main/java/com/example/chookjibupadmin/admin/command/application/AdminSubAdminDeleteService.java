@@ -22,8 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(timeout = AdminSubAdminDeleteService.DELETE_TIMEOUT_SECONDS)
 public class AdminSubAdminDeleteService {
+
+    /**
+     * 삭제 대상 역할은 잠금 조회(FOR UPDATE)로 읽는다. 다른 트랜잭션이 같은 행을 쥐고 있으면
+     * 무한정 대기하다 앞단 게이트웨이 타임아웃(502)으로 끊기므로 상한(초)을 둔다.
+     */
+    static final int DELETE_TIMEOUT_SECONDS = 10;
 
     private static final int MAX_BULK_DELETE_SIZE = 100;
 
