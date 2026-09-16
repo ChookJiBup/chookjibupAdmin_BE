@@ -87,6 +87,10 @@ app:
     confirmation-key: ${APP_ROAD_ADDRESS_CONFIRMATION_KEY:}
     connect-timeout: ${APP_ROAD_ADDRESS_CONNECT_TIMEOUT:3s}
     read-timeout: ${APP_ROAD_ADDRESS_READ_TIMEOUT:5s}
+  booth:
+    queue-recommendation:
+      # auto: 기존 OpenAI 인증 설정이 있으면 지도 분석 provider와 독립적으로 활성화
+      provider: ${APP_QUEUE_RECOMMENDATION_PROVIDER:auto}
   map:
     analysis:
       provider: ${APP_MAP_ANALYSIS_PROVIDER:disabled}

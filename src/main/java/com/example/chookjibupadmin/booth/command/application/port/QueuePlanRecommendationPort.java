@@ -10,4 +10,5 @@ public interface QueuePlanRecommendationPort {
             List<Map<String, Object>> facilities, int targetCapacity, double metersPerPerson) {}
     record Proposal(List<Map<String, BigDecimal>> path, String reason) {}
     Proposal recommend(Input input);
+    default String unavailableReason() { return null; }
 }

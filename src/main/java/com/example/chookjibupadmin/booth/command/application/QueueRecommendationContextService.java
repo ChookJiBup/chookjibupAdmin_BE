@@ -26,6 +26,9 @@ public class QueueRecommendationContextService {
     private final BoothQueueMapReader mapReader;
     private final QueueWriteAccess writeAccess;
     public record Context(Input input, Long nodeVersion, long planRevision) {}
+    public void verifyAccess(UUID festivalId, Long boothId, FestivalActorPrincipal principal) {
+        authorized(festivalId, boothId, principal);
+    }
     public record LineCandidate(UUID sourceNodeId, String name, String source,
             List<Map<String, BigDecimal>> path, BigDecimal confidence, Long expectedNodeVersion,
             long expectedRevision) {}

@@ -130,6 +130,19 @@ class QueuePlanFlowIntegrationTest extends com.example.chookjibupadmin.support.A
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.code").value(40922));
     }
 
+    @Test void success_Http_RecommendationStatusChecksAccessWithoutModelCall() throws Exception {
+        String url="/api/festivals/"+festival.getPublicId()+"/operations/booths/"+booth.getId()+"/queue-plan/recommendations/status";
+        given(recommendationPort.unavailableReason()).willReturn("AI 인증 설정이 없습니다.");
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(url)
+                .header("Authorization",bearer(adminService.getById(principal.adminId()))))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.data.available").value(false))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.data.reason").value("AI 인증 설정이 없습니다."));
+        org.mockito.Mockito.verify(recommendationPort,org.mockito.Mockito.never()).recommend(any());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(url))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isUnauthorized());
+    }
+
     @Test void fail_Http_PlanMissingAndInvalidFields_ReturnExpectedErrors() throws Exception {
         String url="/api/festivals/"+festival.getPublicId()+"/operations/booths/"+booth.getId()+"/queue-plan";
         String authorization=bearer(adminService.getById(principal.adminId()));

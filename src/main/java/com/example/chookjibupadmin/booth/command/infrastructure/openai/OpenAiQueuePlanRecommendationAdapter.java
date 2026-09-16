@@ -9,20 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 /** 기존 지도 분석의 인증·타임아웃 설정을 재사용한다. DB 트랜잭션 밖에서 호출한다. */
-@Component
-@ConditionalOnProperty(prefix = "app.map.analysis", name = "provider", havingValue = "openai")
 public class OpenAiQueuePlanRecommendationAdapter implements QueuePlanRecommendationPort {
     private final RestClient client;
     private final ObjectMapper mapper;
     private final MapAnalysisProperties properties;
-    public OpenAiQueuePlanRecommendationAdapter(@Qualifier("openAiMapRestClient") RestClient client,
+    public OpenAiQueuePlanRecommendationAdapter(RestClient client,
             ObjectMapper mapper, MapAnalysisProperties properties) {
         this.client = client; this.mapper = mapper; this.properties = properties;
     }

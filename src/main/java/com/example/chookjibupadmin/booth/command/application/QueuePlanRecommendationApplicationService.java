@@ -16,6 +16,12 @@ import org.springframework.stereotype.Service;
 public class QueuePlanRecommendationApplicationService {
     private final QueueRecommendationContextService contextService;
     private final QueuePlanRecommendationPort port;
+    public record Availability(boolean available, String reason) {}
+    public Availability availability(UUID festivalId, Long boothId, FestivalActorPrincipal principal) {
+        contextService.verifyAccess(festivalId, boothId, principal);
+        String reason = port.unavailableReason();
+        return new Availability(reason == null, reason);
+    }
     public record Recommendation(List<Map<String, BigDecimal>> path, String reason,
             double lengthMeters, Long expectedNodeVersion, long expectedRevision, List<String> warnings) {}
     public Recommendation recommend(UUID festivalId, Long boothId, int capacity, double spacing,

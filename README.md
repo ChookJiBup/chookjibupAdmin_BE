@@ -174,6 +174,13 @@ JWT는 계정 인증을 의미하며, 축제별 총괄관리자/운영자 권한
 
 이메일 인증은 Redis 기반으로 인증 코드를 관리한다.
 운영 secret은 Git에 커밋하지 않고 환경 변수 또는 secret manager로 주입한다.
+
+부스 사전 줄 AI 추천은 `APP_QUEUE_RECOMMENDATION_PROVIDER`로 설정한다. 기본값 `auto`는
+`app.map.analysis.api-key`(환경 변수 `APP_OPENAI_API_KEY`)가 있으면 지도 이미지 분석의
+provider와 독립적으로 OpenAI를 사용한다. `disabled`는 줄 추천만 비활성화한다.
+키가 없으면 서버 기동과 수동 줄 설정을 유지하고 AI 추천은 사용할 수 없다고 응답한다.
+`GET /api/festivals/{festivalId}/operations/booths/{boothId}/queue-plan/recommendations/status`로
+사용 가능 여부와 안내 문구를 조회한다. 추천에는 저장된 행사장 경계와 승인된 부스 좌표가 필요하다.
 로컬 개발용 secret은 `src/main/resources/application-secret.yml`에 두며 `.gitignore` 대상이다.
 
 사용자 서버가 호출하는 내부 API(`/internal/api/**`)는 애플리케이션 계층 HMAC 인증을 사용하지 않는다.

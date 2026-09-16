@@ -27,6 +27,13 @@ public class BoothQueuePlanController {
     private final BoothQueuePlanApplicationService service;
     private final QueuePlanRecommendationApplicationService recommendationService;
     private final QueueRecommendationContextService contextService;
+    @GetMapping("/recommendations/status")
+    @Operation(summary = "AI 줄 추천 사용 가능 여부", description = "권한을 검증한 후 서버 활성화 상태와 안내 문구를 반환한다. 외부 AI 호출이나 저장은 수행하지 않는다.")
+    public ApiResponse<QueuePlanRecommendationApplicationService.Availability> availability(
+            @PathVariable UUID festivalId, @PathVariable Long boothId, @AuthenticationPrincipal Object principal) {
+        return ApiResponse.success(SuccessCode.FESTIVAL_QUEUE_READ_SUCCESS,
+                recommendationService.availability(festivalId, boothId, actor(principal)));
+    }
 
     @PostMapping("/recommendations")
     @Operation(summary = "AI 사전 동선 추천", description = "동기식 추천. 경계와 부스 좌표 필요. 미확정 결과를 PUT으로 저장한다.")
