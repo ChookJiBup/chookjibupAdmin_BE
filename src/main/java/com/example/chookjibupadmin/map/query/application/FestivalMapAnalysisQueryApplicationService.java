@@ -257,7 +257,8 @@ public class FestivalMapAnalysisQueryApplicationService {
                     node.getReviewStatus().name(),
                     node.getSortOrder(),
                     node.getGeometrySchemaVersion(),
-                    node.getRelatedBoothId()
+                    node.getRelatedBoothId(),
+                    node.getVersion()
             );
         } catch (Exception exception) {
             throw new IllegalStateException(

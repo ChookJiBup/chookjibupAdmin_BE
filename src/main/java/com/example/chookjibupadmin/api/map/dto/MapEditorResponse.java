@@ -107,7 +107,8 @@ public record MapEditorResponse(
             String reviewStatus,
             int sortOrder,
             String geometrySchemaVersion,
-            Long relatedBoothId
+            Long relatedBoothId,
+            Long version
     ) {
 
         static NodeResponse from(RoadmapNodeView view) {
@@ -123,7 +124,8 @@ public record MapEditorResponse(
                     view.reviewStatus(),
                     view.sortOrder(),
                     view.geometrySchemaVersion(),
-                    view.relatedBoothId()
+                    view.relatedBoothId(),
+                    view.version()
             );
         }
     }

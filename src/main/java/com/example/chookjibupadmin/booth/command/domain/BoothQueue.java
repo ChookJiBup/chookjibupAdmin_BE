@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -76,6 +77,41 @@ public class BoothQueue extends BaseTimeEntity {
 
     @Column(name = "modifier_staff_id")
     private Long modifierStaffId;
+
+    @Column(name = "wait_minutes")
+    private Integer waitMinutes;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "congestion_level", length = 20)
+    private BoothCongestionLevel congestionLevel;
+    @Column(name = "observed_at")
+    private LocalDateTime observedAt;
+    @Column(name = "observation_revision", nullable = false)
+    private long observationRevision;
+    @Column(name = "plan_revision")
+    private Long planRevision;
+    @Column(name = "calculation_method", length = 30)
+    private String calculationMethod;
+
+    public void recordObservation(BoothCongestionEstimate estimate, LocalDateTime observedAt,
+            Long planRevision, String method) {
+        this.waitMinutes = estimate == null ? null : estimate.waitMinutes();
+        this.congestionLevel = estimate == null ? null : estimate.congestionLevel();
+        this.observedAt = observedAt;
+        this.planRevision = planRevision;
+        this.calculationMethod = method;
+        observationRevision++;
+    }
+
+    public void checkRevision(Long expectedRevision) {
+        // 구 FE는 revision을 보내지 않는다. 신규 FE는 조회 revision을 보내 충돌을 검출한다.
+        if (expectedRevision != null && expectedRevision != observationRevision) {
+            throw new CustomException(ErrorCode.BOOTH_QUEUE_REVISION_CONFLICT);
+        }
+    }
+
+    public List<Map<String, BigDecimal>> getPathGeometry() {
+        return pathGeometry == null ? null : pathGeometry.stream().map(Map::copyOf).toList();
+    }
 
     public static BoothQueue createEmpty(Long festivalId, Long boothId) {
         if (festivalId == null || boothId == null) {

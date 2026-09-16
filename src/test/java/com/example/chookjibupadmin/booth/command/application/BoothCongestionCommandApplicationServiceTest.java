@@ -45,6 +45,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class BoothCongestionCommandApplicationServiceTest {
+    @Mock private BoothQueueService boothQueueService;
+    @Mock private QueueWriteAccess writeAccess;
+    @org.mockito.Spy private java.time.Clock clock=java.time.Clock.systemUTC();
 
     @InjectMocks
     private BoothCongestionCommandApplicationService service;

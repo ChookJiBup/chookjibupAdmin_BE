@@ -16,6 +16,9 @@ import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
 import java.util.UUID;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import com.example.chookjibupadmin.booth.command.domain.BoothCongestionEstimate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +36,9 @@ public class BoothCongestionCommandApplicationService {
     private final BoothCongestionService boothCongestionService;
     private final AdminAccountService adminAccountService;
     private final AdminFestivalRoleService adminFestivalRoleService;
+    private final BoothQueueService boothQueueService;
+    private final QueueWriteAccess writeAccess;
+    private final Clock clock;
 
     public BoothCongestionResult record(
             UUID festivalPublicId,
@@ -45,6 +51,8 @@ public class BoothCongestionCommandApplicationService {
         if (!booth.belongsTo(festival.getId())) {
             throw new CustomException(ErrorCode.BOOTH_NOT_FOUND);
         }
+        writeAccess.requireOpen(festivalPublicId);
+        var currentQueue = boothQueueService.findByBoothIdForUpdate(boothId);
 
         BoothCongestion saved = switch (principal) {
             case AdminPrincipal adminPrincipal -> recordAsAdmin(
@@ -61,6 +69,12 @@ public class BoothCongestionCommandApplicationService {
             );
             default -> throw new CustomException(ErrorCode.UNAUTHORIZED);
         };
+        // 기존 수동 시간 보정도 새 큐 조회와 동일한 현재 값을 사용한다.
+        currentQueue.ifPresent(queue -> {
+            queue.recordObservation(new BoothCongestionEstimate(command.congestionLevel(),command.waitMinutes()),
+                    LocalDateTime.now(clock),null,"MANUAL");
+            boothQueueService.save(queue);
+        });
         return BoothCongestionResult.from(saved);
     }
 

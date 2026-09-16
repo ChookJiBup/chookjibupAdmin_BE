@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.api.operations.dto;
 
 import com.example.chookjibupadmin.booth.command.application.dto.BoothQueueResult;
 import com.example.chookjibupadmin.booth.command.domain.BoothQueueModifierType;
+import com.example.chookjibupadmin.booth.command.domain.BoothCongestionLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,7 +22,13 @@ public record FestivalQueueResponse(
         BoothQueueModifierType lastModifierType,
         @Schema(description = "마지막으로 줄끝을 갱신한 사람의 이름", nullable = true)
         String lastModifierName,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        Integer waitMinutes,
+        BoothCongestionLevel congestionLevel,
+        LocalDateTime observedAt,
+        long observationRevision,
+        Long planRevision,
+        String calculationMethod
 ) {
     public static FestivalQueueResponse from(BoothQueueResult result) {
         return new FestivalQueueResponse(
@@ -34,7 +41,9 @@ public record FestivalQueueResponse(
                 result.path(),
                 result.lastModifierType(),
                 result.lastModifierName(),
-                result.updatedAt()
+                result.updatedAt(),
+                result.waitMinutes(), result.congestionLevel(), result.observedAt(),
+                result.observationRevision(), result.planRevision(), result.calculationMethod()
         );
     }
 }

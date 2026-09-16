@@ -7,6 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BoothInfoJpaRepository extends JpaRepository<BoothInfo, Long> {
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select b from BoothInfo b where b.id = :id")
+    Optional<BoothInfo> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
+
     List<BoothInfo> findAllByFestivalIdOrderByIdAsc(Long festivalId);
 
     Optional<BoothInfo> findByFestivalIdAndRoadmapNodeId(
