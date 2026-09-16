@@ -50,6 +50,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ExtendWith(MockitoExtension.class)
 class BoothQueueCommandApplicationServiceTest {
 
+    @org.junit.jupiter.api.BeforeEach
+    void setUpGeometry() {
+        org.mockito.Mockito.lenient().when(mapReader.boothPoint(any())).thenReturn(null);
+    }
+
     @InjectMocks
     private BoothQueueCommandApplicationService service;
 
@@ -74,9 +79,14 @@ class BoothQueueCommandApplicationServiceTest {
     @Mock
     private FieldStaffAccountService fieldStaffAccountService;
 
+    @Mock private BoothQueuePlanService planService;
+    @Mock private BoothQueueMapReader mapReader;
+    @Mock private QueueWriteAccess writeAccess;
+    @org.mockito.Spy private java.time.Clock clock = java.time.Clock.systemUTC();
+
     @Test
-    @DisplayName("path가 null이면 기존 경로를 유지한다")
-    void success_UpdateTail_NullPath_KeepsExisting() {
+    @DisplayName("줄끝이 바뀌면 이전 경로를 제거한다")
+    void success_UpdateTail_ChangedTail_RemovesStalePath() {
         UUID festivalPublicId = UUID.randomUUID();
         BoothQueue queue = BoothQueue.createEmpty(10L, 7L);
         ReflectionTestUtils.setField(queue, "id", 1L);
@@ -106,8 +116,8 @@ class BoothQueueCommandApplicationServiceTest {
         );
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
                 .willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
-        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getByIdForUpdate(7L)).willReturn(booth);
         given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
         given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
         given(boothCongestionService.findLatestByBoothId(7L))
@@ -120,7 +130,7 @@ class BoothQueueCommandApplicationServiceTest {
                 staff
         );
 
-        assertThat(result.path()).hasSize(2);
+        assertThat(result.path()).isNull();
         assertThat(result.tailLatitude()).isEqualByComparingTo("37.5665");
     }
 
@@ -156,8 +166,8 @@ class BoothQueueCommandApplicationServiceTest {
         );
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
                 .willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
-        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getByIdForUpdate(7L)).willReturn(booth);
         given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
         given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
         given(boothCongestionService.findLatestByBoothId(7L))
@@ -190,8 +200,8 @@ class BoothQueueCommandApplicationServiceTest {
         );
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
                 .willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
-        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getByIdForUpdate(7L)).willReturn(booth);
         given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
         given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
         given(boothCongestionService.findLatestByBoothId(7L))
@@ -240,8 +250,8 @@ class BoothQueueCommandApplicationServiceTest {
         );
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
                 .willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
-        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getByIdForUpdate(7L)).willReturn(booth);
         given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
         given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
         given(boothCongestionService.findLatestByBoothId(7L))
@@ -290,8 +300,8 @@ class BoothQueueCommandApplicationServiceTest {
                 festivalPublicId,
                 adminPrincipal
         )).willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
-        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getByIdForUpdate(7L)).willReturn(booth);
         given(adminAccountService.getById(2L)).willReturn(admin);
         given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(2L, 10L))
                 .willReturn(AdminFestivalRole.createFestivalOwner(2L, 10L));
@@ -331,8 +341,8 @@ class BoothQueueCommandApplicationServiceTest {
         );
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
                 .willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
-        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getByIdForUpdate(7L)).willReturn(booth);
         given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
         given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
 
@@ -369,8 +379,8 @@ class BoothQueueCommandApplicationServiceTest {
         );
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
                 .willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
-        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getByIdForUpdate(7L)).willReturn(booth);
         given(fieldStaffAccountService.getById(3L)).willReturn(staffAccount("김스태프"));
         given(boothQueueService.save(any())).willAnswer(inv -> inv.getArgument(0));
         given(boothCongestionService.findLatestByBoothId(7L))
@@ -396,8 +406,8 @@ class BoothQueueCommandApplicationServiceTest {
         FieldStaffPrincipal staff = new FieldStaffPrincipal(3L, 10L, "s1", 0L);
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, staff))
                 .willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
-        given(boothInfoService.getById(7L)).willReturn(booth);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
+        given(boothInfoService.getByIdForUpdate(7L)).willReturn(booth);
 
         assertThatThrownBy(() -> service.updateTail(
                 festivalPublicId,
@@ -422,7 +432,7 @@ class BoothQueueCommandApplicationServiceTest {
         AdminPrincipal admin = new AdminPrincipal(1L, "a@mapo.go.kr");
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, admin))
                 .willReturn(10L);
-        given(boothQueueService.getByPublicId(queue.getPublicId())).willReturn(queue);
+        given(boothQueueService.getByPublicIdForUpdate(queue.getPublicId())).willReturn(queue);
 
         assertThatThrownBy(() -> service.updateTail(
                 festivalPublicId,

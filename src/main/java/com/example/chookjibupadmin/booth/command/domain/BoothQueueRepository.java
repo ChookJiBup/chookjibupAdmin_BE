@@ -11,7 +11,11 @@ public interface BoothQueueRepository {
 
     Optional<BoothQueue> findByPublicId(UUID publicId);
 
+    Optional<BoothQueue> findByPublicIdForUpdate(UUID publicId);
+
     Optional<BoothQueue> findByBoothId(Long boothId);
+
+    Optional<BoothQueue> findByBoothIdForUpdate(Long boothId);
 
     List<BoothQueue> findAllByFestivalId(Long festivalId);
 

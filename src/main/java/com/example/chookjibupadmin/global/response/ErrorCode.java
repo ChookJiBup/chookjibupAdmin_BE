@@ -6,6 +6,10 @@ import org.springframework.http.HttpStatus;
  * API 실패 상황별 숫자 코드, HTTP 상태, 메시지를 정의한다.
  */
 public enum ErrorCode {
+    BOOTH_QUEUE_RECOMMENDATION_UNAVAILABLE(50303, HttpStatus.SERVICE_UNAVAILABLE, "AI 동선 추천을 사용할 수 없습니다. 직접 설정하거나 다시 시도해 주세요."),
+    BOOTH_QUEUE_REVISION_CONFLICT(40922, HttpStatus.CONFLICT, "다른 사용자가 대기줄을 수정했습니다. 새로 조회해 주세요."),
+    BOOTH_QUEUE_PLAN_NOT_FOUND(40413, HttpStatus.NOT_FOUND, "사전 대기 동선이 없습니다."),
+    BOOTH_QUEUE_OPERATION_CLOSED(40923, HttpStatus.CONFLICT, "종료된 축제의 대기줄은 수정할 수 없습니다."),
     BAD_REQUEST(40000, HttpStatus.BAD_REQUEST, "잘못된 요청입니다."),
     INVALID_REQUEST(40001, HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     AUTH_EMAIL_DOMAIN_NOT_ALLOWED(40002, HttpStatus.BAD_REQUEST, "정부 공식 이메일만 사용할 수 있습니다."),

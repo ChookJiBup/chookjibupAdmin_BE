@@ -16,6 +16,7 @@ public record RoadmapNodeView(
         String reviewStatus,
         int sortOrder,
         String geometrySchemaVersion,
-        Long relatedBoothId
+        Long relatedBoothId,
+        Long version
 ) {
 }

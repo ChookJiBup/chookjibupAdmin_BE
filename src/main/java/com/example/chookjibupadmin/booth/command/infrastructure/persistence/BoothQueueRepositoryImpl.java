@@ -26,8 +26,18 @@ public class BoothQueueRepositoryImpl implements BoothQueueRepository {
     }
 
     @Override
+    public Optional<BoothQueue> findByPublicIdForUpdate(UUID publicId) {
+        return jpaRepository.findByPublicIdForUpdate(publicId);
+    }
+
+    @Override
     public Optional<BoothQueue> findByBoothId(Long boothId) {
         return jpaRepository.findByBoothId(boothId);
+    }
+
+    @Override
+    public Optional<BoothQueue> findByBoothIdForUpdate(Long boothId) {
+        return jpaRepository.findByBoothIdForUpdate(boothId);
     }
 
     @Override

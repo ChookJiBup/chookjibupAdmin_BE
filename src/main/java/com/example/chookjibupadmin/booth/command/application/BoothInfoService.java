@@ -30,6 +30,12 @@ public class BoothInfoService {
                 .orElseThrow(() -> new CustomException(ErrorCode.BOOTH_NOT_FOUND));
     }
 
+    @Transactional
+    public BoothInfo getByIdForUpdate(Long boothId) {
+        return boothInfoRepository.findByIdForUpdate(boothId)
+                .orElseThrow(() -> new CustomException(ErrorCode.BOOTH_NOT_FOUND));
+    }
+
     public Optional<BoothInfo> findByFestivalIdAndRoadmapNodeId(
             Long festivalId,
             Long roadmapNodeId

@@ -9,6 +9,9 @@ public interface BoothInfoRepository {
 
     Optional<BoothInfo> findById(Long boothId);
 
+    /** 계획 생성 및 현재 줄 갱신의 공통 직렬화 지점이다. */
+    Optional<BoothInfo> findByIdForUpdate(Long boothId);
+
     Optional<BoothInfo> findByFestivalIdAndRoadmapNodeId(
             Long festivalId,
             Long roadmapNodeId

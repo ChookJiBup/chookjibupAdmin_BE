@@ -44,6 +44,7 @@ public class BoothApprovalApplicationService {
     private final RoadmapNodeService roadmapNodeService;
     private final BoothInfoService boothInfoService;
     private final FestivalRoadmapService festivalRoadmapService;
+    private final BoothQueueService boothQueueService;
 
     public ApproveBoothResult approve(
             UUID festivalPublicId,
@@ -77,6 +78,8 @@ public class BoothApprovalApplicationService {
                     BoothInfo.create(festival.getId(), node.getId(), node.getNodeName())
             );
             node.approveBooth(booth.getId(), admin.getId());
+            boothQueueService.save(com.example.chookjibupadmin.booth.command.domain.BoothQueue.createEmpty(
+                    festival.getId(), booth.getId()));
             roadmapNodeService.save(node);
             return new ApproveBoothResult(
                     booth.getId(),
@@ -124,6 +127,8 @@ public class BoothApprovalApplicationService {
                         BoothInfo.create(festival.getId(), node.getId(), node.getNodeName())
                 );
                 node.approveBooth(booth.getId(), admin.getId());
+                boothQueueService.save(com.example.chookjibupadmin.booth.command.domain.BoothQueue.createEmpty(
+                        festival.getId(), booth.getId()));
                 roadmapNodeService.save(node);
                 approved.add(new ApproveBoothResult(
                         booth.getId(),

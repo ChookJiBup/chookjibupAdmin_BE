@@ -37,8 +37,8 @@ class BoothQueueQueryApplicationServiceTest {
     private BoothQueueService boothQueueService;
 
     @Test
-    @DisplayName("대기열이 없으면 승인 부스마다 빈 대기열을 만든다")
-    void success_GetQueues_CreatesMissing() {
+    @DisplayName("승인 시 생성된 빈 대기열을 읽고 조회 중 생성하지 않는다")
+    void success_GetQueues_ReadsApprovedQueue() {
         UUID festivalPublicId = UUID.randomUUID();
         AdminPrincipal principal = new AdminPrincipal(1L, "a@mapo.go.kr");
         BoothInfo booth = BoothInfo.create(10L, 100L, "김밥부스");
@@ -47,11 +47,12 @@ class BoothQueueQueryApplicationServiceTest {
         given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, principal))
                 .willReturn(10L);
         given(boothInfoService.findAllByFestivalId(10L)).willReturn(List.of(booth));
-        given(boothQueueService.findAllByBoothIdIn(List.of(7L))).willReturn(List.of());
-        given(boothQueueService.save(any(BoothQueue.class))).willReturn(created);
+        given(boothQueueService.findAllByBoothIdIn(List.of(7L))).willReturn(List.of(created));
+
 
         FestivalQueueListView view = service.getQueues(festivalPublicId, principal);
 
+        org.mockito.Mockito.verify(boothQueueService, org.mockito.Mockito.never()).save(any());
         assertThat(view.queues()).hasSize(1);
         assertThat(view.queues().getFirst().boothName()).isEqualTo("김밥부스");
         assertThat(view.queues().getFirst().queueId()).isEqualTo(created.getPublicId());

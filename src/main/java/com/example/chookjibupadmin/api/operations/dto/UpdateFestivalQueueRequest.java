@@ -25,23 +25,27 @@ public record UpdateFestivalQueueRequest(
         @DecimalMax("132.0")
         BigDecimal tailLongitude,
 
-        @Schema(description = "줄끝까지 거리(m). 없으면 null", example = "18")
+        @Schema(description = "호환용 보고 거리(m). 경로/부스 좌표가 있으면 서버 계산을 우선한다.", example = "18")
         @PositiveOrZero
         Integer queueTailMeters,
 
         /**
          * 대기열 경로.
          * <ul>
-         *   <li>필드 생략({@code null}) — 기존 경로 유지</li>
+         *   <li>필드 생략({@code null}) — 사전 동선 투영 또는 줄끝 기반 계산</li>
          *   <li>빈 배열 — 경로 삭제</li>
          *   <li>2점 이상 — 경로 교체(마지막 점은 줄끝과 동일)</li>
          * </ul>
          */
-        @Schema(description = "대기열 경로. null=유지, []=삭제, 2점 이상=교체")
-        List<@Valid PathPointRequest> path
+        @Schema(description = "실제 경로. 생략=동선/줄끝 계산, []=경로 삭제, 2점 이상=교체. 저장 응답에 계산 시간 포함.")
+        List<@NotNull @Valid PathPointRequest> path,
+        @Schema(description = "조회한 observationRevision. 구 FE 호환을 위해 생략 가능.")
+        @PositiveOrZero Long expectedRevision,
+        @Schema(description = "참조한 사전 동선 revision. 일치하지 않으면 409.")
+        @PositiveOrZero Long planRevision
 ) {
     /**
-     * {@code path == null}이면 기존 경로 유지, 빈 목록이면 삭제로 해석한다.
+     * 경로와 기대 버전을 application 명령으로 변환한다.
      */
     public UpdateBoothQueueCommand toCommand() {
         return new UpdateBoothQueueCommand(
@@ -52,7 +56,9 @@ public record UpdateFestivalQueueRequest(
                         ? null
                         : path.stream()
                                 .map(point -> new QueuePathPointCommand(point.lat(), point.lng()))
-                                .toList()
+                                .toList(),
+                expectedRevision,
+                planRevision
         );
     }
 

@@ -29,11 +29,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 승인 부스별 대기열을 조회하고, 없으면 빈 대기열을 생성한다.
+ * 승인 시 생성한 부스별 대기열을 조회한다. GET에서 상태를 생성하지 않는다.
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class BoothQueueQueryApplicationService {
 
     private final FestivalOperationAccessService festivalOperationAccessService;
@@ -59,10 +59,7 @@ public class BoothQueueQueryApplicationService {
         Map<BoothInfo, BoothQueue> queueByBooth = new LinkedHashMap<>();
         for (BoothInfo booth : booths) {
             BoothQueue queue = byBooth.get(booth.getId());
-            if (queue == null) {
-                queue = boothQueueService.save(BoothQueue.createEmpty(festivalId, booth.getId()));
-            }
-            queueByBooth.put(booth, queue);
+            if (queue != null) queueByBooth.put(booth, queue);
         }
 
         // 큐마다 이름을 따로 조회하면 N+1이 되므로 갱신자 이름은 한 번에 모아 조회한다.

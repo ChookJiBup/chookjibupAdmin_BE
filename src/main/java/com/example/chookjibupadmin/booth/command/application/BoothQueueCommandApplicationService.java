@@ -8,10 +8,9 @@ import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.auth.support.FestivalActorPrincipal;
 import com.example.chookjibupadmin.booth.command.application.dto.BoothQueueResult;
 import com.example.chookjibupadmin.booth.command.application.dto.UpdateBoothQueueCommand;
-import com.example.chookjibupadmin.booth.command.application.dto.UpdateBoothQueueCommand.QueuePathPointCommand;
+
 import com.example.chookjibupadmin.booth.command.domain.BoothCongestion;
 import com.example.chookjibupadmin.booth.command.domain.BoothCongestionEstimate;
-import com.example.chookjibupadmin.booth.command.domain.BoothCongestionEstimator;
 import com.example.chookjibupadmin.booth.command.domain.BoothCongestionModifierType;
 import com.example.chookjibupadmin.booth.command.domain.BoothInfo;
 import com.example.chookjibupadmin.booth.command.domain.BoothQueue;
@@ -22,11 +21,13 @@ import com.example.chookjibupadmin.operator.command.application.FestivalOperatio
 import com.example.chookjibupadmin.operator.command.application.FieldStaffAccountService;
 import com.example.chookjibupadmin.operator.support.FieldStaffPrincipal;
 import java.math.BigDecimal;
-import java.util.LinkedHashMap;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,8 +44,6 @@ public class BoothQueueCommandApplicationService {
     private static final BigDecimal KOREA_LAT_MAX = new BigDecimal("38.7");
     private static final BigDecimal KOREA_LNG_MIN = new BigDecimal("124.5");
     private static final BigDecimal KOREA_LNG_MAX = new BigDecimal("132.0");
-    private static final BoothCongestionEstimator BOOTH_CONGESTION_ESTIMATOR =
-            new BoothCongestionEstimator();
 
     private final FestivalOperationAccessService festivalOperationAccessService;
     private final BoothQueueService boothQueueService;
@@ -53,6 +52,10 @@ public class BoothQueueCommandApplicationService {
     private final AdminAccountService adminAccountService;
     private final AdminFestivalRoleService adminFestivalRoleService;
     private final FieldStaffAccountService fieldStaffAccountService;
+    private final BoothQueuePlanService planService;
+    private final BoothQueueMapReader mapReader;
+    private final QueueWriteAccess writeAccess;
+    private final Clock clock;
 
     public BoothQueueResult updateTail(
             UUID festivalPublicId,
@@ -64,13 +67,18 @@ public class BoothQueueCommandApplicationService {
                 festivalPublicId,
                 principal
         );
-        BoothQueue queue = boothQueueService.getByPublicId(queueId);
+        writeAccess.requireOpen(festivalPublicId);
+        BoothQueue queue = boothQueueService.getByPublicIdForUpdate(queueId);
         if (!queue.belongsTo(festivalId)) {
             throw new CustomException(ErrorCode.BOOTH_QUEUE_NOT_FOUND);
         }
-        BoothInfo booth = boothInfoService.getById(queue.getBoothId());
+        BoothInfo booth = boothInfoService.getByIdForUpdate(queue.getBoothId());
+        queue.checkRevision(command.expectedRevision());
         validateTailCoordinates(command.tailLatitude(), command.tailLongitude());
-        List<Map<String, BigDecimal>> path = resolvePathGeometry(queue, command);
+        var plan = planService.findByBoothId(booth.getId()).orElse(null);
+        var observation = QueueObservationResolver.resolve(queue, plan, mapReader.boothPoint(booth), command);
+        List<Map<String, BigDecimal>> path = observation.path();
+        command = new UpdateBoothQueueCommand(observation.lat(), observation.lng(), observation.meters(), null);
 
         CongestionModifier modifier = switch (principal) {
             case AdminPrincipal adminPrincipal -> updateAsAdmin(
@@ -89,8 +97,10 @@ public class BoothQueueCommandApplicationService {
             );
             default -> throw new CustomException(ErrorCode.UNAUTHORIZED);
         };
+        queue.recordObservation(observation.estimate(), observation.refreshObservation() ? LocalDateTime.now(clock) : queue.getObservedAt(),
+                observation.planRevision(), observation.method());
         BoothQueue savedQueue = boothQueueService.save(queue);
-        recordEstimatedCongestion(booth.getId(), command.queueTailMeters(), modifier);
+        recordEstimatedCongestion(booth.getId(), observation.estimate(), modifier);
         return BoothQueueResult.from(savedQueue, booth.getBoothName(), modifier.name());
     }
 
@@ -153,16 +163,12 @@ public class BoothQueueCommandApplicationService {
 
     private void recordEstimatedCongestion(
             Long boothId,
-            Integer queueTailMeters,
+            BoothCongestionEstimate value,
             CongestionModifier modifier
     ) {
-        Optional<BoothCongestionEstimate> estimate = BOOTH_CONGESTION_ESTIMATOR
-                .estimate(queueTailMeters);
-        if (estimate.isEmpty()) {
+        if (value == null) {
             return;
         }
-
-        BoothCongestionEstimate value = estimate.get();
         Optional<BoothCongestion> latest = boothCongestionService
                 .findLatestByBoothId(boothId);
         if (latest.filter(congestion -> congestion.getWaitMinutes() != null
@@ -198,51 +204,6 @@ public class BoothQueueCommandApplicationService {
                 || lng.compareTo(KOREA_LNG_MAX) > 0) {
             throw new CustomException(ErrorCode.FESTIVAL_LOCATION_COORDINATES_OUT_OF_KOREA);
         }
-    }
-
-    private List<Map<String, BigDecimal>> resolvePathGeometry(
-            BoothQueue queue,
-            UpdateBoothQueueCommand command
-    ) {
-        List<QueuePathPointCommand> path = command.path();
-        if (path == null) {
-            return queue.getPathGeometry();
-        }
-        if (path.isEmpty()) {
-            return null;
-        }
-        if (path.size() == 1) {
-            throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
-        }
-        if (path.size() > 500) {
-            throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
-        }
-
-        List<Map<String, BigDecimal>> resolved = new java.util.ArrayList<>(path.size());
-        QueuePathPointCommand previous = null;
-        for (QueuePathPointCommand point : path) {
-            if (point == null || point.lat() == null || point.lng() == null) {
-                throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
-            }
-            validateTailCoordinates(point.lat(), point.lng());
-            if (previous != null
-                    && previous.lat().compareTo(point.lat()) == 0
-                    && previous.lng().compareTo(point.lng()) == 0) {
-                throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
-            }
-            Map<String, BigDecimal> map = new LinkedHashMap<>();
-            map.put("lat", point.lat());
-            map.put("lng", point.lng());
-            resolved.add(map);
-            previous = point;
-        }
-
-        QueuePathPointCommand last = path.get(path.size() - 1);
-        if (last.lat().compareTo(command.tailLatitude()) != 0
-                || last.lng().compareTo(command.tailLongitude()) != 0) {
-            throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
-        }
-        return List.copyOf(resolved);
     }
 
     private record CongestionModifier(

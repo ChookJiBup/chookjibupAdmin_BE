@@ -24,6 +24,11 @@ public class BoothInfoRepositoryImpl implements BoothInfoRepository {
     }
 
     @Override
+    public Optional<BoothInfo> findByIdForUpdate(Long boothId) {
+        return jpaRepository.findByIdForUpdate(boothId);
+    }
+
+    @Override
     public Optional<BoothInfo> findByFestivalIdAndRoadmapNodeId(
             Long festivalId,
             Long roadmapNodeId

@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.booth.command.application.dto;
 
 import com.example.chookjibupadmin.booth.command.domain.BoothQueue;
 import com.example.chookjibupadmin.booth.command.domain.BoothQueueModifierType;
+import com.example.chookjibupadmin.booth.command.domain.BoothCongestionLevel;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,7 +19,13 @@ public record BoothQueueResult(
         List<Map<String, BigDecimal>> path,
         BoothQueueModifierType lastModifierType,
         String lastModifierName,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        Integer waitMinutes,
+        BoothCongestionLevel congestionLevel,
+        LocalDateTime observedAt,
+        long observationRevision,
+        Long planRevision,
+        String calculationMethod
 ) {
     public static BoothQueueResult from(
             BoothQueue queue,
@@ -35,7 +42,9 @@ public record BoothQueueResult(
                 queue.getPathGeometry(),
                 queue.getModifierType(),
                 lastModifierName,
-                queue.getUpdatedAt()
+                queue.getUpdatedAt(),
+                queue.getWaitMinutes(), queue.getCongestionLevel(), queue.getObservedAt(),
+                queue.getObservationRevision(), queue.getPlanRevision(), queue.getCalculationMethod()
         );
     }
 }

@@ -36,6 +36,17 @@ public class BoothQueueService {
         return boothQueueRepository.findByBoothId(boothId);
     }
 
+    @Transactional
+    public Optional<BoothQueue> findByBoothIdForUpdate(Long boothId) {
+        return boothQueueRepository.findByBoothIdForUpdate(boothId);
+    }
+
+    @Transactional
+    public BoothQueue getByPublicIdForUpdate(UUID publicId) {
+        return boothQueueRepository.findByPublicIdForUpdate(publicId)
+                .orElseThrow(() -> new CustomException(ErrorCode.BOOTH_QUEUE_NOT_FOUND));
+    }
+
     public List<BoothQueue> findAllByFestivalId(Long festivalId) {
         return boothQueueRepository.findAllByFestivalId(festivalId);
     }

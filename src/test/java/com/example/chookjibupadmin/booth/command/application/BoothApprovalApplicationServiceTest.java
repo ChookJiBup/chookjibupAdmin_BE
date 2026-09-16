@@ -77,6 +77,8 @@ class BoothApprovalApplicationServiceTest {
     @Mock
     private FestivalRoadmapService festivalRoadmapService;
 
+    @Mock private BoothQueueService boothQueueService;
+
     @Test
     @DisplayName("이미 같은 노드로 승인된 부스가 있으면 거절한다")
     void fail_Approve_AlreadyLinkedBooth() {
