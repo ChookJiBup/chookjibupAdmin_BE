@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
+import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -24,6 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class AdminLoginServiceTest {
@@ -33,6 +36,9 @@ class AdminLoginServiceTest {
 
     @Mock
     private AdminAccountService adminAccountService;
+
+    @Mock
+    private AdminFestivalRoleService adminFestivalRoleService;
 
     @Mock
     private PasswordEncoder passwordEncoder;
@@ -73,11 +79,53 @@ class AdminLoginServiceTest {
         }
 
         @Test
-        @DisplayName("축제에 배정된 관리자도 로그인 응답에서는 축제 역할을 확정하지 않는다")
-        void success_Login_WithoutFestivalRole() {
+        @DisplayName("총괄과 운영자를 함께 맡은 계정은 총괄을 대표 역할로 내려준다")
+        void success_Login_HighestRoleFestivalOwner() {
             // given
+            AdminLoginResponse response = loginWithHighestRole(AdminRole.FESTIVAL_OWNER);
+
+            // then
+            assertThat(response.admin().role()).isEqualTo(AdminRole.FESTIVAL_OWNER);
+        }
+
+        @Test
+        @DisplayName("운영자만 맡은 계정은 운영자를 대표 역할로 내려준다")
+        void success_Login_HighestRoleSubAdmin() {
+            // given
+            AdminLoginResponse response = loginWithHighestRole(AdminRole.SUB_ADMIN);
+
+            // then
+            assertThat(response.admin().role()).isEqualTo(AdminRole.SUB_ADMIN);
+        }
+
+        @Test
+        @DisplayName("배정된 축제가 없으면 대표 역할 없이 응답한다")
+        void success_Login_NoAssignedFestival() {
+            // given
+            AdminLoginResponse response = loginWithHighestRole(null);
+
+            // then
+            assertThat(response.admin().role()).isNull();
+        }
+
+        @Test
+        @DisplayName("대표 역할이 총괄이어도 권한 플래그는 축제별 값이라 채우지 않는다")
+        void success_Login_KeepsPermissionFlagsFalse() {
+            // given
+            AdminLoginResponse response = loginWithHighestRole(AdminRole.FESTIVAL_OWNER);
+
+            // then: 계정 단위로 true를 내려주면 운영자로 배정된 축제에서도 총괄 메뉴가 열린다.
+            assertThat(response.admin().festivalId()).isNull();
+            assertThat(response.admin().canInviteSubAdmin()).isFalse();
+            assertThat(response.admin().canModifyFestivalInfo()).isFalse();
+            assertThat(response.admin().canViewOperationReport()).isFalse();
+            assertThat(response.admin().canUpdateQueueTail()).isFalse();
+        }
+
+        private AdminLoginResponse loginWithHighestRole(AdminRole highestRole) {
             AdminLoginRequest request = loginRequest();
             AdminAccount adminAccount = adminAccount();
+            ReflectionTestUtils.setField(adminAccount, "id", 7L);
             given(adminAccountService.getByEmailForLogin(AdminEmail.of(request.email())))
                     .willReturn(adminAccount);
             given(passwordEncoder.matches(
@@ -88,14 +136,9 @@ class AdminLoginServiceTest {
                     .willReturn("access-token");
             given(jwtTokenProvider.getAccessTokenExpirationSeconds())
                     .willReturn(1800L);
+            given(adminFestivalRoleService.getHighestRole(7L)).willReturn(highestRole);
 
-            // when
-            AdminLoginResponse response = adminLoginService.login(request);
-
-            // then
-            assertThat(response.admin().festivalId()).isNull();
-            assertThat(response.admin().role()).isNull();
-            assertThat(response.admin().canInviteSubAdmin()).isFalse();
+            return adminLoginService.login(request);
         }
 
         @Test

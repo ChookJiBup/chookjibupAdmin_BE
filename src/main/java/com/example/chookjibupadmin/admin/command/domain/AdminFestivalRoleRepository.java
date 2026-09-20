@@ -32,5 +32,8 @@ public interface AdminFestivalRoleRepository {
 
     List<AdminFestivalRole> findAllByFestivalId(Long festivalId);
 
+    /** 계정이 가진 축제 역할의 종류(중복 제거)를 한 번에 조회한다. */
+    List<AdminRole> findDistinctRolesByAdminAccountId(Long adminAccountId);
+
     void deleteAll(Collection<AdminFestivalRole> roles);
 }

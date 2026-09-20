@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.auth.command.application;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.api.auth.dto.AdminLoginRequest;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminLoginService {
 
     private final AdminAccountService adminAccountService;
+    private final AdminFestivalRoleService adminFestivalRoleService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -42,10 +44,13 @@ public class AdminLoginService {
 
         String accessToken = jwtTokenProvider.createAccessToken(adminAccount);
 
+        // 로그인 직후 메인보드에는 고른 축제가 없어서 계정 단위 대표 역할로 뱃지를 그린다.
+        // 표시 전용이다. 축제 안 화면의 권한 판정은 그 축제의 역할로 따로 한다.
         return AdminLoginResponse.of(
                 accessToken,
                 jwtTokenProvider.getAccessTokenExpirationSeconds(),
-                adminAccount
+                adminAccount,
+                adminFestivalRoleService.getHighestRole(adminAccount.getId())
         );
     }
 }

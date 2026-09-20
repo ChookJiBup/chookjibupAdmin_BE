@@ -126,4 +126,42 @@ class AdminFestivalRoleRepositoryTest {
             assertThat(exists).isFalse();
         }
     }
+
+    @Nested
+    @DisplayName("findDistinctRolesByAdminAccountId")
+    class FindDistinctRolesByAdminAccountId {
+
+        @Test
+        @DisplayName("배정된 축제가 몇 곳이든 역할 종류만 중복 없이 반환한다")
+        void success_FindDistinctRoles_Deduplicates() {
+            // given: 총괄 2곳 + 운영자 1곳
+            adminFestivalRoleRepository.save(
+                    AdminFestivalRole.createFestivalOwner(50L, 301L));
+            adminFestivalRoleRepository.save(
+                    AdminFestivalRole.createFestivalOwner(50L, 302L));
+            adminFestivalRoleRepository.save(
+                    AdminFestivalRole.createSubAdmin(50L, 303L, 9L));
+
+            // when
+            List<AdminRole> roles =
+                    adminFestivalRoleRepository.findDistinctRolesByAdminAccountId(50L);
+
+            // then: 축제 수만큼 행이 늘지 않는다.
+            assertThat(roles).containsExactlyInAnyOrder(
+                    AdminRole.FESTIVAL_OWNER,
+                    AdminRole.SUB_ADMIN
+            );
+        }
+
+        @Test
+        @DisplayName("배정된 축제가 없으면 빈 목록을 반환한다")
+        void success_FindDistinctRoles_NoAssignment() {
+            // when
+            List<AdminRole> roles =
+                    adminFestivalRoleRepository.findDistinctRolesByAdminAccountId(51L);
+
+            // then
+            assertThat(roles).isEmpty();
+        }
+    }
 }

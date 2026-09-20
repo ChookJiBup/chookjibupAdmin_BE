@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
+import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
 import com.example.chookjibupadmin.admin.command.domain.AccountKind;
 import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
+import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
+import com.example.chookjibupadmin.admin.command.domain.AdminRole;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminEmail;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminName;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
@@ -32,6 +35,9 @@ class AdminLoginServiceIntegrationTest {
 
     @Autowired
     private AdminAccountService adminAccountService;
+
+    @Autowired
+    private AdminFestivalRoleService adminFestivalRoleService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -86,6 +92,54 @@ class AdminLoginServiceIntegrationTest {
             assertThat(response.admin().email()).isEqualTo("vendor@gmail.com");
             assertThat(response.admin().accountKind()).isEqualTo(AccountKind.CONTRACTOR);
             assertThat(response.admin().rank()).isNull();
+        }
+
+        @Test
+        @DisplayName("총괄과 운영자를 함께 맡은 계정은 총괄을 대표 역할로 내려준다")
+        void success_Login_HighestRoleAcrossFestivals() {
+            // given: 총괄 2곳 + 운영자 1곳. 배정 수와 무관하게 역할 종류만 조회한다.
+            AdminAccount adminAccount = adminAccount("Password!123");
+            adminAccountService.save(adminAccount);
+            Long adminId = adminAccount.getId();
+            adminFestivalRoleService.save(
+                    AdminFestivalRole.createFestivalOwner(adminId, 101L));
+            adminFestivalRoleService.save(
+                    AdminFestivalRole.createFestivalOwner(adminId, 102L));
+            adminFestivalRoleService.save(
+                    AdminFestivalRole.createSubAdmin(adminId, 103L, 999L));
+
+            // when
+            AdminLoginResponse response = adminLoginService.login(new AdminLoginRequest(
+                    "admin@mapo.go.kr",
+                    "Password!123"
+            ));
+
+            // then
+            assertThat(response.admin().role()).isEqualTo(AdminRole.FESTIVAL_OWNER);
+            // 권한 플래그는 축제별 값이라 계정 단위로는 채우지 않는다.
+            assertThat(response.admin().canInviteSubAdmin()).isFalse();
+        }
+
+        @Test
+        @DisplayName("운영자로만 배정된 계정은 운영자를 대표 역할로 내려준다")
+        void success_Login_SubAdminOnly() {
+            // given
+            AdminAccount adminAccount = adminAccount("Password!123");
+            adminAccountService.save(adminAccount);
+            Long adminId = adminAccount.getId();
+            adminFestivalRoleService.save(
+                    AdminFestivalRole.createSubAdmin(adminId, 201L, 999L));
+            adminFestivalRoleService.save(
+                    AdminFestivalRole.createSubAdmin(adminId, 202L, 999L));
+
+            // when
+            AdminLoginResponse response = adminLoginService.login(new AdminLoginRequest(
+                    "admin@mapo.go.kr",
+                    "Password!123"
+            ));
+
+            // then
+            assertThat(response.admin().role()).isEqualTo(AdminRole.SUB_ADMIN);
         }
 
         @Test
