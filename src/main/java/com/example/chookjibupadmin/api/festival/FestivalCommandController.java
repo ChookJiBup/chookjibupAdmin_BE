@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import com.example.chookjibupadmin.festival.support.ReviewQrUrlBuilder;
 
 /**
  * 축제 기본 정보 쓰기 API를 제공한다.
@@ -51,6 +52,7 @@ public class FestivalCommandController {
     private final FestivalMapRegistrationApplicationService
             festivalMapRegistrationApplicationService;
     private final FestivalLocationQueryApplicationService locationQueryService;
+    private final ReviewQrUrlBuilder reviewQrUrlBuilder;
 
     /**
      * 임시 기준의 축제 기본 정보를 저장한다.
@@ -73,8 +75,8 @@ public class FestivalCommandController {
                         festival,
                         locationQueryService.getLocations(
                                 festival.getPublicId(),
-                                principal
-                        )
+                                principal)
+                        ,reviewQrUrlBuilder.buildReviewUrl(festival.getPublicId())
                 )
         );
     }
@@ -111,7 +113,7 @@ public class FestivalCommandController {
                         locationQueryService.getLocations(
                                 result.festival().getPublicId(),
                                 principal
-                        )
+                        ), reviewQrUrlBuilder.buildReviewUrl(result.festival().getPublicId())
                 )
         );
     }

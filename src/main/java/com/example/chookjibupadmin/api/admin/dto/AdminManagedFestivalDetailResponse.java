@@ -33,7 +33,12 @@ public record AdminManagedFestivalDetailResponse(
         @Schema(description = "일일 운영 종료 시간") LocalTime operationEndTime,
         @Schema(description = "방문 인원 입력 방식", example = "DAILY")
         FestivalVisitorCountInputMode visitorCountInputMode,
-        @Schema(description = "축제 장소 목록") List<FestivalLocationResponse> locations
+        @Schema(description = "축제 장소 목록") List<FestivalLocationResponse> locations,
+        @Schema(
+                description = "축제 현장 리뷰 QR코드가 가리킬 URL(사용자 프런트 기준). "
+                        + "QR 이미지 자체가 필요하면 /api/admin/me/managed-festivals/{festivalId}/review-qr을 호출한다."
+        )
+        String reviewQrUrl
 ) {
 
     public static AdminManagedFestivalDetailResponse from(
@@ -57,7 +62,8 @@ public record AdminManagedFestivalDetailResponse(
                 detail.visitorCountInputMode(),
                 detail.locations().stream()
                         .map(FestivalLocationResponse::from)
-                        .toList()
+                        .toList(),
+                detail.reviewQrUrl()
         );
     }
 }

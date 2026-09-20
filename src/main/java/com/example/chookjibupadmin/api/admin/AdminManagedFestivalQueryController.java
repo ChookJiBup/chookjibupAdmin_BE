@@ -6,6 +6,7 @@ import com.example.chookjibupadmin.admin.query.application.AdminManagedFestivalQ
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalCondition;
 import com.example.chookjibupadmin.api.admin.dto.AdminManagedFestivalDetailResponse;
 import com.example.chookjibupadmin.api.admin.dto.AdminManagedFestivalResponse;
+import com.example.chookjibupadmin.api.admin.dto.ReviewQrResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.ApiResponse;
@@ -82,6 +83,30 @@ public class AdminManagedFestivalQueryController {
                                 festivalId,
                                 principal
                         )
+                )
+        );
+    }
+
+    /**
+     * 축제 현장에 붙일 리뷰 QR코드를 조회한다. URL과 함께, 바로 화면에 그릴 수 있는
+     * PNG 이미지(base64 data URI)도 같이 내려준다. getManagedFestival과 똑같이
+     * 본인이 관리하는 축제인지 검증한다.
+     */
+    @Operation(
+            summary = "축제 현장 리뷰 QR 조회",
+            description = "리뷰 작성 URL과 그 URL을 인코딩한 PNG QR코드 이미지(base64 data URI)를 함께 반환한다. "
+                    + "size는 QR 이미지의 정사각형 한 변 픽셀 크기(기본 480, 생략 가능)."
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/{festivalId}/review-qr")
+    public ApiResponse<ReviewQrResponse> getReviewQr(
+            @PathVariable UUID festivalId,
+            @AuthenticationPrincipal AdminPrincipal principal
+    ) {
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_REVIEW_QR_READ_SUCCESS,
+                ReviewQrResponse.from(
+                        detailQueryService.getReviewQr(festivalId, principal)
                 )
         );
     }

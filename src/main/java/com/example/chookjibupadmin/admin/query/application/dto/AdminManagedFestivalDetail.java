@@ -29,6 +29,7 @@ public record AdminManagedFestivalDetail(
         LocalTime operationStartTime,
         LocalTime operationEndTime,
         FestivalVisitorCountInputMode visitorCountInputMode,
-        List<FestivalLocationDetail> locations
+        List<FestivalLocationDetail> locations,
+        String reviewQrUrl
 ) {
 }
