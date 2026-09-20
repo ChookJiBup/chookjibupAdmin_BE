@@ -151,6 +151,26 @@ public class AdminFestivalRoleService {
     }
 
     /**
+     * 계정이 가진 축제 역할 중 가장 높은 역할을 반환한다. 배정된 축제가 없으면 null.
+     *
+     * <p><strong>권한 판정에 쓰면 안 된다.</strong> 축제를 고르기 전 화면(메인보드·축제등록·
+     * 마이페이지)에서 역할 뱃지를 그릴 때만 쓰는 표시값이다. 축제 안 화면은
+     * {@link #getByAdminAccountIdAndFestivalId}로 그 축제의 역할을 받아 판정해야 한다.
+     * 안 그러면 운영자로 배정된 축제에서도 총괄 메뉴가 열린다.</p>
+     *
+     * <p>역할 종류만 distinct로 한 번에 읽으므로 배정된 축제 수와 무관하게 쿼리 하나다.</p>
+     */
+    public AdminRole getHighestRole(Long adminAccountId) {
+        if (adminAccountId == null) {
+            return null;
+        }
+        return AdminRole.highestOf(
+                adminFestivalRoleRepository
+                        .findDistinctRolesByAdminAccountId(adminAccountId)
+        );
+    }
+
+    /**
      * 축제 관리자 역할 관계를 일괄 삭제한다.
      */
     @Transactional

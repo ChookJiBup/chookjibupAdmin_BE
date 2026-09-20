@@ -70,6 +70,11 @@ public class AdminFestivalRoleRepositoryImpl
     }
 
     @Override
+    public List<AdminRole> findDistinctRolesByAdminAccountId(Long adminAccountId) {
+        return jpaRepository.findDistinctRolesByAdminAccountId(adminAccountId);
+    }
+
+    @Override
     public void deleteAll(Collection<AdminFestivalRole> roles) {
         jpaRepository.deleteAllInBatch(roles);
     }

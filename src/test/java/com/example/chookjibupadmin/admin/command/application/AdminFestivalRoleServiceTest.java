@@ -193,4 +193,63 @@ class AdminFestivalRoleServiceTest {
             assertThat(exists).isTrue();
         }
     }
+
+    @Nested
+    @DisplayName("getHighestRole")
+    class GetHighestRole {
+
+        @Test
+        @DisplayName("총괄과 운영자를 함께 가지면 총괄을 대표 역할로 고른다")
+        void success_GetHighestRole_OwnerAndSubAdmin() {
+            // given: 총괄 10곳 + 운영자 3곳이어도 역할 종류는 두 줄만 돌아온다.
+            given(repository.findDistinctRolesByAdminAccountId(1L))
+                    .willReturn(List.of(AdminRole.SUB_ADMIN, AdminRole.FESTIVAL_OWNER));
+
+            // when
+            AdminRole role = service.getHighestRole(1L);
+
+            // then
+            assertThat(role).isEqualTo(AdminRole.FESTIVAL_OWNER);
+        }
+
+        @Test
+        @DisplayName("운영자 역할만 가지면 운영자를 대표 역할로 고른다")
+        void success_GetHighestRole_SubAdminOnly() {
+            // given
+            given(repository.findDistinctRolesByAdminAccountId(2L))
+                    .willReturn(List.of(AdminRole.SUB_ADMIN));
+
+            // when
+            AdminRole role = service.getHighestRole(2L);
+
+            // then
+            assertThat(role).isEqualTo(AdminRole.SUB_ADMIN);
+        }
+
+        @Test
+        @DisplayName("배정된 축제가 하나도 없으면 대표 역할이 없다")
+        void success_GetHighestRole_NoAssignment() {
+            // given
+            given(repository.findDistinctRolesByAdminAccountId(11L))
+                    .willReturn(List.of());
+
+            // when
+            AdminRole role = service.getHighestRole(11L);
+
+            // then
+            assertThat(role).isNull();
+        }
+
+        @Test
+        @DisplayName("아직 저장되지 않은 계정이면 역할을 조회하지 않는다")
+        void success_GetHighestRole_NullAccountId() {
+            // when
+            AdminRole role = service.getHighestRole(null);
+
+            // then
+            assertThat(role).isNull();
+            then(repository).should(never())
+                    .findDistinctRolesByAdminAccountId(org.mockito.ArgumentMatchers.any());
+        }
+    }
 }
