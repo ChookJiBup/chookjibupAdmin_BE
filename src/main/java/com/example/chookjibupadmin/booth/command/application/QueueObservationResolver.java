@@ -51,6 +51,10 @@ public final class QueueObservationResolver {
                 throw new CustomException(ErrorCode.BOOTH_QUEUE_PATH_INVALID);
             }
             meters = 0; method = "EMPTY";
+        } else if (command.path() != null && command.path().isEmpty()
+                && command.queueTailMeters() != null) {
+            // 존 선택처럼 좌표 대신 거리를 보고하는 경우. 사전 동선이나 부스 좌표로 재계산하지 않는다.
+            meters = command.queueTailMeters(); method = "REPORTED"; usedPlanRevision = null;
         } else if (plan != null && command.path() == null) {
             path = QueueGeometry.occupiedPath(plan.getPathGeometry(), tail);
             tail = path.getLast(); meters = toMeters(QueueGeometry.length(path));
