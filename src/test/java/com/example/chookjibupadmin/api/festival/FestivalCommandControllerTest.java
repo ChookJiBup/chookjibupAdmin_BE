@@ -6,11 +6,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalRequest;
-import com.example.chookjibupadmin.api.festival.dto.CreateFestivalWithMapResponse;
+import com.example.chookjibupadmin.api.festival.dto.CreateFestivalResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
 import com.example.chookjibupadmin.festival.command.application.FestivalDeleteApplicationService;
-import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalWithMapResult;
+import com.example.chookjibupadmin.festival.command.application.FestivalImageRegistrationApplicationService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescription;
@@ -19,20 +19,12 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationT
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationQueryApplicationService;
 import com.example.chookjibupadmin.global.response.ApiResponse;
-import com.example.chookjibupadmin.map.command.application.FestivalMapRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
-import com.example.chookjibupadmin.map.command.domain.FestivalMap;
-import com.example.chookjibupadmin.map.command.domain.vo.FestivalMapName;
-import com.example.chookjibupadmin.map.command.domain.vo.MapImageContentType;
-import com.example.chookjibupadmin.map.command.domain.vo.MapImageDimensions;
-import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileName;
-import com.example.chookjibupadmin.map.command.domain.vo.MapImageFileSize;
-import com.example.chookjibupadmin.map.command.domain.vo.MapImageObjectKey;
-import com.example.chookjibupadmin.map.command.domain.vo.Sha256Checksum;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -40,9 +32,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @ExtendWith(MockitoExtension.class)
 class FestivalCommandControllerTest {
+
+    @AfterEach
+    void tearDown() {
+        RequestContextHolder.resetRequestAttributes();
+    }
 
     @InjectMocks
     private FestivalCommandController controller;
@@ -54,39 +54,44 @@ class FestivalCommandControllerTest {
     private FestivalDeleteApplicationService festivalDeleteApplicationService;
 
     @Mock
-    private FestivalMapRegistrationApplicationService registrationService;
+    private FestivalImageRegistrationApplicationService imageRegistrationService;
 
     @Mock
     private FestivalLocationQueryApplicationService locationQueryService;
 
     @Test
     @DisplayName("multipart 축제 등록 요청의 이미지 파트를 프레임워크 독립 Command로 변환한다")
-    void success_CreateWithMap() throws Exception {
+    void success_CreateWithImage() throws Exception {
         CreateFestivalRequest request = request();
         AdminPrincipal principal = new AdminPrincipal(1L, "owner@mapo.go.kr");
         MockMultipartFile image = new MockMultipartFile(
                 "image",
-                "festival-map.png",
+                "festival-thumbnail.png",
                 "image/png",
                 new byte[]{1, 2, 3}
         );
-        given(registrationService.create(any(), any(), any()))
-                .willReturn(result());
+        MockHttpServletRequest servletRequest = new MockHttpServletRequest();
+        servletRequest.setScheme("https");
+        servletRequest.setServerName("admin-api.example.com");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(servletRequest));
+        Festival festival = festival();
+        given(imageRegistrationService.create(any(), any(), any(), any()))
+                .willReturn(festival);
 
-        ApiResponse<CreateFestivalWithMapResponse> response =
-                controller.createWithMap(request, image, principal);
+        ApiResponse<CreateFestivalResponse> response =
+                controller.createWithImage(request, image, principal);
 
-        assertThat(response.data().festival().name()).isEqualTo(request.name());
-        assertThat(response.data().map().storageStatus()).isEqualTo("UPLOADED");
+        assertThat(response.data().name()).isEqualTo(request.name());
         ArgumentCaptor<MapImageUploadCommand> captor =
                 ArgumentCaptor.forClass(MapImageUploadCommand.class);
-        then(registrationService).should().create(
+        then(imageRegistrationService).should().create(
                 any(),
                 captor.capture(),
+                any(),
                 any()
         );
         assertThat(captor.getValue().originalFileName())
-                .isEqualTo("festival-map.png");
+                .isEqualTo("festival-thumbnail.png");
         assertThat(captor.getValue().fileSize()).isEqualTo(3);
         assertThat(captor.getValue().inputStreamSupplier().open().readAllBytes())
                 .containsExactly(1, 2, 3);
@@ -122,8 +127,8 @@ class FestivalCommandControllerTest {
         );
     }
 
-    private CreateFestivalWithMapResult result() {
-        Festival festival = Festival.create(
+    private Festival festival() {
+        return Festival.create(
                 1L,
                 UUID.randomUUID(),
                 FestivalName.of("테스트 축제"),
@@ -138,27 +143,5 @@ class FestivalCommandControllerTest {
                         LocalTime.of(21, 0)
                 )
         );
-        FestivalMap festivalMap = FestivalMap.uploaded(
-                UUID.randomUUID(),
-                1L,
-                FestivalMapName.of("테스트 축제 배치도"),
-                MapImageFileName.of("festival-map.png"),
-                MapImageObjectKey.of("original-key"),
-                MapImageObjectKey.of("display-key"),
-                MapImageObjectKey.of("analysis-key"),
-                MapImageContentType.of("image/png"),
-                MapImageContentType.of("image/png"),
-                MapImageContentType.of("image/jpeg"),
-                MapImageFileSize.of(3),
-                MapImageFileSize.of(3),
-                MapImageFileSize.of(2),
-                MapImageDimensions.of(800, 600),
-                MapImageDimensions.of(800, 600),
-                Sha256Checksum.of("a".repeat(64)),
-                Sha256Checksum.of("b".repeat(64)),
-                Sha256Checksum.of("c".repeat(64)),
-                1L
-        );
-        return new CreateFestivalWithMapResult(festival, festivalMap);
     }
 }

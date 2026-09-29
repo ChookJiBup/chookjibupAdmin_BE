@@ -90,6 +90,9 @@ public class Festival extends BaseTimeEntity {
     )
     private FestivalDescription description;
 
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
     @Embedded
     @AttributeOverride(
             name = "value",
@@ -319,6 +322,16 @@ public class Festival extends BaseTimeEntity {
         this.detailAddress = detailAddress;
         this.period = period;
         this.operationTime = operationTime;
+    }
+
+    /**
+     * 사용자 화면에서 대표 썸네일로 사용할 공개 이미지 주소를 지정한다.
+     */
+    public void assignRepresentativeImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+        this.imageUrl = imageUrl.trim();
     }
 
     /**

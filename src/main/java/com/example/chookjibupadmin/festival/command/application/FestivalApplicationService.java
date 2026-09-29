@@ -75,7 +75,26 @@ public class FestivalApplicationService {
                 command,
                 principal,
                 UUID.randomUUID(),
+                null,
                 null
+        ).festival();
+    }
+
+    /**
+     * 업로드된 대표 이미지의 공개 조회 주소와 함께 축제를 생성한다.
+     */
+    public Festival createWithImage(
+            CreateFestivalCommand command,
+            AdminPrincipal principal,
+            UUID festivalPublicId,
+            String imageUrl
+    ) {
+        return createFestival(
+                command,
+                principal,
+                festivalPublicId,
+                null,
+                imageUrl
         ).festival();
     }
 
@@ -95,7 +114,8 @@ public class FestivalApplicationService {
                 command,
                 principal,
                 festivalPublicId,
-                uploadedMap
+                uploadedMap,
+                null
         );
     }
 
@@ -103,7 +123,8 @@ public class FestivalApplicationService {
             CreateFestivalCommand command,
             AdminPrincipal principal,
             UUID festivalPublicId,
-            UploadedFestivalMap uploadedMap
+            UploadedFestivalMap uploadedMap,
+            String imageUrl
     ) {
         AdminAccount creator = findAuthenticatedAdmin(principal);
         if (!creator.canCreateFestival()) {
@@ -137,6 +158,9 @@ public class FestivalApplicationService {
                 ),
                 normalizeCreateVisitorMode(command.visitorCountInputMode())
         );
+        if (imageUrl != null) {
+            festival.assignRepresentativeImage(imageUrl);
+        }
 
         Festival savedFestival = festivalService.save(festival);
         List<FestivalLocation> savedLocations = festivalLocationService.saveAll(

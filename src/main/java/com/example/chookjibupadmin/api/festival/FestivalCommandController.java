@@ -2,18 +2,16 @@ package com.example.chookjibupadmin.api.festival;
 
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalResponse;
-import com.example.chookjibupadmin.api.festival.dto.CreateFestivalWithMapResponse;
 import com.example.chookjibupadmin.api.festival.dto.FestivalVisitorCountInputModeResponse;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalVisitorCountInputModeRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalResponse;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalDeleteApplicationService;
+import com.example.chookjibupadmin.festival.command.application.FestivalImageRegistrationApplicationService;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
-import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalWithMapResult;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationQueryApplicationService;
-import com.example.chookjibupadmin.map.command.application.FestivalMapRegistrationApplicationService;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
@@ -36,6 +34,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
  * 축제 기본 정보 쓰기 API를 제공한다.
@@ -48,8 +47,7 @@ public class FestivalCommandController {
 
     private final FestivalApplicationService festivalApplicationService;
     private final FestivalDeleteApplicationService festivalDeleteApplicationService;
-    private final FestivalMapRegistrationApplicationService
-            festivalMapRegistrationApplicationService;
+    private final FestivalImageRegistrationApplicationService imageRegistrationService;
     private final FestivalLocationQueryApplicationService locationQueryService;
 
     /**
@@ -80,36 +78,39 @@ public class FestivalCommandController {
     }
 
     /**
-     * 축제 기본 정보와 AI 분석 대상 원본 도면을 함께 등록한다.
+     * 축제 기본 정보와 사용자 화면 대표 이미지를 함께 등록한다.
      */
     @Operation(
-            summary = "AI 분석용 원본 도면을 포함한 축제 기본 정보 생성",
+            summary = "대표 이미지를 포함한 축제 기본 정보 생성",
             description = "대표 장소 위경도 필수(JSON 파트와 동일). 누락 40013, 범위 밖 40014."
     )
     @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<CreateFestivalWithMapResponse> createWithMap(
+    public ApiResponse<CreateFestivalResponse> createWithImage(
             @Valid @RequestPart("festival") CreateFestivalRequest request,
-            @RequestPart("image") MultipartFile blueprintImage,
+            @RequestPart("image") MultipartFile representativeImage,
             @AuthenticationPrincipal AdminPrincipal principal
     ) {
-        CreateFestivalWithMapResult result = festivalMapRegistrationApplicationService.create(
+        Festival festival = imageRegistrationService.create(
                 request.toCommand(),
                 new MapImageUploadCommand(
-                        blueprintImage.getOriginalFilename(),
-                        blueprintImage.getContentType(),
-                        blueprintImage.getSize(),
-                        blueprintImage::getInputStream
+                        representativeImage.getOriginalFilename(),
+                        representativeImage.getContentType(),
+                        representativeImage.getSize(),
+                        representativeImage::getInputStream
                 ),
+                ServletUriComponentsBuilder.fromCurrentContextPath()
+                        .path("/api/public/festivals")
+                        .toUriString(),
                 principal
         );
         return ApiResponse.success(
                 SuccessCode.FESTIVAL_CREATE_SUCCESS,
-                CreateFestivalWithMapResponse.from(
-                        result,
+                CreateFestivalResponse.from(
+                        festival,
                         locationQueryService.getLocations(
-                                result.festival().getPublicId(),
+                                festival.getPublicId(),
                                 principal
                         )
                 )

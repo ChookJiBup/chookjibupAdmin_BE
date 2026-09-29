@@ -93,6 +93,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/internal/api/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/public/festivals/*/image").permitAll()
                         .requestMatchers("/api/field-staff/**")
                         .hasRole("FIELD_STAFF")
                         .requestMatchers(
