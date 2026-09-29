@@ -12,20 +12,22 @@ public record CreateFestivalWithMapResponse(
 ) {
 
     public static CreateFestivalWithMapResponse from(
-            CreateFestivalWithMapResult result
+            CreateFestivalWithMapResult result,
+            String reviewQrUrl
     ) {
         return new CreateFestivalWithMapResponse(
-                CreateFestivalResponse.from(result.festival()),
+                CreateFestivalResponse.from(result.festival(), reviewQrUrl),
                 CreateFestivalMapResponse.from(result.festivalMap(), result.analysisJob())
         );
     }
 
     public static CreateFestivalWithMapResponse from(
             CreateFestivalWithMapResult result,
-            List<FestivalLocationDetail> locations
+            List<FestivalLocationDetail> locations,
+            String reviewQrUrl
     ) {
         return new CreateFestivalWithMapResponse(
-                CreateFestivalResponse.from(result.festival(), locations),
+                CreateFestivalResponse.from(result.festival(), locations, reviewQrUrl),
                 CreateFestivalMapResponse.from(result.festivalMap(), result.analysisJob())
         );
     }

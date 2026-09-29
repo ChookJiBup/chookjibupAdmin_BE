@@ -14,6 +14,7 @@ import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalDetail;
 import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFestivalView;
+import com.example.chookjibupadmin.admin.query.application.dto.AdminReviewQrView;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
@@ -28,6 +29,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
 import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
+import com.example.chookjibupadmin.festival.support.ReviewQrUrlBuilder;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.Clock;
@@ -65,6 +67,9 @@ class AdminManagedFestivalDetailQueryApplicationServiceTest {
     @Mock
     private FestivalLocationService festivalLocationService;
 
+    @Mock
+    private ReviewQrUrlBuilder reviewQrUrlBuilder;
+
     private AdminManagedFestivalDetailQueryApplicationService service;
 
     @BeforeEach
@@ -74,6 +79,7 @@ class AdminManagedFestivalDetailQueryApplicationServiceTest {
                 managedFestivalQueryService,
                 festivalService,
                 festivalLocationService,
+                reviewQrUrlBuilder,
                 Clock.fixed(
                         Instant.parse("2026-08-08T00:00:00Z"),
                         ZoneOffset.UTC
@@ -97,6 +103,8 @@ class AdminManagedFestivalDetailQueryApplicationServiceTest {
         given(festivalService.getByPublicId(FESTIVAL_ID)).willReturn(festival);
         given(festivalLocationService.findAllByFestivalId(10L))
                 .willReturn(List.of(location));
+        given(reviewQrUrlBuilder.buildReviewUrl(FESTIVAL_ID))
+                .willReturn("https://user.chookjibup.store/festivals/" + FESTIVAL_ID + "/review?source=qr");
 
         // when
         AdminManagedFestivalDetail result = service.getManagedFestival(
@@ -113,6 +121,8 @@ class AdminManagedFestivalDetailQueryApplicationServiceTest {
         assertThat(result.visitorCountInputMode())
                 .isEqualTo(FestivalVisitorCountInputMode.UNSET);
         assertThat(result.locations()).hasSize(1);
+        assertThat(result.reviewQrUrl())
+                .isEqualTo("https://user.chookjibup.store/festivals/" + FESTIVAL_ID + "/review?source=qr");
     }
 
     @Test
@@ -131,6 +141,8 @@ class AdminManagedFestivalDetailQueryApplicationServiceTest {
         given(festivalService.getByPublicId(FESTIVAL_ID)).willReturn(festival);
         given(festivalLocationService.findAllByFestivalId(10L))
                 .willReturn(List.of());
+        given(reviewQrUrlBuilder.buildReviewUrl(FESTIVAL_ID))
+                .willReturn("https://user.chookjibup.store/festivals/" + FESTIVAL_ID + "/review?source=qr");
 
         AdminManagedFestivalDetail result = service.getManagedFestival(
                 FESTIVAL_ID,
@@ -149,6 +161,57 @@ class AdminManagedFestivalDetailQueryApplicationServiceTest {
         assertThatThrownBy(() -> service.getManagedFestival(FESTIVAL_ID, null))
                 .isInstanceOf(CustomException.class)
                 .hasMessage(ErrorCode.UNAUTHORIZED.getMessage());
+    }
+
+    @Test
+    @DisplayName("리뷰 QR URL 조회는 축제 ID와 리뷰 URL을 반환한다")
+    void success_GetReviewQr() {
+        AdminAccount adminAccount = adminAccount();
+        Festival festival = festival();
+        String reviewUrl = "https://user.chookjibup.store/festivals/" + FESTIVAL_ID + "/review?source=qr";
+        given(adminAccountService.getById(1L)).willReturn(adminAccount);
+        given(managedFestivalQueryService.getCurrentManagedFestival(
+                1L,
+                FESTIVAL_ID,
+                LocalDate.of(2026, 8, 8)
+        )).willReturn(managedFestivalView());
+        given(festivalService.getByPublicId(FESTIVAL_ID)).willReturn(festival);
+        given(reviewQrUrlBuilder.buildReviewUrl(FESTIVAL_ID)).willReturn(reviewUrl);
+
+        AdminReviewQrView result = service.getReviewQr(
+                FESTIVAL_ID,
+                new AdminPrincipal(1L, "owner@mapo.go.kr")
+        );
+
+        assertThat(result.festivalId()).isEqualTo(FESTIVAL_ID);
+        assertThat(result.reviewUrl()).isEqualTo(reviewUrl);
+    }
+
+    @Test
+    @DisplayName("인증 주체가 없으면 리뷰 QR URL을 조회할 수 없다")
+    void fail_GetReviewQr_Unauthorized_CustomException() {
+        assertThatThrownBy(() -> service.getReviewQr(FESTIVAL_ID, null))
+                .isInstanceOf(CustomException.class)
+                .hasMessage(ErrorCode.UNAUTHORIZED.getMessage());
+    }
+
+    @Test
+    @DisplayName("본인이 관리하지 않는 축제의 리뷰 QR URL은 조회할 수 없다")
+    void fail_GetReviewQr_NotManagedFestival_CustomException() {
+        AdminAccount adminAccount = adminAccount();
+        given(adminAccountService.getById(1L)).willReturn(adminAccount);
+        given(managedFestivalQueryService.getCurrentManagedFestival(
+                1L,
+                FESTIVAL_ID,
+                LocalDate.of(2026, 8, 8)
+        )).willThrow(new CustomException(ErrorCode.FESTIVAL_NOT_FOUND));
+
+        assertThatThrownBy(() -> service.getReviewQr(
+                FESTIVAL_ID,
+                new AdminPrincipal(1L, "owner@mapo.go.kr")
+        ))
+                .isInstanceOf(CustomException.class)
+                .hasMessage(ErrorCode.FESTIVAL_NOT_FOUND.getMessage());
     }
 
     private AdminAccount adminAccount() {

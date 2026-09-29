@@ -18,6 +18,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationQueryApplicationService;
+import com.example.chookjibupadmin.festival.support.ReviewQrUrlBuilder;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import java.time.LocalDate;
@@ -59,6 +60,9 @@ class FestivalCommandControllerTest {
     @Mock
     private FestivalLocationQueryApplicationService locationQueryService;
 
+    @Mock
+    private ReviewQrUrlBuilder reviewQrUrlBuilder;
+
     @Test
     @DisplayName("multipart 축제 등록 요청의 이미지 파트를 프레임워크 독립 Command로 변환한다")
     void success_CreateWithImage() throws Exception {
@@ -77,11 +81,15 @@ class FestivalCommandControllerTest {
         Festival festival = festival();
         given(imageRegistrationService.create(any(), any(), any(), any()))
                 .willReturn(festival);
+        given(reviewQrUrlBuilder.buildReviewUrl(any()))
+                .willReturn("https://user.chookjibup.store/festivals/dummy/review?source=qr");
 
         ApiResponse<CreateFestivalResponse> response =
                 controller.createWithImage(request, image, principal);
 
         assertThat(response.data().name()).isEqualTo(request.name());
+        assertThat(response.data().reviewQrUrl())
+                .isEqualTo("https://user.chookjibup.store/festivals/dummy/review?source=qr");
         ArgumentCaptor<MapImageUploadCommand> captor =
                 ArgumentCaptor.forClass(MapImageUploadCommand.class);
         then(imageRegistrationService).should().create(
