@@ -25,7 +25,7 @@ public record UpdateFestivalQueueRequest(
         @DecimalMax("132.0")
         BigDecimal tailLongitude,
 
-        @Schema(description = "호환용 보고 거리(m). 경로/부스 좌표가 있으면 서버 계산을 우선한다.", example = "18")
+        @Schema(description = "보고 거리(m). path=[]와 함께 보내면 좌표 대신 이 거리로 대기시간을 계산한다.", example = "20")
         @PositiveOrZero
         Integer queueTailMeters,
 
@@ -33,11 +33,11 @@ public record UpdateFestivalQueueRequest(
          * 대기열 경로.
          * <ul>
          *   <li>필드 생략({@code null}) — 사전 동선 투영 또는 줄끝 기반 계산</li>
-         *   <li>빈 배열 — 경로 삭제</li>
+         *   <li>빈 배열 + 보고 거리 — 거리만 기록. 보고 거리 없이 빈 배열 — 경로 삭제</li>
          *   <li>2점 이상 — 경로 교체(마지막 점은 줄끝과 동일)</li>
          * </ul>
          */
-        @Schema(description = "실제 경로. 생략=동선/줄끝 계산, []=경로 삭제, 2점 이상=교체. 저장 응답에 계산 시간 포함.")
+        @Schema(description = "실제 경로. 생략=동선/줄끝 계산, []+보고 거리=거리만 기록, []만=경로 삭제, 2점 이상=교체.")
         List<@NotNull @Valid PathPointRequest> path,
         @Schema(description = "조회한 observationRevision. 구 FE 호환을 위해 생략 가능.")
         @PositiveOrZero Long expectedRevision,

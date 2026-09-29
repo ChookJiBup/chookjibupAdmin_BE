@@ -8,10 +8,12 @@ import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.dto.FestivalDeletionTarget;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
+import com.example.chookjibupadmin.festival.support.FestivalImageObjectKey;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import com.example.chookjibupadmin.map.command.application.FestivalMapPurgeService;
 import com.example.chookjibupadmin.operator.command.application.FieldStaffAccountService;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +40,13 @@ public class FestivalDeletionLifecycleService {
             AdminPrincipal principal
     ) {
         Festival festival = authorizedFestivalForUpdate(festivalPublicId, principal);
-        return new FestivalDeletionTarget(
+        List<String> objectKeys = new ArrayList<>(
                 festivalMapPurgeService.beginDeletion(festival.getId())
         );
+        if (festival.getImageUrl() != null && !festival.getImageUrl().isBlank()) {
+            objectKeys.add(FestivalImageObjectKey.representative(festivalPublicId));
+        }
+        return new FestivalDeletionTarget(objectKeys);
     }
 
     public void completeDeletion(

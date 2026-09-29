@@ -48,6 +48,17 @@ class QueueObservationResolverTest {
         var straight=QueueObservationResolver.resolve(BoothQueue.createEmpty(1L,2L),null,p("37"),command("37.00018",999,null));
         assertThat(straight.meters()).isEqualTo(20);
     }
+    @Test void success_Resolve_ReportedDistanceOverridesBoothCoordinateAndPlan() {
+        var plan=BoothQueuePlan.create(1L,2L);
+        plan.replace(List.of(p("37"),p("37.0004")),QueueEstimationSettings.defaults(),null,3L,0);
+        var observation=QueueObservationResolver.resolve(
+                BoothQueue.createEmpty(1L,2L),plan,p("37"),command("37",30,List.of()));
+        assertThat(observation.meters()).isEqualTo(30);
+        assertThat(observation.method()).isEqualTo("REPORTED");
+        assertThat(observation.path()).isNull();
+        assertThat(observation.planRevision()).isNull();
+        assertThat(observation.estimate().waitMinutes()).isEqualTo(15);
+    }
     @Test void fail_Resolve_StalePlanRevision() {
         assertThatThrownBy(() -> QueueObservationResolver.resolve(BoothQueue.createEmpty(1L,2L),null,p("37"),
                 new UpdateBoothQueueCommand(new BigDecimal("37"),new BigDecimal("127"),null,null,0L,1L)))
