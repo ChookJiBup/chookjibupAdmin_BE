@@ -22,7 +22,6 @@ import org.springframework.stereotype.Repository;
 public class FestivalReviewMetricQueryRepository {
 
     private static final int REVIEW_LIMIT = 50;
-    private static final String DISPLAY_NAME = "방문객";
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -126,10 +125,19 @@ public class FestivalReviewMetricQueryRepository {
     private List<FestivalReviewItem> findRecentReviews(Long festivalId) {
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
                 """
-                    select review_id, rating, content
-                    from festival_review
-                    where festival_id = :festivalId
-                    order by created_at desc
+                    select review.review_id,
+                           case
+                               when review.user_id is null then '현장 방문자'
+                               when user_account.nickname is null then '탈퇴한 사용자'
+                               else user_account.nickname
+                           end as display_name,
+                           review.rating,
+                           review.content
+                    from festival_review review
+                    left join users user_account
+                      on user_account.user_id = review.user_id
+                    where review.festival_id = :festivalId
+                    order by review.created_at desc
                     limit :limit
                     """,
                 new MapSqlParameterSource()
@@ -140,7 +148,7 @@ public class FestivalReviewMetricQueryRepository {
         for (Map<String, Object> row : rows) {
             reviews.add(new FestivalReviewItem(
                     toLong(row.get("review_id")),
-                    DISPLAY_NAME,
+                    (String) row.get("display_name"),
                     toInteger(row.get("rating")),
                     (String) row.get("content")
             ));
