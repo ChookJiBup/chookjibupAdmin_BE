@@ -11,6 +11,7 @@ import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
 import com.example.chookjibupadmin.festival.command.application.FestivalDeleteApplicationService;
 import com.example.chookjibupadmin.festival.command.application.FestivalImageRegistrationApplicationService;
+import com.example.chookjibupadmin.festival.command.application.dto.FestivalThumbnailUploadCommand;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescription;
@@ -20,7 +21,6 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationQueryApplicationService;
 import com.example.chookjibupadmin.festival.support.ReviewQrUrlBuilder;
 import com.example.chookjibupadmin.global.response.ApiResponse;
-import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
@@ -90,8 +90,8 @@ class FestivalCommandControllerTest {
         assertThat(response.data().name()).isEqualTo(request.name());
         assertThat(response.data().reviewQrUrl())
                 .isEqualTo("https://user.chookjibup.store/festivals/dummy/review?source=qr");
-        ArgumentCaptor<MapImageUploadCommand> captor =
-                ArgumentCaptor.forClass(MapImageUploadCommand.class);
+        ArgumentCaptor<FestivalThumbnailUploadCommand> captor =
+                ArgumentCaptor.forClass(FestivalThumbnailUploadCommand.class);
         then(imageRegistrationService).should().create(
                 any(),
                 captor.capture(),

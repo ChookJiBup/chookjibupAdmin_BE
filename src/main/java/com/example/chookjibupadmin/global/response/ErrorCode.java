@@ -46,6 +46,10 @@ public enum ErrorCode {
 
     FESTIVAL_NOT_FOUND(40401, HttpStatus.NOT_FOUND, "축제를 찾을 수 없습니다."),
     FESTIVAL_SERIES_NOT_FOUND(40402, HttpStatus.NOT_FOUND, "축제 묶음을 찾을 수 없습니다."),
+    FESTIVAL_IMAGE_FILE_EMPTY(40018, HttpStatus.BAD_REQUEST, "축제 대표 이미지가 비어 있습니다."),
+    FESTIVAL_IMAGE_FILE_TOO_LARGE(41301, HttpStatus.CONTENT_TOO_LARGE, "축제 대표 이미지 크기가 허용 용량을 초과했습니다."),
+    FESTIVAL_IMAGE_FILE_TYPE_NOT_ALLOWED(41501, HttpStatus.UNSUPPORTED_MEDIA_TYPE, "축제 대표 이미지는 JPEG 또는 PNG만 등록할 수 있습니다."),
+    FESTIVAL_IMAGE_INVALID(42202, HttpStatus.UNPROCESSABLE_CONTENT, "축제 대표 이미지를 읽을 수 없습니다."),
     FIELD_STAFF_NOT_FOUND(40403, HttpStatus.NOT_FOUND, "현장 스태프 계정을 찾을 수 없습니다."),
     ADMIN_SUB_ADMIN_NOT_FOUND(40404, HttpStatus.NOT_FOUND, "서브관리자를 찾을 수 없습니다."),
     FESTIVAL_YEAR_ALREADY_EXISTS(40904, HttpStatus.CONFLICT, "해당 축제 묶음에는 이미 같은 연도 축제가 존재합니다."),

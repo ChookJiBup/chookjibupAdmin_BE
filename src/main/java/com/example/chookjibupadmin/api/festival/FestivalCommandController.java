@@ -11,9 +11,9 @@ import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalDeleteApplicationService;
 import com.example.chookjibupadmin.festival.command.application.FestivalImageRegistrationApplicationService;
 import com.example.chookjibupadmin.festival.command.application.FestivalApplicationService;
+import com.example.chookjibupadmin.festival.command.application.dto.FestivalThumbnailUploadCommand;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationQueryApplicationService;
-import com.example.chookjibupadmin.map.command.application.dto.MapImageUploadCommand;
 import com.example.chookjibupadmin.global.response.ApiResponse;
 import com.example.chookjibupadmin.global.response.SuccessCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -81,11 +81,12 @@ public class FestivalCommandController {
     }
 
     /**
-     * 축제 기본 정보와 사용자 화면 대표 이미지를 함께 등록한다.
+     * 축제 기본 정보와 사용자 화면 대표 썸네일을 함께 등록한다.
      */
     @Operation(
-            summary = "대표 이미지를 포함한 축제 기본 정보 생성",
-            description = "대표 장소 위경도 필수(JSON 파트와 동일). 누락 40013, 범위 밖 40014."
+            summary = "대표 썸네일을 포함한 축제 기본 정보 생성",
+            description = "대표 썸네일은 지도·AI 분석에 사용하지 않는다. "
+                    + "대표 장소 위경도 필수(JSON 파트와 동일). 누락 40013, 범위 밖 40014."
     )
     @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
@@ -97,7 +98,7 @@ public class FestivalCommandController {
     ) {
         Festival festival = imageRegistrationService.create(
                 request.toCommand(),
-                new MapImageUploadCommand(
+                new FestivalThumbnailUploadCommand(
                         representativeImage.getOriginalFilename(),
                         representativeImage.getContentType(),
                         representativeImage.getSize(),

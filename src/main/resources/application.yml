@@ -51,6 +51,13 @@ spring:
         size: ${APP_TASK_SCHEDULING_POOL_SIZE:3}
 
 app:
+  festival:
+    thumbnail:
+      max-file-size: ${APP_FESTIVAL_THUMBNAIL_MAX_FILE_SIZE:50MB}
+      max-original-side: ${APP_FESTIVAL_THUMBNAIL_MAX_ORIGINAL_SIDE:12000}
+      max-original-pixels: ${APP_FESTIVAL_THUMBNAIL_MAX_ORIGINAL_PIXELS:50000000}
+      max-side: ${APP_FESTIVAL_THUMBNAIL_MAX_SIDE:1600}
+      jpeg-quality: ${APP_FESTIVAL_THUMBNAIL_JPEG_QUALITY:0.9}
   auth:
     email-verification:
       request-limit: ${APP_AUTH_EMAIL_VERIFICATION_REQUEST_LIMIT:5}
