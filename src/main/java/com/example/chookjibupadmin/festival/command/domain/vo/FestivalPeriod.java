@@ -47,5 +47,8 @@ public class FestivalPeriod {
         if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
+        if (!startDate.isAfter(endDate.minusYears(1))) {
+            throw new CustomException(ErrorCode.FESTIVAL_PERIOD_TOO_LONG);
+        }
     }
 }

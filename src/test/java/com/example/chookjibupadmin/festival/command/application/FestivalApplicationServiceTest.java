@@ -1040,8 +1040,8 @@ class FestivalApplicationServiceTest {
         }
 
         @Test
-        @DisplayName("축제 개최 연도가 바뀌는 기본 정보 수정은 할 수 없다")
-        void fail_Update_YearChanged_CustomException() {
+        @DisplayName("변경할 개최 연도에 같은 시리즈 축제가 있으면 수정할 수 없다")
+        void fail_Update_YearAlreadyExists_CustomException() {
             // given
             Long festivalId = 1L;
             Festival festival = festival(festivalId);
@@ -1074,6 +1074,8 @@ class FestivalApplicationServiceTest {
             given(festivalService.getByPublicIdForUpdate(publicId))
                     .willReturn(festival);
             givenOwnerRole(1L, festivalId);
+            given(festivalService.existsBySeriesIdAndYear(festival.getSeriesId(), 2027))
+                    .willReturn(true);
 
             // when & then
             assertThatThrownBy(() -> festivalApplicationService.update(
@@ -1082,7 +1084,7 @@ class FestivalApplicationServiceTest {
                     principal
             ))
                     .isInstanceOf(CustomException.class)
-                    .hasMessage(ErrorCode.FESTIVAL_YEAR_CANNOT_BE_CHANGED.getMessage());
+                    .hasMessage(ErrorCode.FESTIVAL_YEAR_ALREADY_EXISTS.getMessage());
         }
     }
 

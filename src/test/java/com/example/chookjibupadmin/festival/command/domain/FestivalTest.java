@@ -105,52 +105,54 @@ class FestivalTest {
         }
 
         @Test
-        @DisplayName("축제 개최 연도가 바뀌는 기본 정보 수정은 할 수 없다")
-        void fail_UpdateBasicInfo_YearChanged_CustomException() {
+        @DisplayName("축제 개최 연도가 바뀌면 시작일 연도로 갱신한다")
+        void success_UpdateBasicInfo_YearChanged() {
             // given
             Festival festival = festival();
 
-            // when & then
-            assertThatThrownBy(() -> festival.updateBasicInfo(
-                            FestivalName.of("수정 축제"),
-                            FestivalDescription.of("수정 설명"),
-                            FestivalAddress.of("서울특별시 마포구 수정로 1"),
-                            FestivalPeriod.of(
-                                    LocalDate.of(2027, 11, 1),
-                                    LocalDate.of(2027, 11, 3)
-                            ),
-                            FestivalOperationTime.of(
-                                    LocalTime.of(9, 0),
-                                    LocalTime.of(20, 0)
-                            )
-                    ))
-                    .isInstanceOf(CustomException.class)
-                    .hasMessage(ErrorCode.FESTIVAL_YEAR_CANNOT_BE_CHANGED.getMessage());
+            // when
+            festival.updateBasicInfo(
+                    FestivalName.of("수정 축제"),
+                    FestivalDescription.of("수정 설명"),
+                    FestivalAddress.of("서울특별시 마포구 수정로 1"),
+                    FestivalPeriod.of(
+                            LocalDate.of(2027, 11, 1),
+                            LocalDate.of(2027, 11, 3)
+                    ),
+                    FestivalOperationTime.of(
+                            LocalTime.of(9, 0),
+                            LocalTime.of(20, 0)
+                    )
+            );
+
+            // then
+            assertThat(festival.getYear()).isEqualTo(2027);
         }
 
         @Test
-        @DisplayName("개최 연도가 없는 기존 축제는 기본 정보를 수정할 수 없다")
-        void fail_UpdateBasicInfo_YearMissing_CustomException() {
+        @DisplayName("개최 연도가 없는 기존 축제는 시작일 연도로 복구한다")
+        void success_UpdateBasicInfo_YearMissing() {
             // given
             Festival festival = festival();
             ReflectionTestUtils.setField(festival, "year", null);
 
-            // when & then
-            assertThatThrownBy(() -> festival.updateBasicInfo(
-                            FestivalName.of("수정 축제"),
-                            FestivalDescription.of("수정 설명"),
-                            FestivalAddress.of("서울특별시 마포구 수정로 1"),
-                            FestivalPeriod.of(
-                                    LocalDate.of(2026, 11, 1),
-                                    LocalDate.of(2026, 11, 3)
-                            ),
-                            FestivalOperationTime.of(
-                                    LocalTime.of(9, 0),
-                                    LocalTime.of(20, 0)
-                            )
-                    ))
-                    .isInstanceOf(CustomException.class)
-                    .hasMessage(ErrorCode.FESTIVAL_YEAR_CANNOT_BE_CHANGED.getMessage());
+            // when
+            festival.updateBasicInfo(
+                    FestivalName.of("수정 축제"),
+                    FestivalDescription.of("수정 설명"),
+                    FestivalAddress.of("서울특별시 마포구 수정로 1"),
+                    FestivalPeriod.of(
+                            LocalDate.of(2026, 11, 1),
+                            LocalDate.of(2026, 11, 3)
+                    ),
+                    FestivalOperationTime.of(
+                            LocalTime.of(9, 0),
+                            LocalTime.of(20, 0)
+                    )
+            );
+
+            // then
+            assertThat(festival.getYear()).isEqualTo(2026);
         }
     }
 

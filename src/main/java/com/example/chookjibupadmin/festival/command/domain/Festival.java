@@ -337,8 +337,8 @@ public class Festival extends BaseTimeEntity {
         if (!status.canModifyBasicInfo()) {
             throw new CustomException(ErrorCode.FESTIVAL_INVALID_STATUS);
         }
-        validateSameYear(period);
 
+        this.year = period.getStartDate().getYear();
         this.name = name;
         this.description = description;
         this.address = address;
@@ -375,12 +375,6 @@ public class Festival extends BaseTimeEntity {
                 period,
                 operationTime
         );
-    }
-
-    private void validateSameYear(FestivalPeriod period) {
-        if (year == null || year != period.getStartDate().getYear()) {
-            throw new CustomException(ErrorCode.FESTIVAL_YEAR_CANNOT_BE_CHANGED);
-        }
     }
 
     /**

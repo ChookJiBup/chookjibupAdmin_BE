@@ -261,12 +261,17 @@ public class FestivalApplicationService {
         Festival festival = festivalService.getByPublicIdForUpdate(festivalId);
         validateFestivalOwner(festival, adminAccount);
         FestivalLocationCommand primaryLocation = validateLocations(command.locations());
+        FestivalPeriod period = FestivalPeriod.of(command.startDate(), command.endDate());
+        int nextYear = period.getStartDate().getYear();
+        if (!Integer.valueOf(nextYear).equals(festival.getYear())) {
+            validateUniqueFestivalYear(festival.getSeriesId(), nextYear);
+        }
         festival.updateBasicInfo(
                 FestivalName.of(command.name()),
                 FestivalDescription.of(command.description()),
                 FestivalAddress.of(representativeAddress(primaryLocation)),
                 FestivalDetailAddress.of(primaryLocation.detailAddress()),
-                FestivalPeriod.of(command.startDate(), command.endDate()),
+                period,
                 command.operationStartTime() == null && command.operationEndTime() == null
                         ? festival.getOperationTime()
                         : FestivalOperationTime.of(

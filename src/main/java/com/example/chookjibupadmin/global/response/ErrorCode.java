@@ -53,7 +53,7 @@ public enum ErrorCode {
     FIELD_STAFF_NOT_FOUND(40403, HttpStatus.NOT_FOUND, "현장 스태프 계정을 찾을 수 없습니다."),
     ADMIN_SUB_ADMIN_NOT_FOUND(40404, HttpStatus.NOT_FOUND, "서브관리자를 찾을 수 없습니다."),
     FESTIVAL_YEAR_ALREADY_EXISTS(40904, HttpStatus.CONFLICT, "해당 축제 묶음에는 이미 같은 연도 축제가 존재합니다."),
-    FESTIVAL_YEAR_CANNOT_BE_CHANGED(40905, HttpStatus.CONFLICT, "축제 개최 연도는 수정할 수 없습니다."),
+    FESTIVAL_PERIOD_TOO_LONG(40019, HttpStatus.BAD_REQUEST, "축제 기간은 1년 미만으로 설정해 주세요."),
     FESTIVAL_MAP_NOT_FOUND(40405, HttpStatus.NOT_FOUND, "축제 배치도를 찾을 수 없습니다."),
     FESTIVAL_MAP_FILE_EMPTY(40007, HttpStatus.BAD_REQUEST, "축제 배치도 이미지가 비어 있습니다."),
     FESTIVAL_MAP_FILE_TOO_LARGE(41300, HttpStatus.CONTENT_TOO_LARGE, "축제 배치도 이미지 크기가 허용 용량을 초과했습니다."),

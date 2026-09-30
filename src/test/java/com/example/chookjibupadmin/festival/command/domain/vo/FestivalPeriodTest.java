@@ -64,6 +64,34 @@ class FestivalPeriodTest {
         }
 
         @Test
+        @DisplayName("종료일의 1년 전 다음 날부터 시작할 수 있다")
+        void success_Of_StartDayAfterOneYearAgo() {
+            // given
+            LocalDate startDate = LocalDate.of(2024, 9, 3);
+            LocalDate endDate = LocalDate.of(2025, 9, 2);
+
+            // when
+            FestivalPeriod period = FestivalPeriod.of(startDate, endDate);
+
+            // then
+            assertThat(period.getStartDate()).isEqualTo(startDate);
+            assertThat(period.getEndDate()).isEqualTo(endDate);
+        }
+
+        @Test
+        @DisplayName("시작일이 종료일의 정확히 1년 전이면 생성할 수 없다")
+        void fail_Of_StartExactlyOneYearAgo_CustomException() {
+            // given
+            LocalDate startDate = LocalDate.of(2024, 9, 2);
+            LocalDate endDate = LocalDate.of(2025, 9, 2);
+
+            // when & then
+            assertThatThrownBy(() -> FestivalPeriod.of(startDate, endDate))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage(ErrorCode.FESTIVAL_PERIOD_TOO_LONG.getMessage());
+        }
+
+        @Test
         @DisplayName("시작일이 null이면 생성할 수 없다")
         void fail_Of_NullStartDate_CustomException() {
             // given
