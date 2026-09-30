@@ -120,6 +120,19 @@ class S3MapImageStorageAdapterTest {
         );
     }
 
+    @Test
+    @DisplayName("공개 객체의 만료되지 않는 S3 URL을 생성한다")
+    void success_CreatePublicUrl() {
+        var result = adapter().createPublicUrl(
+                "public/festivals/test/representative.png"
+        );
+
+        assertThat(result).isEqualTo(URI.create(
+                "http://localhost:4566/festival-assets-test/"
+                        + "public/festivals/test/representative.png"
+        ));
+    }
+
     private StoredMapImageFile file(Path path) throws Exception {
         return new StoredMapImageFile(
                 "private/festivals/test/maps/test/original/test.png",

@@ -18,6 +18,7 @@ import com.example.chookjibupadmin.admin.command.domain.vo.AdminOrganization;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminPasswordHash;
 import com.example.chookjibupadmin.admin.command.domain.vo.AdminRank;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
+import com.example.chookjibupadmin.booth.command.application.BoothInfoService;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
@@ -77,6 +78,7 @@ class RoadmapDraftApplicationServiceTest {
     @Mock private FestivalRoadmapService roadmapService;
     @Mock private RoadmapNodeService nodeService;
     @Mock private FestivalMapPresentationService presentationService;
+    @Mock private BoothInfoService boothInfoService;
 
     private final MapGeometryValidator geometryValidator =
             new MapGeometryValidator();
@@ -274,6 +276,47 @@ class RoadmapDraftApplicationServiceTest {
                 assertThat(exception.getErrorCode())
                         .isEqualTo(ErrorCode.ROADMAP_NODE_INVALID)
         );
+
+        then(nodeService).should(never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("관리자 편집 요청으로 폴리곤, 라인, 대기줄 노드를 만들 수 없다")
+    void fail_Save_RemovedDrawingNodeTypes() {
+        List<RoadmapNodeChangeCommand> removedFeatures = List.of(
+                new RoadmapNodeChangeCommand(
+                        null, NodeType.OPEN_SPACE, "구역", GeometryType.POLYGON,
+                        objectMapper.valueToTree(java.util.Map.of("points", List.of(
+                                java.util.Map.of("x", 0.1, "y", 0.1),
+                                java.util.Map.of("x", 0.2, "y", 0.1),
+                                java.util.Map.of("x", 0.2, "y", 0.2)
+                        ))), false, 0
+                ),
+                new RoadmapNodeChangeCommand(
+                        null, NodeType.PATH, "통로", GeometryType.POLYLINE,
+                        objectMapper.valueToTree(java.util.Map.of("points", List.of(
+                                java.util.Map.of("x", 0.1, "y", 0.1),
+                                java.util.Map.of("x", 0.2, "y", 0.2)
+                        ))), false, 0
+                ),
+                new RoadmapNodeChangeCommand(
+                        null, NodeType.QUEUE, "대기줄", GeometryType.POINT,
+                        objectMapper.valueToTree(java.util.Map.of("x", 0.1, "y", 0.1)),
+                        false, 0
+                )
+        );
+
+        for (RoadmapNodeChangeCommand removedFeature : removedFeatures) {
+            assertThatThrownBy(() -> service.save(
+                    festivalPublicId,
+                    mapPublicId,
+                    new SaveRoadmapDraftCommand(1L, List.of(removedFeature)),
+                    principal
+            )).isInstanceOfSatisfying(CustomException.class, exception ->
+                    assertThat(exception.getErrorCode())
+                            .isEqualTo(ErrorCode.ROADMAP_NODE_INVALID)
+            );
+        }
 
         then(nodeService).should(never()).saveAll(any());
     }

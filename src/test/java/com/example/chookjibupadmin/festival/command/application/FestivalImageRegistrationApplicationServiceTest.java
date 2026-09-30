@@ -13,6 +13,7 @@ import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.map.command.application.dto.StoredMapImageFile;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
 import java.io.ByteArrayInputStream;
+import java.net.URI;
 import java.nio.file.Path;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,11 @@ class FestivalImageRegistrationApplicationServiceTest {
         given(preparedThumbnail.fileSize()).willReturn(10L);
         given(preparedThumbnail.contentType()).willReturn("image/jpeg");
         given(preparedThumbnail.checksumSha256()).willReturn("checksum");
+        given(imageStoragePort.createPublicUrl(any()))
+                .willReturn(URI.create(
+                        "https://festival-assets-test.s3.ap-northeast-2.amazonaws.com/"
+                                + "public/festivals/id/representative.png"
+                ));
         given(festivalApplicationService.createWithImage(
                 any(CreateFestivalCommand.class),
                 any(AdminPrincipal.class),
@@ -69,12 +75,20 @@ class FestivalImageRegistrationApplicationServiceTest {
         service.create(
                 org.mockito.Mockito.mock(CreateFestivalCommand.class),
                 imageCommand,
-                "https://admin-api.example.com/api/public/festivals",
                 principal
         );
 
         then(thumbnailPreparationPort).should().prepare(imageCommand);
         then(imageStoragePort).should().upload(any(StoredMapImageFile.class));
+        then(festivalApplicationService).should().createWithImage(
+                any(CreateFestivalCommand.class),
+                any(AdminPrincipal.class),
+                any(),
+                org.mockito.ArgumentMatchers.eq(
+                        "https://festival-assets-test.s3.ap-northeast-2.amazonaws.com/"
+                                + "public/festivals/id/representative.png"
+                )
+        );
         then(preparedThumbnail).should().close();
     }
 }

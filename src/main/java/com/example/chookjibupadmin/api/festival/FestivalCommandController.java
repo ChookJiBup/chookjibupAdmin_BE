@@ -35,7 +35,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.example.chookjibupadmin.festival.support.ReviewQrUrlBuilder;
 
 /**
@@ -104,9 +103,6 @@ public class FestivalCommandController {
                         representativeImage.getSize(),
                         representativeImage::getInputStream
                 ),
-                ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/api/public/festivals")
-                        .toUriString(),
                 principal
         );
         return ApiResponse.success(

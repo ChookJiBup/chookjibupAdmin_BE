@@ -29,6 +29,8 @@ import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
 import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
 import com.example.chookjibupadmin.map.roadmap.application.RoadmapNodeService;
 import com.example.chookjibupadmin.map.roadmap.domain.FestivalRoadmap;
+import com.example.chookjibupadmin.map.roadmap.domain.GeometryType;
+import com.example.chookjibupadmin.map.roadmap.domain.NodeType;
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapNode;
 import com.example.chookjibupadmin.map.roadmap.domain.RoadmapZone;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -358,6 +360,16 @@ public class RoadmapDraftApplicationService {
                     throw new CustomException(ErrorCode.ROADMAP_NODE_INVALID);
                 }
                 continue;
+            }
+            /*
+              관리자 지도 편집기는 핀만 노드로 저장한다. 부지 경계는 presentation으로
+              별도 저장되며, 예전 POLYGON/POLYLINE 노드는 조회 시 원본 그대로 보존한다.
+              화면을 우회한 요청으로 제거된 도형 기능이 다시 생성되지 않게 서버에서도 막는다.
+            */
+            if (change.geometryType() == GeometryType.POLYGON
+                    || change.geometryType() == GeometryType.POLYLINE
+                    || change.nodeType() == NodeType.QUEUE) {
+                throw new CustomException(ErrorCode.ROADMAP_NODE_INVALID);
             }
             if (change.nodeType() == null
                     || change.name() == null

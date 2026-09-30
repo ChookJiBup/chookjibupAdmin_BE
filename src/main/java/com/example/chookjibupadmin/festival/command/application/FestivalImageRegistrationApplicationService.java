@@ -29,7 +29,6 @@ public class FestivalImageRegistrationApplicationService {
     public Festival create(
             CreateFestivalCommand command,
             FestivalThumbnailUploadCommand imageCommand,
-            String publicImageBaseUrl,
             AdminPrincipal principal
     ) {
         UUID festivalPublicId = UUID.randomUUID();
@@ -51,10 +50,7 @@ public class FestivalImageRegistrationApplicationService {
                         command,
                         principal,
                         festivalPublicId,
-                        "%s/%s/image".formatted(
-                                publicImageBaseUrl.replaceAll("/+$", ""),
-                                festivalPublicId
-                        )
+                        imageStoragePort.createPublicUrl(objectKey).toString()
                 );
             } catch (RuntimeException exception) {
                 if (uploadAttempted) {

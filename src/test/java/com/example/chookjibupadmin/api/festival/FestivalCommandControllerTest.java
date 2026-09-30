@@ -25,7 +25,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,17 +32,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 @ExtendWith(MockitoExtension.class)
 class FestivalCommandControllerTest {
-
-    @AfterEach
-    void tearDown() {
-        RequestContextHolder.resetRequestAttributes();
-    }
 
     @InjectMocks
     private FestivalCommandController controller;
@@ -74,12 +65,8 @@ class FestivalCommandControllerTest {
                 "image/png",
                 new byte[]{1, 2, 3}
         );
-        MockHttpServletRequest servletRequest = new MockHttpServletRequest();
-        servletRequest.setScheme("https");
-        servletRequest.setServerName("admin-api.example.com");
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(servletRequest));
         Festival festival = festival();
-        given(imageRegistrationService.create(any(), any(), any(), any()))
+        given(imageRegistrationService.create(any(), any(), any()))
                 .willReturn(festival);
         given(reviewQrUrlBuilder.buildReviewUrl(any()))
                 .willReturn("https://user.chookjibup.store/festivals/dummy/review?source=qr");
@@ -95,7 +82,6 @@ class FestivalCommandControllerTest {
         then(imageRegistrationService).should().create(
                 any(),
                 captor.capture(),
-                any(),
                 any()
         );
         assertThat(captor.getValue().originalFileName())

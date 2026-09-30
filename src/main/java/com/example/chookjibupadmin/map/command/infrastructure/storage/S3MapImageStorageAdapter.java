@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import java.time.Duration;
 import java.time.Instant;
+import java.net.URI;
 
 /**
  * 비공개 S3 버킷에 축제 배치도 이미지를 저장한다.
@@ -102,6 +103,23 @@ public class S3MapImageStorageAdapter implements MapImageStoragePort {
                     exception
             );
         }
+    }
+
+    @Override
+    public URI createPublicUrl(String objectKey) {
+        String baseUrl;
+        if (properties.endpoint() != null) {
+            baseUrl = properties.endpoint().toString().replaceAll("/+$", "");
+            if (properties.pathStyleAccessEnabled()) {
+                baseUrl = "%s/%s".formatted(baseUrl, properties.bucket());
+            }
+        } else {
+            baseUrl = "https://%s.s3.%s.amazonaws.com".formatted(
+                    properties.bucket(),
+                    properties.region()
+            );
+        }
+        return URI.create("%s/%s".formatted(baseUrl, objectKey));
     }
 
     @Override
