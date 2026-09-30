@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.festival.command.infrastructure.persistence;
 
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -34,4 +35,11 @@ interface FestivalJpaRepository extends JpaRepository<Festival, Long> {
     boolean existsBySeriesIdAndYear(Long seriesId, int year);
 
     Optional<Festival> findBySeriesIdAndYear(Long seriesId, int year);
+
+    @Query("""
+            select f from Festival f
+            where f.imageUrl like '%/api/public/festivals/%/image'
+              and f.publicId is not null
+            """)
+    List<Festival> findAllWithLegacyRepresentativeImageUrl();
 }

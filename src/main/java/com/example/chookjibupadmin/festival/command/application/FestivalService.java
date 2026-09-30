@@ -4,6 +4,7 @@ import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalRepository;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -92,5 +93,9 @@ public class FestivalService {
             int year
     ) {
         return festivalRepository.findBySeriesIdAndYear(seriesId, year);
+    }
+
+    public List<Festival> findAllWithLegacyRepresentativeImageUrl() {
+        return festivalRepository.findAllWithLegacyRepresentativeImageUrl();
     }
 }
