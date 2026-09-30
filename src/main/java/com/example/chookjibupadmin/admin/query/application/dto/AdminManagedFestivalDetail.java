@@ -30,6 +30,7 @@ public record AdminManagedFestivalDetail(
         LocalTime operationEndTime,
         FestivalVisitorCountInputMode visitorCountInputMode,
         List<FestivalLocationDetail> locations,
-        String reviewQrUrl
+        String reviewQrUrl,
+        FestivalProgressStatus progressStatusOverride
 ) {
 }

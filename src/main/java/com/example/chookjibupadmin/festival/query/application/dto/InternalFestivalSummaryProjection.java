@@ -6,7 +6,7 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 /**
- * DB projection 결과에 날짜 기준 진행 상태를 더하기 전의 축제 요약이다.
+ * 저장된 진행 상태를 포함하는 축제 요약이다.
  */
 public record InternalFestivalSummaryProjection(
         UUID festivalId,
@@ -19,7 +19,8 @@ public record InternalFestivalSummaryProjection(
         LocalDate startDate,
         LocalDate endDate,
         LocalTime operationStartTime,
-        LocalTime operationEndTime
+        LocalTime operationEndTime,
+        String progressStatus
 ) {
 
     public InternalFestivalSummaryView toView(LocalDate today) {
@@ -35,7 +36,7 @@ public record InternalFestivalSummaryProjection(
                 endDate,
                 operationStartTime,
                 operationEndTime,
-                FestivalProgressStatus.from(today, startDate, endDate)
+                FestivalProgressStatus.resolve(progressStatus, today, startDate, endDate)
         );
     }
 }

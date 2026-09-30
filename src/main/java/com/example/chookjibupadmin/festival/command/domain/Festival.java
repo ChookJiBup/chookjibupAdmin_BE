@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddr
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import jakarta.persistence.AttributeOverride;
@@ -32,6 +33,7 @@ import lombok.NoArgsConstructor;
  * 축제 기본 정보를 저장하는 Aggregate이다.
  */
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Getter
 @AttributeOverrides({
         @AttributeOverride(
@@ -136,6 +138,27 @@ public class Festival extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "publication_status", nullable = false, length = 30)
     private FestivalStatus status;
+
+    // 공유 DB의 소문자 PostgreSQL enum은 트리거만 기록한다.
+    @Column(name = "progress_status", insertable = false, updatable = false)
+    @org.hibernate.annotations.ColumnTransformer(read = "cast(progress_status as varchar)")
+    private String storedProgressStatus;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "progress_status_override", length = 20)
+    private FestivalProgressStatus progressStatusOverride;
+
+    /** null이면 날짜 자동 모드로 복귀한다. */
+    public void changeProgressStatus(
+            FestivalProgressStatus override) {
+        this.progressStatusOverride = override;
+    }
+
+    public FestivalProgressStatus progressStatus(LocalDate today) {
+        return progressStatusOverride != null ? progressStatusOverride
+                : FestivalProgressStatus.resolve(
+                        storedProgressStatus, today, getStartDate(), getEndDate());
+    }
 
     @Enumerated(EnumType.STRING)
     @Column(name = "visitor_count_input_mode", nullable = false, length = 20)

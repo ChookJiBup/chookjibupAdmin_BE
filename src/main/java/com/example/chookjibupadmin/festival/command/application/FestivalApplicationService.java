@@ -1,8 +1,8 @@
 package com.example.chookjibupadmin.festival.command.application;
 
-import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
+import com.example.chookjibupadmin.admin.command.domain.AdminAccount;
 import com.example.chookjibupadmin.admin.command.domain.AdminFestivalRole;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.dto.CreateFestivalCommand;
@@ -20,11 +20,12 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationT
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
 import com.example.chookjibupadmin.festival.location.application.FestivalLocationService;
 import com.example.chookjibupadmin.festival.location.domain.FestivalLocation;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
-import com.example.chookjibupadmin.map.command.application.FestivalMapService;
 import com.example.chookjibupadmin.map.analysis.application.MapAnalysisQueueApplicationService;
 import com.example.chookjibupadmin.map.analysis.domain.MapAnalysisJob;
+import com.example.chookjibupadmin.map.command.application.FestivalMapService;
 import com.example.chookjibupadmin.map.command.application.dto.UploadedFestivalMap;
 import com.example.chookjibupadmin.map.command.domain.FestivalMap;
 import com.example.chookjibupadmin.map.command.domain.vo.MapImageAnchor;
@@ -309,6 +310,19 @@ public class FestivalApplicationService {
         festival.changeVisitorCountInputMode(nextMode);
 
         return festival;
+    }
+
+    /** 총괄관리자가 진행 상태를 지정하거나 날짜 자동 모드로 복귀한다. */
+    public void changeProgressStatus(UUID festivalId,
+            FestivalProgressStatus override,
+            AdminPrincipal principal) {
+        AdminAccount admin = findAuthenticatedAdmin(principal);
+        if (!admin.isActive()) {
+            throw new CustomException(ErrorCode.AUTH_ADMIN_INACTIVE);
+        }
+        Festival festival = festivalService.getByPublicIdForUpdate(festivalId);
+        validateFestivalOwner(festival, admin);
+        festival.changeProgressStatus(override);
     }
 
     private void ensureVisitorModeChangeAllowed(Long festivalId) {

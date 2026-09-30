@@ -86,11 +86,7 @@ public class FestivalReportDetailQueryApplicationService {
                 festival.getId()
         );
 
-        FestivalProgressStatus progress = FestivalProgressStatus.from(
-                LocalDate.now(clock),
-                festival.getStartDate(),
-                festival.getEndDate()
-        );
+        FestivalProgressStatus progress = festival.progressStatus(LocalDate.now(clock));
 
         UUID previousFestivalId = null;
         if (festival.getSeriesId() != null && festival.getYear() != null) {

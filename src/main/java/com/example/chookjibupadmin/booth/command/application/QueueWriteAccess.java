@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.booth.command.application;
 
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.global.response.CustomException;
 import com.example.chookjibupadmin.global.response.ErrorCode;
 import java.time.Clock;
@@ -17,7 +18,8 @@ public class QueueWriteAccess {
     private final Clock clock;
     public void requireOpen(UUID festivalId) {
         var festival = festivalService.getByPublicId(festivalId);
-        if (festival.getEndDate() == null || LocalDate.now(clock).isAfter(festival.getEndDate())) {
+        var status = festival.progressStatus(LocalDate.now(clock));
+        if (status == null || status == FestivalProgressStatus.COMPLETED) {
             throw new CustomException(ErrorCode.BOOTH_QUEUE_OPERATION_CLOSED);
         }
     }

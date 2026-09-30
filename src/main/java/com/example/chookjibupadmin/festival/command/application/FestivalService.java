@@ -20,6 +20,12 @@ public class FestivalService {
 
     private final FestivalRepository festivalRepository;
 
+    /** 공유 DB의 자동 진행 상태를 현재 서울 날짜로 갱신한다. */
+    @Transactional
+    public int synchronizeProgressStatuses() {
+        return festivalRepository.synchronizeProgressStatuses();
+    }
+
     /**
      * 축제 기본 정보를 저장한다.
      */

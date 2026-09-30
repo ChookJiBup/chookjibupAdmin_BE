@@ -11,6 +11,7 @@ import com.example.chookjibupadmin.booth.command.domain.BoothInfo;
 import com.example.chookjibupadmin.dashboard.query.application.port.FestivalDashboardMetricProvider;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.map.roadmap.application.FestivalRoadmapService;
 import com.example.chookjibupadmin.map.roadmap.application.RoadmapNodeService;
 import com.example.chookjibupadmin.map.roadmap.domain.GeometryType;
@@ -257,12 +258,11 @@ public class BoothCongestionFestivalDashboardMetricProvider
 
     private String resolveOperatingStatus(Festival festival) {
         LocalDate today = LocalDate.now(clock);
-        LocalDate start = festival.getPeriod().getStartDate();
-        LocalDate end = festival.getPeriod().getEndDate();
-        if (today.isBefore(start)) {
+        var status = festival.progressStatus(today);
+        if (status == null || status == FestivalProgressStatus.UPCOMING) {
             return "PREPARING";
         }
-        if (today.isAfter(end)) {
+        if (status == FestivalProgressStatus.COMPLETED) {
             return "ENDED";
         }
         return "ONGOING";

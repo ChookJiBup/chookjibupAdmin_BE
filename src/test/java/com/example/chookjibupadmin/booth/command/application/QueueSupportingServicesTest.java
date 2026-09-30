@@ -36,9 +36,21 @@ class QueueSupportingServicesTest {
         var festival=mock(Festival.class);
         var id=UUID.randomUUID();
         when(festivalService.getByPublicId(id)).thenReturn(festival);
-        when(festival.getEndDate()).thenReturn(LocalDate.of(2026,9,15));
+        when(festival.progressStatus(LocalDate.of(2026,9,16)))
+                .thenReturn(com.example.chookjibupadmin.festival.support.FestivalProgressStatus.COMPLETED);
         var access=new QueueWriteAccess(festivalService,Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"),ZoneOffset.UTC));
         assertThatThrownBy(() -> access.requireOpen(id)).isInstanceOf(RuntimeException.class);
+    }
+    @Test void success_WriteAccess_UsesEffectiveManualStatus() {
+        var festivalService=mock(FestivalService.class);
+        var festival=mock(Festival.class);
+        var id=UUID.randomUUID();
+        when(festivalService.getByPublicId(id)).thenReturn(festival);
+        when(festival.progressStatus(LocalDate.of(2026,9,16)))
+                .thenReturn(com.example.chookjibupadmin.festival.support.FestivalProgressStatus.ONGOING);
+        var access=new QueueWriteAccess(festivalService,Clock.fixed(Instant.parse("2026-09-16T00:00:00Z"),ZoneOffset.UTC));
+        access.requireOpen(id);
+        verify(festival).progressStatus(LocalDate.of(2026,9,16));
     }
     @Test void success_Recommendation_ValidatesOutsideModelCall() {
         var contextService=mock(QueueRecommendationContextService.class);

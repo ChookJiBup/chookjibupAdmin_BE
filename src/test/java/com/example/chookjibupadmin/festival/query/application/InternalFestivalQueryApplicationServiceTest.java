@@ -148,7 +148,8 @@ class InternalFestivalQueryApplicationServiceTest {
                 LocalDate.of(2026, 10, 9),
                 LocalDate.of(2026, 10, 18),
                 LocalTime.of(10, 0),
-                LocalTime.of(21, 0)
+                LocalTime.of(21, 0),
+                null
         );
     }
 }

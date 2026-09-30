@@ -6,10 +6,20 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 interface FestivalJpaRepository extends JpaRepository<Festival, Long> {
+
+    @Modifying
+    @Query(value = """
+            UPDATE festivals SET progress_status = progress_status
+            WHERE progress_status_override IS NULL
+              AND progress_status IS DISTINCT FROM
+                  festival_effective_progress(start_date, end_date, progress_status_override)
+            """, nativeQuery = true)
+    int synchronizeProgressStatuses();
 
     Optional<Festival> findByPublicId(UUID publicId);
 

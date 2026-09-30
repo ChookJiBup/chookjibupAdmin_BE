@@ -46,7 +46,8 @@ public class InternalFestivalQueryRepositoryImpl
                         festival.period.startDate,
                         festival.period.endDate,
                         festival.operationTime.startTime,
-                        festival.operationTime.endTime
+                        festival.operationTime.endTime,
+                        FestivalProgressExpression.of(festival, condition.today())
                 ))
                 .from(festival)
                 .where(
@@ -83,15 +84,7 @@ public class InternalFestivalQueryRepositoryImpl
             return null;
         }
 
-        if (status == FestivalProgressStatus.UPCOMING) {
-            return festival.period.startDate.gt(condition.today());
-        }
-        if (status == FestivalProgressStatus.ONGOING) {
-            return festival.period.startDate.loe(condition.today())
-                    .and(festival.period.endDate.goe(condition.today()));
-        }
-
-        return festival.period.endDate.lt(condition.today());
+        return FestivalProgressExpression.of(festival, condition.today()).eq(status.name());
     }
 
     private BooleanExpression keywordContains(

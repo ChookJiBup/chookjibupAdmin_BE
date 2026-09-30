@@ -24,7 +24,7 @@ public record AdminManagedFestivalDetailResponse(
         @Schema(description = "개최 연도") int festivalYear,
         @Schema(description = "관리자 역할") AdminRole role,
         @Schema(description = "축제 게시 상태") FestivalStatus festivalStatus,
-        @Schema(description = "날짜 기준 진행 상태") FestivalProgressStatus progressStatus,
+        @Schema(description = "사용자 화면에 표시되는 진행 상태") FestivalProgressStatus progressStatus,
         @Schema(description = "대표 주소") String address,
         @Schema(description = "대표 상세주소") String detailAddress,
         @Schema(description = "시작일") LocalDate startDate,
@@ -38,7 +38,8 @@ public record AdminManagedFestivalDetailResponse(
                 description = "축제 현장 리뷰 QR코드가 가리킬 URL(사용자 프런트 기준). "
                         + "QR 이미지 자체가 필요하면 /api/admin/me/managed-festivals/{festivalId}/review-qr을 호출한다."
         )
-        String reviewQrUrl
+        String reviewQrUrl,
+        FestivalProgressStatus progressStatusOverride
 ) {
 
     public static AdminManagedFestivalDetailResponse from(
@@ -63,7 +64,8 @@ public record AdminManagedFestivalDetailResponse(
                 detail.locations().stream()
                         .map(FestivalLocationResponse::from)
                         .toList(),
-                detail.reviewQrUrl()
+                detail.reviewQrUrl(),
+                detail.progressStatusOverride()
         );
     }
 }

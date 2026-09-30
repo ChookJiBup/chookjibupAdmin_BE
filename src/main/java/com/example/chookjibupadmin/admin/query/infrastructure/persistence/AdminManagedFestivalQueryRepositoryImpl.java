@@ -9,13 +9,14 @@ import com.example.chookjibupadmin.admin.query.application.dto.AdminManagedFesti
 import com.example.chookjibupadmin.admin.query.repository.AdminManagedFestivalQueryRepository;
 import com.example.chookjibupadmin.festival.command.domain.QFestival;
 import com.example.chookjibupadmin.festival.location.domain.QFestivalLocation;
+import com.example.chookjibupadmin.festival.query.infrastructure.persistence.FestivalProgressExpression;
 import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.DateExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
-import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.time.LocalDate;
@@ -53,7 +54,8 @@ public class AdminManagedFestivalQueryRepositoryImpl
                         festival.address.value,
                         festival.detailAddress.value,
                         festival.period.startDate,
-                        festival.period.endDate
+                        festival.period.endDate,
+                        FestivalProgressExpression.of(festival, today)
                 ))
                 .from(adminFestivalRole)
                 .join(adminAccount).on(adminAccount.id.eq(adminFestivalRole.adminAccountId))
@@ -95,7 +97,8 @@ public class AdminManagedFestivalQueryRepositoryImpl
                         festival.address.value,
                         festival.detailAddress.value,
                         festival.period.startDate,
-                        festival.period.endDate
+                        festival.period.endDate,
+                        FestivalProgressExpression.of(festival, today)
                 ))
                 .from(adminFestivalRole)
                 .join(adminAccount).on(adminAccount.id.eq(adminFestivalRole.adminAccountId))
@@ -170,24 +173,17 @@ public class AdminManagedFestivalQueryRepositoryImpl
         if (status == null) {
             return null;
         }
-        if (status == FestivalProgressStatus.UPCOMING) {
-            return festival.period.startDate.gt(today);
-        }
-        if (status == FestivalProgressStatus.ONGOING) {
-            return festival.period.startDate.loe(today)
-                    .and(festival.period.endDate.goe(today));
-        }
-        return festival.period.endDate.lt(today);
+        return FestivalProgressExpression.of(festival, today).eq(status.name());
     }
 
     private OrderSpecifier<?>[] progressStatusOrder(
             QFestival festival,
             LocalDate today
     ) {
-        BooleanExpression upcoming = festival.period.startDate.gt(today);
-        BooleanExpression ongoing = festival.period.startDate.loe(today)
-                .and(festival.period.endDate.goe(today));
-        BooleanExpression completed = festival.period.endDate.lt(today);
+        var progress = FestivalProgressExpression.of(festival, today);
+        BooleanExpression upcoming = progress.eq("UPCOMING");
+        BooleanExpression ongoing = progress.eq("ONGOING");
+        BooleanExpression completed = progress.eq("COMPLETED");
 
         NumberExpression<Integer> statusOrder = new CaseBuilder()
                 .when(upcoming).then(0)

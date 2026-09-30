@@ -14,6 +14,11 @@ public class FestivalRepositoryImpl implements FestivalRepository {
     private final FestivalJpaRepository jpaRepository;
 
     @Override
+    public int synchronizeProgressStatuses() {
+        return jpaRepository.synchronizeProgressStatuses();
+    }
+
+    @Override
     public Festival save(Festival festival) {
         return jpaRepository.save(festival);
     }

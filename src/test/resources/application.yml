@@ -23,6 +23,9 @@ spring:
       timeout: 2s
 
 app:
+  festival:
+    progress-sync:
+      enabled: false
   auth:
     email-verification:
       request-limit: 5

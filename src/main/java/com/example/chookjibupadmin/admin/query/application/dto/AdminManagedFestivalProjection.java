@@ -7,7 +7,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * 관리 축제 DB 조회 결과에 날짜 기준 진행 상태를 더하기 전의 projection이다.
+ * 관리 축제 DB 조회 결과와 저장된 진행 상태 projection이다.
  */
 public record AdminManagedFestivalProjection(
         UUID festivalId,
@@ -18,11 +18,12 @@ public record AdminManagedFestivalProjection(
         String address,
         String detailAddress,
         LocalDate startDate,
-        LocalDate endDate
+        LocalDate endDate,
+        String progressStatus
 ) {
 
     /**
-     * 조회 요청의 기준일로 진행 상태가 포함된 View를 생성한다.
+     * 저장된 진행 상태를 우선 사용하며, 없는 경우에만 조회 기준일로 보완한다.
      */
     public AdminManagedFestivalView toView(LocalDate today) {
         return new AdminManagedFestivalView(
@@ -31,7 +32,7 @@ public record AdminManagedFestivalProjection(
                 festivalYear,
                 role,
                 festivalStatus,
-                FestivalProgressStatus.from(today, startDate, endDate),
+                FestivalProgressStatus.resolve(progressStatus, today, startDate, endDate),
                 address,
                 detailAddress,
                 startDate,

@@ -8,6 +8,8 @@ import java.util.UUID;
  */
 public interface FestivalRepository {
 
+    int synchronizeProgressStatuses();
+
     /**
      * 축제 기본 정보를 저장한다.
      */

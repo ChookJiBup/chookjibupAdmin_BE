@@ -68,7 +68,8 @@ public class AdminManagedFestivalDetailQueryApplicationService {
                         .stream()
                         .map(FestivalLocationDetail::from)
                         .toList(),
-                reviewQrUrlBuilder.buildReviewUrl(festival.getPublicId())
+                reviewQrUrlBuilder.buildReviewUrl(festival.getPublicId()),
+                festival.getProgressStatusOverride()
         );
     }
 

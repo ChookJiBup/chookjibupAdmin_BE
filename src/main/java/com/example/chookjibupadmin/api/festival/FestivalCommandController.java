@@ -3,9 +3,10 @@ package com.example.chookjibupadmin.api.festival;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.CreateFestivalResponse;
 import com.example.chookjibupadmin.api.festival.dto.FestivalVisitorCountInputModeResponse;
-import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalVisitorCountInputModeRequest;
+import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalProgressStatusRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalRequest;
 import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalResponse;
+import com.example.chookjibupadmin.api.festival.dto.UpdateFestivalVisitorCountInputModeRequest;
 import com.example.chookjibupadmin.auth.support.AdminPrincipal;
 import com.example.chookjibupadmin.festival.command.application.FestivalDeleteApplicationService;
 import com.example.chookjibupadmin.festival.command.application.FestivalImageRegistrationApplicationService;
@@ -30,9 +31,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.example.chookjibupadmin.festival.support.ReviewQrUrlBuilder;
@@ -176,6 +177,17 @@ public class FestivalCommandController {
                         )
                 )
         );
+    }
+
+    @Operation(summary = "축제 진행 상태 변경", description = "총괄관리자 전용. automatic=true로 날짜 자동 모드 복귀.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PatchMapping("/{festivalId}/progress-status")
+    public ApiResponse<Void> updateProgressStatus(
+            @PathVariable UUID festivalId,
+            @Valid @RequestBody UpdateFestivalProgressStatusRequest request,
+            @AuthenticationPrincipal AdminPrincipal principal) {
+        festivalApplicationService.changeProgressStatus(festivalId, request.toOverride(), principal);
+        return ApiResponse.success(SuccessCode.FESTIVAL_UPDATE_SUCCESS);
     }
 
     /**
