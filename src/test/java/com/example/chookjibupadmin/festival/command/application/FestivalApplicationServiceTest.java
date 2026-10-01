@@ -262,6 +262,51 @@ class FestivalApplicationServiceTest {
         }
 
         @Test
+        @DisplayName("공공데이터 축제를 썸네일과 함께 인수하면 기존 축제에 이미지 주소를 저장한다")
+        void success_CreateWithImage_ClaimsUnlinkedFestivalAndAssignsImage() {
+            CreateFestivalCommand command = createCommand();
+            AdminPrincipal principal = principal();
+            UUID festivalPublicId = UUID.randomUUID();
+            Festival existing = Festival.create(
+                    99L,
+                    festivalPublicId,
+                    FestivalName.of("마포나루새우젓축제"),
+                    FestivalDescription.of("기존 축제"),
+                    FestivalAddress.of("서울특별시 마포구"),
+                    FestivalDetailAddress.of(null),
+                    FestivalPeriod.of(
+                            LocalDate.of(2026, 9, 19),
+                            LocalDate.of(2026, 9, 20)
+                    ),
+                    FestivalOperationTime.of(LocalTime.of(9, 0), LocalTime.of(18, 0))
+            );
+            ReflectionTestUtils.setField(existing, "id", 42L);
+            ReflectionTestUtils.setField(existing, "publicId", festivalPublicId);
+            String imageUrl = "https://api.chookjibup.store/api/public/festivals/"
+                    + festivalPublicId + "/image";
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.findFirstByNormalizedNameAndYear(
+                    "마포나루새우젓축제",
+                    2026
+            )).willReturn(java.util.Optional.of(existing));
+            given(adminFestivalRoleService.hasFestivalOwnerForFestival(existing.getId()))
+                    .willReturn(false);
+            given(festivalLocationService.findAllByFestivalId(existing.getId()))
+                    .willReturn(List.of());
+
+            Festival claimed = festivalApplicationService.createWithImage(
+                    command,
+                    principal,
+                    festivalPublicId,
+                    imageUrl
+            );
+
+            assertThat(claimed).isSameAs(existing);
+            assertThat(claimed.getImageUrl()).isEqualTo(imageUrl);
+        }
+
+        @Test
         @DisplayName("이미 관리자가 배정된 동일 이름과 연도의 축제는 중복으로 거절한다")
         void fail_Create_ManagedFestivalWithSameNameAndYear_CustomException() {
             CreateFestivalCommand command = createCommand();

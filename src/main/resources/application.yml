@@ -52,6 +52,7 @@ spring:
 
 app:
   festival:
+    public-image-base-url: ${APP_FESTIVAL_PUBLIC_IMAGE_BASE_URL:https://api.chookjibup.store}
     thumbnail:
       max-file-size: ${APP_FESTIVAL_THUMBNAIL_MAX_FILE_SIZE:50MB}
       max-original-side: ${APP_FESTIVAL_THUMBNAIL_MAX_ORIGINAL_SIDE:12000}

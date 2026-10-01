@@ -47,6 +47,6 @@ public interface FestivalRepository {
 
     Optional<Festival> findBySeriesIdAndYear(Long seriesId, int year);
 
-    /** 과거 관리자 API 중계 주소로 저장된 대표 이미지가 있는 축제를 조회한다. */
-    List<Festival> findAllWithLegacyRepresentativeImageUrl();
+    /** 서비스가 관리하는 S3 객체 또는 과거 중계 주소를 사용하는 축제를 조회한다. */
+    List<Festival> findAllWithManagedRepresentativeImageUrl();
 }

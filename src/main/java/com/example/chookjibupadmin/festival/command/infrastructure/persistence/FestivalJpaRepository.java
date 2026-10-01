@@ -51,8 +51,9 @@ interface FestivalJpaRepository extends JpaRepository<Festival, Long> {
 
     @Query("""
             select f from Festival f
-            where f.imageUrl like '%/api/public/festivals/%/image'
+            where (f.imageUrl like '%/api/public/festivals/%/image'
+                or f.imageUrl like '%/public/festivals/%/representative.png')
               and f.publicId is not null
             """)
-    List<Festival> findAllWithLegacyRepresentativeImageUrl();
+    List<Festival> findAllWithManagedRepresentativeImageUrl();
 }

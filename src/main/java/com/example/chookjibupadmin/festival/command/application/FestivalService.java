@@ -102,7 +102,7 @@ public class FestivalService {
         return festivalRepository.findBySeriesIdAndYear(seriesId, year);
     }
 
-    public List<Festival> findAllWithLegacyRepresentativeImageUrl() {
-        return festivalRepository.findAllWithLegacyRepresentativeImageUrl();
+    public List<Festival> findAllWithManagedRepresentativeImageUrl() {
+        return festivalRepository.findAllWithManagedRepresentativeImageUrl();
     }
 }

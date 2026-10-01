@@ -4,8 +4,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import com.example.chookjibupadmin.festival.command.domain.Festival;
-import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
-import java.net.URI;
+import com.example.chookjibupadmin.festival.support.FestivalPublicImageUrlBuilder;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -21,25 +20,23 @@ class FestivalImageUrlRepairApplicationServiceTest {
     private FestivalService festivalService;
 
     @Mock
-    private MapImageStoragePort imageStoragePort;
+    private FestivalPublicImageUrlBuilder publicImageUrlBuilder;
 
     @Test
-    @DisplayName("기존 관리자 API 이미지 주소를 실제 S3 객체 주소로 보정한다")
+    @DisplayName("S3 직접 주소를 서명 URL 중계 API 주소로 보정한다")
     void success_Run_LegacyRepresentativeImageUrl() {
         UUID festivalId = UUID.randomUUID();
         Festival festival = org.mockito.Mockito.mock(Festival.class);
         given(festival.getPublicId()).willReturn(festivalId);
-        given(festivalService.findAllWithLegacyRepresentativeImageUrl())
+        given(festivalService.findAllWithManagedRepresentativeImageUrl())
                 .willReturn(List.of(festival));
-        String objectKey = "public/festivals/%s/representative.png".formatted(festivalId);
-        URI publicUrl = URI.create(
-                "https://bucket.s3.ap-northeast-2.amazonaws.com/" + objectKey
-        );
-        given(imageStoragePort.createPublicUrl(objectKey)).willReturn(publicUrl);
+        String publicUrl = "https://api.chookjibup.store/api/public/festivals/"
+                + festivalId + "/image";
+        given(publicImageUrlBuilder.build(festivalId)).willReturn(publicUrl);
         FestivalImageUrlRepairApplicationService service =
-                new FestivalImageUrlRepairApplicationService(festivalService, imageStoragePort);
+                new FestivalImageUrlRepairApplicationService(festivalService, publicImageUrlBuilder);
         service.run(org.mockito.Mockito.mock(org.springframework.boot.ApplicationArguments.class));
 
-        then(festival).should().assignRepresentativeImage(publicUrl.toString());
+        then(festival).should().assignRepresentativeImage(publicUrl);
     }
 }

@@ -70,7 +70,7 @@ public class FestivalRepositoryImpl implements FestivalRepository {
     }
 
     @Override
-    public List<Festival> findAllWithLegacyRepresentativeImageUrl() {
-        return jpaRepository.findAllWithLegacyRepresentativeImageUrl();
+    public List<Festival> findAllWithManagedRepresentativeImageUrl() {
+        return jpaRepository.findAllWithManagedRepresentativeImageUrl();
     }
 }

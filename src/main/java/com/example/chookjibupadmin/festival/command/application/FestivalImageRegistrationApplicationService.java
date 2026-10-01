@@ -7,6 +7,7 @@ import com.example.chookjibupadmin.festival.command.application.dto.PreparedFest
 import com.example.chookjibupadmin.festival.command.application.port.FestivalThumbnailPreparationPort;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.support.FestivalImageObjectKey;
+import com.example.chookjibupadmin.festival.support.FestivalPublicImageUrlBuilder;
 import com.example.chookjibupadmin.map.command.application.dto.StoredMapImageFile;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
 import java.util.UUID;
@@ -25,13 +26,14 @@ public class FestivalImageRegistrationApplicationService {
     private final FestivalThumbnailPreparationPort thumbnailPreparationPort;
     private final MapImageStoragePort imageStoragePort;
     private final FestivalApplicationService festivalApplicationService;
+    private final FestivalPublicImageUrlBuilder publicImageUrlBuilder;
 
     public Festival create(
             CreateFestivalCommand command,
             FestivalThumbnailUploadCommand imageCommand,
             AdminPrincipal principal
     ) {
-        UUID festivalPublicId = UUID.randomUUID();
+        UUID festivalPublicId = festivalApplicationService.resolveCreatePublicId(command);
         String objectKey = FestivalImageObjectKey.representative(festivalPublicId);
         boolean uploadAttempted = false;
 
@@ -50,7 +52,7 @@ public class FestivalImageRegistrationApplicationService {
                         command,
                         principal,
                         festivalPublicId,
-                        imageStoragePort.createPublicUrl(objectKey).toString()
+                        publicImageUrlBuilder.build(festivalPublicId)
                 );
             } catch (RuntimeException exception) {
                 if (uploadAttempted) {

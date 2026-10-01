@@ -10,10 +10,10 @@ import com.example.chookjibupadmin.festival.command.application.dto.FestivalThum
 import com.example.chookjibupadmin.festival.command.application.dto.PreparedFestivalThumbnail;
 import com.example.chookjibupadmin.festival.command.application.port.FestivalThumbnailPreparationPort;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
+import com.example.chookjibupadmin.festival.support.FestivalPublicImageUrlBuilder;
 import com.example.chookjibupadmin.map.command.application.dto.StoredMapImageFile;
 import com.example.chookjibupadmin.map.command.application.port.MapImageStoragePort;
 import java.io.ByteArrayInputStream;
-import java.net.URI;
 import java.nio.file.Path;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +38,9 @@ class FestivalImageRegistrationApplicationServiceTest {
     private FestivalApplicationService festivalApplicationService;
 
     @Mock
+    private FestivalPublicImageUrlBuilder publicImageUrlBuilder;
+
+    @Mock
     private PreparedFestivalThumbnail preparedThumbnail;
 
     @Mock
@@ -52,19 +55,20 @@ class FestivalImageRegistrationApplicationServiceTest {
                         "image/png",
                         3,
                         () -> new ByteArrayInputStream(new byte[]{1, 2, 3})
-                );
+        );
         AdminPrincipal principal = new AdminPrincipal(1L, "owner@mapo.go.kr");
+        java.util.UUID festivalId = java.util.UUID.randomUUID();
+        String publicImageUrl = "https://api.chookjibup.store/api/public/festivals/"
+                + festivalId + "/image";
         given(thumbnailPreparationPort.prepare(imageCommand))
                 .willReturn(preparedThumbnail);
         given(preparedThumbnail.path()).willReturn(Path.of("thumbnail.jpg"));
         given(preparedThumbnail.fileSize()).willReturn(10L);
         given(preparedThumbnail.contentType()).willReturn("image/jpeg");
         given(preparedThumbnail.checksumSha256()).willReturn("checksum");
-        given(imageStoragePort.createPublicUrl(any()))
-                .willReturn(URI.create(
-                        "https://festival-assets-test.s3.ap-northeast-2.amazonaws.com/"
-                                + "public/festivals/id/representative.png"
-                ));
+        given(festivalApplicationService.resolveCreatePublicId(any(CreateFestivalCommand.class)))
+                .willReturn(festivalId);
+        given(publicImageUrlBuilder.build(festivalId)).willReturn(publicImageUrl);
         given(festivalApplicationService.createWithImage(
                 any(CreateFestivalCommand.class),
                 any(AdminPrincipal.class),
@@ -84,10 +88,7 @@ class FestivalImageRegistrationApplicationServiceTest {
                 any(CreateFestivalCommand.class),
                 any(AdminPrincipal.class),
                 any(),
-                org.mockito.ArgumentMatchers.eq(
-                        "https://festival-assets-test.s3.ap-northeast-2.amazonaws.com/"
-                                + "public/festivals/id/representative.png"
-                )
+                org.mockito.ArgumentMatchers.eq(publicImageUrl)
         );
         then(preparedThumbnail).should().close();
     }

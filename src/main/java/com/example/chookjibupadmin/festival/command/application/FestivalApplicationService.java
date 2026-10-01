@@ -99,6 +99,19 @@ public class FestivalApplicationService {
         ).festival();
     }
 
+    /** 새 축제는 UUID를 만들고, 가져올 공공데이터 축제는 기존 UUID를 재사용한다. */
+    public UUID resolveCreatePublicId(CreateFestivalCommand command) {
+        FestivalName name = FestivalName.of(command.name());
+        FestivalPeriod period = FestivalPeriod.of(command.startDate(), command.endDate());
+        Festival existingFestival = findExistingFestivalOrNull(
+                name,
+                period.getStartDate().getYear()
+        );
+        return existingFestival == null
+                ? UUID.randomUUID()
+                : existingFestival.getPublicId();
+    }
+
     /**
      * S3 저장이 완료된 최초 배치도와 축제 기본 정보를 한 트랜잭션으로 저장한다.
      */
@@ -144,7 +157,10 @@ public class FestivalApplicationService {
                 period.getStartDate().getYear()
         );
         if (existingFestival != null) {
-            return claimImportedFestival(existingFestival, creator, name, command);
+            if (imageUrl != null && !festivalPublicId.equals(existingFestival.getPublicId())) {
+                throw new CustomException(ErrorCode.INVALID_REQUEST);
+            }
+            return claimImportedFestival(existingFestival, creator, name, command, imageUrl);
         }
         FestivalSeries series = findOrCreateSeries(command.seriesId(), name);
         validateSeriesName(series, name);
@@ -271,7 +287,8 @@ public class FestivalApplicationService {
             Festival existing,
             AdminAccount creator,
             FestivalName requestedName,
-            CreateFestivalCommand command
+            CreateFestivalCommand command,
+            String imageUrl
     ) {
         if (adminFestivalRoleService.hasFestivalOwnerForFestival(existing.getId())) {
             throw new CustomException(
@@ -286,6 +303,9 @@ public class FestivalApplicationService {
             festivalLocationService.saveAll(
                     toLocations(existing, command.locations(), creator.getId())
             );
+        }
+        if (imageUrl != null) {
+            existing.assignRepresentativeImage(imageUrl);
         }
         return new CreateFestivalWithMapResult(existing, null, null);
     }
