@@ -173,7 +173,7 @@ public class FestivalVisitorCountApplicationService {
         }
 
         LocalDate today = LocalDate.now(clock);
-        if (!visitDate.isBefore(today)) {
+        if (visitDate.isAfter(today)) {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
     }

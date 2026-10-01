@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 축제 종료 후 결과 보고서 조회·생성 API를 제공한다.
+ * 축제 진행 중과 종료 후의 운영 보고서 조회·생성 API를 제공한다.
  */
 @Tag(name = "Festival Report", description = "축제 결과 보고서 API")
 @RestController

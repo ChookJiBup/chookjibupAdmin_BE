@@ -91,6 +91,33 @@ class FestivalReportQueryApplicationServiceTest {
         }
 
         @Test
+        @DisplayName("운영자도 담당 축제의 운영 보고서 요약을 조회한다")
+        void success_GetSummary_SubAdmin() {
+            // given
+            Long festivalId = 1L;
+            Festival festival = festival(festivalId);
+            UUID publicId = festival.getPublicId();
+            AdminPrincipal principal = principal();
+            given(festivalService.getByPublicId(publicId)).willReturn(festival);
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(
+                    1L,
+                    festivalId
+            )).willReturn(AdminFestivalRole.createSubAdmin(1L, festivalId, 2L));
+
+            // when
+            FestivalReportSummaryView view = reportQueryService.getSummary(
+                    publicId,
+                    principal
+            );
+
+            // then
+            assertThat(view.festivalId()).isEqualTo(publicId);
+            assertThat(view.dataAvailable()).isFalse();
+        }
+
+        @Test
         @DisplayName("다른 축제의 결과 보고서 요약은 조회할 수 없다")
         void fail_GetSummary_DifferentFestival_CustomException() {
             // given

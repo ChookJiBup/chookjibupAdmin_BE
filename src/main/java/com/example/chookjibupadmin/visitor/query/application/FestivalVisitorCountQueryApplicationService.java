@@ -80,7 +80,7 @@ public class FestivalVisitorCountQueryApplicationService {
                     cursor,
                     dayIndex,
                     count,
-                    cursor.isBefore(today),
+                    !cursor.isAfter(today),
                     isSaved
             ));
             dayIndex++;
