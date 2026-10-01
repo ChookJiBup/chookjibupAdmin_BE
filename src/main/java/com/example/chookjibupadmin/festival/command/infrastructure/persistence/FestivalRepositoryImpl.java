@@ -55,6 +55,16 @@ public class FestivalRepositoryImpl implements FestivalRepository {
     }
 
     @Override
+    public Optional<Festival> findFirstByNormalizedNameAndYear(
+            String normalizedName,
+            int year
+    ) {
+        return jpaRepository.findByNormalizedNameAndYear(normalizedName, year)
+                .stream()
+                .findFirst();
+    }
+
+    @Override
     public Optional<Festival> findBySeriesIdAndYear(Long seriesId, int year) {
         return jpaRepository.findBySeriesIdAndYear(seriesId, year);
     }

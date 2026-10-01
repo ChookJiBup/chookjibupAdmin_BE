@@ -150,6 +150,13 @@ public class AdminFestivalRoleService {
         );
     }
 
+    public boolean hasFestivalOwnerForFestival(Long festivalId) {
+        return adminFestivalRoleRepository.existsByFestivalIdAndRole(
+                festivalId,
+                AdminRole.FESTIVAL_OWNER
+        );
+    }
+
     /**
      * 계정이 가진 축제 역할 중 가장 높은 역할을 반환한다. 배정된 축제가 없으면 null.
      *

@@ -139,6 +139,13 @@ public class FestivalApplicationService {
                 command.startDate(),
                 command.endDate()
         );
+        Festival existingFestival = findExistingFestivalOrNull(
+                name,
+                period.getStartDate().getYear()
+        );
+        if (existingFestival != null) {
+            return claimImportedFestival(existingFestival, creator, name, command);
+        }
         FestivalSeries series = findOrCreateSeries(command.seriesId(), name);
         validateSeriesName(series, name);
         validateUniqueFestivalYear(series.getId(), period.getStartDate().getYear());
@@ -247,6 +254,40 @@ public class FestivalApplicationService {
         if (festivalService.existsBySeriesIdAndYear(seriesId, year)) {
             throw new CustomException(ErrorCode.FESTIVAL_YEAR_ALREADY_EXISTS);
         }
+    }
+
+    private Festival findExistingFestivalOrNull(
+            FestivalName name,
+            int year
+    ) {
+        return festivalService.findFirstByNormalizedNameAndYear(
+                        FestivalSeries.normalize(name),
+                        year
+                )
+                .orElse(null);
+    }
+
+    private CreateFestivalWithMapResult claimImportedFestival(
+            Festival existing,
+            AdminAccount creator,
+            FestivalName requestedName,
+            CreateFestivalCommand command
+    ) {
+        if (adminFestivalRoleService.hasFestivalOwnerForFestival(existing.getId())) {
+            throw new CustomException(
+                    ErrorCode.FESTIVAL_YEAR_ALREADY_EXISTS,
+                    existing.getYear() + "년 " + requestedName.getValue()
+                            + "이 이미 등록되어 있습니다."
+            );
+        }
+        adminFestivalRoleService.assignFestivalOwner(creator.getId(), existing.getId());
+        if (festivalLocationService.findAllByFestivalId(existing.getId()).isEmpty()) {
+            validateLocations(command.locations());
+            festivalLocationService.saveAll(
+                    toLocations(existing, command.locations(), creator.getId())
+            );
+        }
+        return new CreateFestivalWithMapResult(existing, null, null);
     }
 
     /**

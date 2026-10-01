@@ -180,6 +180,40 @@ class FestivalJpaRepositoryTest {
         }
     }
 
+    @Nested
+    @DisplayName("findByNormalizedNameAndYear")
+    class FindByNormalizedNameAndYear {
+
+        @Test
+        @DisplayName("동일한 이름과 연도의 레거시 중복 행을 최신 순서로 조회한다")
+        void success_FindByNormalizedNameAndYear_DuplicateRows() {
+            Festival older = festivalJpaRepository.saveAndFlush(festival());
+            Festival newer = Festival.create(
+                    2L,
+                    UUID.randomUUID(),
+                    FestivalName.of("마포나루새우젓축제"),
+                    FestivalDescription.of("다른 시리즈의 레거시 행"),
+                    FestivalAddress.of("서울특별시 마포구"),
+                    FestivalDetailAddress.of(null),
+                    FestivalPeriod.of(
+                            LocalDate.of(2026, 9, 19),
+                            LocalDate.of(2026, 9, 20)
+                    ),
+                    FestivalOperationTime.of(LocalTime.of(9, 0), LocalTime.of(18, 0))
+            );
+            newer = festivalJpaRepository.saveAndFlush(newer);
+            entityManager.clear();
+
+            var found = festivalJpaRepository.findByNormalizedNameAndYear(
+                    "마포나루새우젓축제",
+                    2026
+            );
+
+            assertThat(found).extracting(Festival::getId)
+                    .containsExactly(newer.getId(), older.getId());
+        }
+    }
+
     private Festival festival() {
         return festival(
                 LocalDate.of(2026, 10, 16),

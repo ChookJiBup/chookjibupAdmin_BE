@@ -27,6 +27,7 @@ import com.example.chookjibupadmin.festival.command.domain.FestivalSeries;
 import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalAddress;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDescription;
+import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddress;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
@@ -210,6 +211,78 @@ class FestivalApplicationServiceTest {
             ))
                     .isInstanceOf(CustomException.class)
                     .hasMessage(ErrorCode.FESTIVAL_YEAR_ALREADY_EXISTS.getMessage());
+        }
+
+        @Test
+        @DisplayName("미연결 공공데이터 축제는 새 행 없이 현재 관리자가 인수한다")
+        void success_Create_ClaimsUnlinkedFestivalWithSameNameAndYear() {
+            // given
+            CreateFestivalCommand command = createCommand();
+            AdminPrincipal principal = principal();
+            Festival existing = Festival.create(
+                    99L,
+                    UUID.randomUUID(),
+                    FestivalName.of("마포나루새우젓축제"),
+                    FestivalDescription.of("기존 축제"),
+                    FestivalAddress.of("서울특별시 마포구"),
+                    FestivalDetailAddress.of(null),
+                    FestivalPeriod.of(
+                            LocalDate.of(2026, 9, 19),
+                            LocalDate.of(2026, 9, 20)
+                    ),
+                    FestivalOperationTime.of(
+                            LocalTime.of(9, 0),
+                            LocalTime.of(18, 0)
+                    )
+            );
+            ReflectionTestUtils.setField(existing, "id", 42L);
+            given(adminAccountService.getById(principal.adminId()))
+                    .willReturn(unassignedAdmin());
+            given(festivalService.findFirstByNormalizedNameAndYear(
+                    "마포나루새우젓축제",
+                    2026
+            )).willReturn(java.util.Optional.of(existing));
+            given(adminFestivalRoleService.hasFestivalOwnerForFestival(existing.getId()))
+                    .willReturn(false);
+            given(festivalLocationService.findAllByFestivalId(existing.getId()))
+                    .willReturn(List.of());
+
+            // when
+            Festival claimed = festivalApplicationService.create(command, principal);
+
+            // then
+            assertThat(claimed).isSameAs(existing);
+            then(festivalSeriesService).shouldHaveNoInteractions();
+            then(festivalService).should().findFirstByNormalizedNameAndYear(
+                    "마포나루새우젓축제", 2026);
+            then(festivalService).shouldHaveNoMoreInteractions();
+            then(adminFestivalRoleService).should()
+                    .assignFestivalOwner(1L, existing.getId());
+            then(festivalLocationService).should().saveAll(any());
+        }
+
+        @Test
+        @DisplayName("이미 관리자가 배정된 동일 이름과 연도의 축제는 중복으로 거절한다")
+        void fail_Create_ManagedFestivalWithSameNameAndYear_CustomException() {
+            CreateFestivalCommand command = createCommand();
+            AdminPrincipal principal = principal();
+            Festival existing = Festival.create(
+                    99L, UUID.randomUUID(), FestivalName.of("마포나루새우젓축제"),
+                    FestivalDescription.of("기존 축제"), FestivalAddress.of("서울특별시 마포구"),
+                    FestivalDetailAddress.of(null),
+                    FestivalPeriod.of(LocalDate.of(2026, 9, 19), LocalDate.of(2026, 9, 20)),
+                    FestivalOperationTime.of(LocalTime.of(9, 0), LocalTime.of(18, 0))
+            );
+            ReflectionTestUtils.setField(existing, "id", 42L);
+            given(adminAccountService.getById(principal.adminId())).willReturn(unassignedAdmin());
+            given(festivalService.findFirstByNormalizedNameAndYear(
+                    "마포나루새우젓축제", 2026
+            )).willReturn(java.util.Optional.of(existing));
+            given(adminFestivalRoleService.hasFestivalOwnerForFestival(42L)).willReturn(true);
+
+            assertThatThrownBy(() -> festivalApplicationService.create(command, principal))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessage("2026년 마포나루 새우젓축제이 이미 등록되어 있습니다.");
         }
 
         @Test

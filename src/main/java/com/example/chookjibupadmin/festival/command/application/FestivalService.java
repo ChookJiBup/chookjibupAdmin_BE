@@ -85,6 +85,13 @@ public class FestivalService {
         return festivalRepository.existsBySeriesIdAndYear(seriesId, year);
     }
 
+    public Optional<Festival> findFirstByNormalizedNameAndYear(
+            String normalizedName,
+            int year
+    ) {
+        return festivalRepository.findFirstByNormalizedNameAndYear(normalizedName, year);
+    }
+
     /**
      * 축제 묶음과 개최 연도로 축제를 조회한다.
      */
