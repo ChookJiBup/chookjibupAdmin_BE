@@ -168,6 +168,39 @@ class FestivalReportDetailQueryApplicationServiceTest {
         assertThat(view.evaluationAvailable()).isFalse();
     }
 
+    @Test
+    @DisplayName("진행 중 축제는 운영자에게도 오늘까지 입력된 성과를 제공한다")
+    void success_GetStatus_OngoingPartialInput_SubAdmin() {
+        // given
+        Festival festival = festival();
+        AdminAccount admin = admin();
+        given(clock.instant()).willReturn(Instant.parse("2026-10-17T00:00:00Z"));
+        given(clock.getZone()).willReturn(ZoneOffset.UTC);
+        given(adminAccountService.getById(1L)).willReturn(admin);
+        given(festivalService.getByPublicId(festival.getPublicId())).willReturn(festival);
+        given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(1L, 10L))
+                .willReturn(AdminFestivalRole.createSubAdmin(1L, 10L, 2L));
+        given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                .willReturn(List.of(FestivalDailyVisitorCount.create(
+                        10L,
+                        LocalDate.of(2026, 10, 16),
+                        VisitorCount.of(100)
+                )));
+        given(visitorCountService.findTotalByFestivalId(10L)).willReturn(Optional.empty());
+        given(reportJobService.findLatestByFestivalId(10L)).willReturn(Optional.empty());
+        given(resultService.findByFestivalId(10L)).willReturn(Optional.empty());
+
+        // when
+        FestivalReportStatusView view = service.getStatus(
+                festival.getPublicId(),
+                new AdminPrincipal(1L, "hong@korea.kr")
+        );
+
+        // then
+        assertThat(view.progressStatus()).isEqualTo("ONGOING");
+        assertThat(view.performanceAvailable()).isTrue();
+    }
+
     private void stubAuth(Festival festival) {
         AdminAccount admin = admin();
         given(clock.instant()).willReturn(Instant.parse("2026-10-20T00:00:00Z"));

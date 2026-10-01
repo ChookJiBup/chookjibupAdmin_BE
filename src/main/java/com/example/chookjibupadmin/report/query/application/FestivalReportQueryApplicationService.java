@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 축제 종료 후 결과 보고서 조회 유스케이스를 처리한다.
+ * 축제 운영 보고서 조회 유스케이스를 처리한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -63,7 +63,7 @@ public class FestivalReportQueryApplicationService {
                         adminAccount.getId(),
                         festival.getId()
                 );
-        if (!role.canViewFestivalResultReport()) {
+        if (!role.canViewOperationReport()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
     }

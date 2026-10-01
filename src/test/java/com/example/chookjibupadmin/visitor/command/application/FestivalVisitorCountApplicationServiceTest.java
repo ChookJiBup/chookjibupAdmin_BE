@@ -141,6 +141,49 @@ class FestivalVisitorCountApplicationServiceTest {
         }
 
         @Test
+        @DisplayName("운영자가 오늘 일자의 방문 인원을 저장한다")
+        void success_UpdateDailyVisitorCount_Today_SubAdmin() {
+            // given
+            Festival festival = festival(10L);
+            UUID publicId = festival.getPublicId();
+            LocalDate visitDate = LocalDate.of(2026, 10, 17);
+            AdminPrincipal principal = new AdminPrincipal(1L, "admin@mapo.go.kr");
+            FestivalDailyVisitorCount saved = FestivalDailyVisitorCount.create(
+                    10L,
+                    visitDate,
+                    VisitorCount.of(900)
+            );
+            givenClock(Instant.parse("2026-10-16T15:00:00Z"));
+            given(adminAccountService.getById(1L)).willReturn(adminAccount(1L));
+            given(festivalService.getByPublicIdForUpdate(publicId)).willReturn(festival);
+            given(adminFestivalRoleService.getByAdminAccountIdAndFestivalId(1L, 10L))
+                    .willReturn(AdminFestivalRole.createSubAdmin(1L, 10L, 2L));
+            given(visitorCountService.findDailyByFestivalIdAndVisitDateForUpdate(
+                    10L,
+                    visitDate
+            )).willReturn(Optional.empty());
+            given(visitorCountService.saveDaily(any(FestivalDailyVisitorCount.class)))
+                    .willReturn(saved);
+            given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                    .willReturn(List.of(saved));
+            given(visitorCountService.findTotalByFestivalId(10L))
+                    .willReturn(Optional.empty());
+
+            // when
+            FestivalDailyVisitorCountResult result = applicationService
+                    .updateDailyVisitorCount(
+                            publicId,
+                            visitDate,
+                            new UpdateVisitorCountCommand(900),
+                            principal
+                    );
+
+            // then
+            assertThat(result.visitDate()).isEqualTo(visitDate);
+            assertThat(result.visitorCount()).isEqualTo(900);
+        }
+
+        @Test
         @DisplayName("TOTAL 모드에서는 일자별 입력을 거부한다")
         void fail_UpdateDailyVisitorCount_TotalMode_CustomException() {
             Festival festival = festival(10L);
@@ -227,11 +270,11 @@ class FestivalVisitorCountApplicationServiceTest {
         }
 
         @Test
-        @DisplayName("오늘 이후 일자는 입력할 수 없다")
-        void fail_UpdateDailyVisitorCount_FutureOrToday_CustomException() {
+        @DisplayName("미래 일자는 입력할 수 없다")
+        void fail_UpdateDailyVisitorCount_Future_CustomException() {
             Festival festival = festival(10L);
             UUID publicId = festival.getPublicId();
-            LocalDate visitDate = LocalDate.of(2026, 10, 17);
+            LocalDate visitDate = LocalDate.of(2026, 10, 18);
             AdminPrincipal principal = new AdminPrincipal(1L, "admin@mapo.go.kr");
             AdminAccount admin = adminAccount(1L);
 

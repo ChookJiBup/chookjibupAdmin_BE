@@ -43,6 +43,8 @@ public interface FestivalRepository {
      */
     boolean existsBySeriesIdAndYear(Long seriesId, int year);
 
+    Optional<Festival> findFirstByNormalizedNameAndYear(String normalizedName, int year);
+
     Optional<Festival> findBySeriesIdAndYear(Long seriesId, int year);
 
     /** 과거 관리자 API 중계 주소로 저장된 대표 이미지가 있는 축제를 조회한다. */

@@ -34,6 +34,19 @@ interface FestivalJpaRepository extends JpaRepository<Festival, Long> {
 
     boolean existsBySeriesIdAndYear(Long seriesId, int year);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select f
+            from Festival f
+            where lower(replace(f.name.value, ' ', '')) = :normalizedName
+              and f.year = :year
+            order by f.id desc
+            """)
+    java.util.List<Festival> findByNormalizedNameAndYear(
+            @Param("normalizedName") String normalizedName,
+            @Param("year") int year
+    );
+
     Optional<Festival> findBySeriesIdAndYear(Long seriesId, int year);
 
     @Query("""

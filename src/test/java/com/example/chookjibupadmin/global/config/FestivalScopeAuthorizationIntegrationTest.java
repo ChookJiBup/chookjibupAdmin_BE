@@ -31,8 +31,8 @@ class FestivalScopeAuthorizationIntegrationTest extends AdminHttpIntegrationTest
     private AdminFestivalRoleService adminFestivalRoleService;
 
     @Test
-    @DisplayName("결과 보고서 조회는 총괄관리자만 열 수 있다")
-    void fail_SubAdmin_ReadReports_Forbidden() throws Exception {
+    @DisplayName("운영자도 운영 보고서를 조회할 수 있다")
+    void success_SubAdmin_ReadReports() throws Exception {
         Fixture fixture = fixture();
 
         for (String path : new String[]{"summary", "status", "performance", "evaluation"}) {
@@ -41,20 +41,20 @@ class FestivalScopeAuthorizationIntegrationTest extends AdminHttpIntegrationTest
                             fixture.festivalId(),
                             path
                     ).header("Authorization", bearer(fixture.subAdmin())))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk());
         }
     }
 
     @Test
-    @DisplayName("결과 보고서 생성은 총괄관리자만 요청할 수 있다")
-    void fail_SubAdmin_GenerateReport_Forbidden() throws Exception {
+    @DisplayName("운영자도 운영 보고서 생성 흐름에 진입할 수 있다")
+    void success_SubAdmin_GenerateReport_NotForbidden() throws Exception {
         Fixture fixture = fixture();
 
         mockMvc.perform(post(
                         "/api/festivals/{festivalId}/reports/generate",
                         fixture.festivalId()
                 ).header("Authorization", bearer(fixture.subAdmin())))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isConflict());
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.example.chookjibupadmin.report.support;
 import com.example.chookjibupadmin.festival.command.application.FestivalService;
 import com.example.chookjibupadmin.festival.command.domain.Festival;
 import com.example.chookjibupadmin.festival.command.domain.FestivalVisitorCountInputMode;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.report.support.dto.FestivalDailyVisitorTrendPoint;
 import com.example.chookjibupadmin.report.support.dto.FestivalEconomicEffectMetric;
 import com.example.chookjibupadmin.report.support.dto.FestivalOperationEfficiencyMetric;
@@ -18,6 +19,7 @@ import com.example.chookjibupadmin.visitor.support.FestivalVisitorEffectiveSourc
 import com.example.chookjibupadmin.visitor.support.FestivalVisitorInputSupport;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +38,7 @@ public class FestivalReportMetricAssembler {
 
     private final FestivalService festivalService;
     private final FestivalVisitorCountService visitorCountService;
+    private final Clock clock;
 
     public FestivalReportMetrics assemble(Festival festival) {
         List<FestivalDailyVisitorCount> currentDaily = visitorCountService
@@ -57,19 +60,23 @@ public class FestivalReportMetricAssembler {
         List<FestivalDailyVisitorTrendPoint> dailyTrend =
                 buildDailyTrend(festival, currentDaily, previous, snapshot);
 
+        // 진행 중에는 아직 남은 일차가 있어 READY가 아니더라도,
+        // 마감된 일차까지의 누적 인원은 운영리포트에 바로 보여 준다.
+        boolean ongoing = progressStatus(festival) == FestivalProgressStatus.ONGOING;
         long currentEffective = snapshot.effectiveVisitorCount() == null
-                ? 0L
+                ? ongoing ? sumDailyThroughToday(festival, currentDaily) : 0L
                 : snapshot.effectiveVisitorCount();
+        boolean completedVisitorInput = FestivalVisitorInputSupport.isReportReady(snapshot);
 
         return new FestivalReportMetrics(
                 festival.getPublicId(),
                 festival.getNameValue(),
                 festival.getYear() == null ? 0 : festival.getYear(),
                 FestivalVisitorDaySupport.totalDayCount(festival),
-                FestivalVisitorInputSupport.isReportReady(snapshot),
+                completedVisitorInput,
                 buildTotalVisitors(
                         currentEffective,
-                        previous.isPresent(),
+                        previous.isPresent() && completedVisitorInput,
                         previousTotal
                 ),
                 dailyTrend,
@@ -100,7 +107,10 @@ public class FestivalReportMetricAssembler {
         List<FestivalDailyVisitorTrendPoint> dailyTrend = new ArrayList<>();
         int dayIndex = 1;
         LocalDate cursor = festival.getStartDate();
-        LocalDate end = festival.getEndDate();
+        LocalDate today = LocalDate.now(clock);
+        LocalDate end = progressStatus(festival) == FestivalProgressStatus.ONGOING
+                ? today
+                : festival.getEndDate();
         while (!cursor.isAfter(end)) {
             Integer currentCount = currentByDate.get(cursor);
             Integer previousCount = previousByDayIndex.get(dayIndex);
@@ -128,6 +138,27 @@ public class FestivalReportMetricAssembler {
         return snapshot.effectiveVisitorCount() == null
                 ? 0L
                 : snapshot.effectiveVisitorCount();
+    }
+
+    private long sumDailyThroughToday(
+            Festival festival,
+            List<FestivalDailyVisitorCount> dailyCounts
+    ) {
+        LocalDate today = LocalDate.now(clock);
+        return dailyCounts.stream()
+                .filter(count -> !count.getVisitDate().isBefore(festival.getStartDate()))
+                .filter(count -> !count.getVisitDate().isAfter(festival.getEndDate()))
+                .filter(count -> !count.getVisitDate().isAfter(today))
+                .mapToLong(FestivalDailyVisitorCount::getVisitorCountValue)
+                .sum();
+    }
+
+    private FestivalProgressStatus progressStatus(Festival festival) {
+        return FestivalProgressStatus.from(
+                LocalDate.now(clock),
+                festival.getStartDate(),
+                festival.getEndDate()
+        );
     }
 
     private FestivalTotalVisitorMetric buildTotalVisitors(

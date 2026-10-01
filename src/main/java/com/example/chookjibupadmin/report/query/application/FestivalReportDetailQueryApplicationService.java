@@ -65,11 +65,13 @@ public class FestivalReportDetailQueryApplicationService {
         Festival festival = authorize(festivalPublicId, principal);
         List<FestivalDailyVisitorCount> dailyCounts = visitorCountService
                 .findDailyByFestivalIdOrderByVisitDateAsc(festival.getId());
+        Optional<Integer> totalVisitorCount = visitorCountService
+                .findTotalByFestivalId(festival.getId())
+                .map(FestivalTotalVisitorCount::getVisitorCountValue);
         var snapshot = FestivalVisitorInputSupport.resolve(
                 festival,
                 dailyCounts,
-                visitorCountService.findTotalByFestivalId(festival.getId())
-                        .map(FestivalTotalVisitorCount::getVisitorCountValue)
+                totalVisitorCount
         );
         boolean visitorReady = FestivalVisitorInputSupport.isReportReady(snapshot);
         String visitorInput = switch (snapshot.status()) {
@@ -107,9 +109,11 @@ public class FestivalReportDetailQueryApplicationService {
         boolean jobFailed = job
                 .map(value -> value.getStatus() == FestivalReportJobStatus.FAILED)
                 .orElse(false);
-        boolean performanceAvailable = visitorReady
-                && !jobFailed
-                && result.isPresent();
+        boolean ongoingPerformanceAvailable = progress == FestivalProgressStatus.ONGOING
+                && (!dailyCounts.isEmpty() || totalVisitorCount.isPresent());
+        boolean performanceAvailable = !jobFailed
+                && (ongoingPerformanceAvailable
+                || (visitorReady && result.isPresent()));
         boolean evaluationAvailable = visitorReady
                 && !jobFailed
                 && hasEvaluationContent(ai);
@@ -137,6 +141,10 @@ public class FestivalReportDetailQueryApplicationService {
     ) {
         Festival festival = authorize(festivalPublicId, principal);
         FestivalReportMetrics metrics = metricAssembler.assemble(festival);
+        List<FestivalDailyVisitorCount> dailyCounts = visitorCountService
+                .findDailyByFestivalIdOrderByVisitDateAsc(festival.getId());
+        boolean hasVisitorData = !dailyCounts.isEmpty()
+                || visitorCountService.findTotalByFestivalId(festival.getId()).isPresent();
         Optional<FestivalReportJob> job = reportJobService.findLatestByFestivalId(
                 festival.getId()
         );
@@ -149,9 +157,14 @@ public class FestivalReportDetailQueryApplicationService {
         boolean jobFailed = job
                 .map(value -> value.getStatus() == FestivalReportJobStatus.FAILED)
                 .orElse(false);
-        boolean performanceAvailable = metrics.visitorInputCompleted()
-                && !jobFailed
-                && result.isPresent();
+        FestivalProgressStatus progress = FestivalProgressStatus.from(
+                LocalDate.now(clock),
+                festival.getStartDate(),
+                festival.getEndDate()
+        );
+        boolean performanceAvailable = !jobFailed
+                && ((progress == FestivalProgressStatus.ONGOING && hasVisitorData)
+                || (metrics.visitorInputCompleted() && result.isPresent()));
 
         return new FestivalReportPerformanceView(
                 festival.getPublicId(),
@@ -225,7 +238,7 @@ public class FestivalReportDetailQueryApplicationService {
                         admin.getId(),
                         festival.getId()
                 );
-        if (!role.canViewFestivalResultReport()) {
+        if (!role.canViewOperationReport()) {
             throw new CustomException(ErrorCode.FORBIDDEN);
         }
         return festival;

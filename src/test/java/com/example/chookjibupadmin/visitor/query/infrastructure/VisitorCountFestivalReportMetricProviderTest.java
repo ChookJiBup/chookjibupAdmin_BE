@@ -17,8 +17,11 @@ import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCo
 import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCount;
 import com.example.chookjibupadmin.visitor.command.domain.FestivalTotalVisitorCount;
 import com.example.chookjibupadmin.visitor.command.domain.vo.VisitorCount;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +42,9 @@ class VisitorCountFestivalReportMetricProviderTest {
 
     @Mock
     private FestivalVisitorCountService visitorCountService;
+
+    @Mock
+    private Clock clock;
 
     @InjectMocks
     private VisitorCountFestivalReportMetricProvider provider;
@@ -130,6 +136,29 @@ class VisitorCountFestivalReportMetricProviderTest {
                     .willReturn(Optional.empty());
 
             assertThat(provider.findSummary(10L)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("진행 중 DAILY 모드는 오늘까지 입력된 부분합을 반환한다")
+        void success_FindSummary_OngoingDailyPartialSumThroughToday() {
+            Festival festival = festival(FestivalVisitorCountInputMode.DAILY);
+            given(clock.instant()).willReturn(Instant.parse("2026-10-17T00:00:00Z"));
+            given(clock.getZone()).willReturn(ZoneOffset.UTC);
+            given(festivalService.getById(10L)).willReturn(festival);
+            given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                    .willReturn(List.of(
+                            daily(festival.getId(), LocalDate.of(2026, 10, 16), 400),
+                            // 미래 일차 값이 잘못 들어와도 실시간 누적에는 섞지 않는다.
+                            daily(festival.getId(), LocalDate.of(2026, 10, 18), 900)
+                    ));
+            given(visitorCountService.findTotalByFestivalId(10L))
+                    .willReturn(Optional.empty());
+
+            Optional<FestivalReportMetricProvider.Snapshot> snapshot =
+                    provider.findSummary(10L);
+
+            assertThat(snapshot).isPresent();
+            assertThat(snapshot.get().totalVisitorCount()).isEqualTo(400L);
         }
     }
 
