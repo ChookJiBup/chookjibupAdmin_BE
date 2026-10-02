@@ -111,9 +111,9 @@ public class FestivalReportDetailQueryApplicationService {
                 .orElse(false);
         boolean ongoingPerformanceAvailable = progress == FestivalProgressStatus.ONGOING
                 && (!dailyCounts.isEmpty() || totalVisitorCount.isPresent());
-        boolean performanceAvailable = !jobFailed
-                && (ongoingPerformanceAvailable
-                || (visitorReady && result.isPresent()));
+        // 방문객 합계·일자별 추이는 AI 결과와 무관한 실지표다. 분석 결과가 없거나
+        // 최신 분석 작업이 실패했더라도 입력이 준비됐으면 성과 화면을 열어야 한다.
+        boolean performanceAvailable = ongoingPerformanceAvailable || visitorReady;
         boolean evaluationAvailable = visitorReady
                 && !jobFailed
                 && hasEvaluationContent(ai);
@@ -154,15 +154,12 @@ public class FestivalReportDetailQueryApplicationService {
                 .orElseGet(FestivalReportAiResult::empty);
         String generationStatus = job.map(value -> value.getStatus().name())
                 .orElse(result.isPresent() ? "COMPLETED" : "NONE");
-        boolean jobFailed = job
-                .map(value -> value.getStatus() == FestivalReportJobStatus.FAILED)
-                .orElse(false);
         FestivalProgressStatus progress = festival.progressStatus(
                 LocalDate.now(clock)
         );
-        boolean performanceAvailable = !jobFailed
-                && ((progress == FestivalProgressStatus.ONGOING && hasVisitorData)
-                || (metrics.visitorInputCompleted() && result.isPresent()));
+        boolean performanceAvailable =
+                (progress == FestivalProgressStatus.ONGOING && hasVisitorData)
+                || metrics.visitorInputCompleted();
 
         return new FestivalReportPerformanceView(
                 festival.getPublicId(),

@@ -89,8 +89,8 @@ class FestivalReportDetailQueryApplicationServiceTest {
     private Clock clock;
 
     @Test
-    @DisplayName("방문 입력만 완료되면 performance·evaluation 모두 false다")
-    void success_GetStatus_VisitorReadyAlone_NotAvailable() {
+    @DisplayName("방문 입력만 완료돼도 실지표 performance는 제공한다")
+    void success_GetStatus_VisitorReadyAlone_PerformanceAvailable() {
         Festival festival = festival();
         stubAuth(festival);
         given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
@@ -104,7 +104,7 @@ class FestivalReportDetailQueryApplicationServiceTest {
                 new AdminPrincipal(1L, "hong@korea.kr")
         );
 
-        assertThat(view.performanceAvailable()).isFalse();
+        assertThat(view.performanceAvailable()).isTrue();
         assertThat(view.evaluationAvailable()).isFalse();
     }
 
@@ -136,7 +136,7 @@ class FestivalReportDetailQueryApplicationServiceTest {
     }
 
     @Test
-    @DisplayName("job FAILED면 performance·evaluation 모두 false다")
+    @DisplayName("job FAILED여도 실지표 performance는 제공하고 evaluation만 숨긴다")
     void success_GetStatus_FailedJob() {
         Festival festival = festival();
         stubAuth(festival);
@@ -167,7 +167,7 @@ class FestivalReportDetailQueryApplicationServiceTest {
                 new AdminPrincipal(1L, "hong@korea.kr")
         );
 
-        assertThat(view.performanceAvailable()).isFalse();
+        assertThat(view.performanceAvailable()).isTrue();
         assertThat(view.evaluationAvailable()).isFalse();
     }
 
@@ -228,6 +228,29 @@ class FestivalReportDetailQueryApplicationServiceTest {
         );
 
         assertThat(view.performanceAvailable()).isFalse();
+    }
+
+    @Test
+    @DisplayName("완료 축제는 AI 결과가 없어도 방문 입력 완료 실지표를 제공한다")
+    void success_GetPerformance_CompletedVisitorReadyWithoutResult() {
+        Festival festival = festival();
+        stubAuth(festival);
+        FestivalReportMetrics metrics = mock(FestivalReportMetrics.class);
+        given(metrics.visitorInputCompleted()).willReturn(true);
+        given(metricAssembler.assemble(festival)).willReturn(metrics);
+        given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                .willReturn(completeDaily());
+        given(reportJobService.findLatestByFestivalId(10L))
+                .willReturn(Optional.empty());
+        given(resultService.findByFestivalId(10L)).willReturn(Optional.empty());
+
+        var view = service.getPerformance(
+                festival.getPublicId(),
+                new AdminPrincipal(1L, "hong@korea.kr")
+        );
+
+        assertThat(view.performanceAvailable()).isTrue();
+        assertThat(view.generationStatus()).isEqualTo("NONE");
     }
 
     @Test
