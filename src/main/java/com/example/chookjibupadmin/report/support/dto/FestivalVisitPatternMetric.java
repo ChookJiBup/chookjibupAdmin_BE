@@ -3,7 +3,7 @@ package com.example.chookjibupadmin.report.support.dto;
 import java.util.List;
 
 /**
- * 시간대별 방문 패턴 지표이다. 혼잡 이력이 없으면 미제공 상태로 반환한다.
+ * 혼잡 이력의 평균 대기시간으로 계산한 주요 혼잡 시간대 지표이다.
  */
 public record FestivalVisitPatternMetric(
         boolean available,
