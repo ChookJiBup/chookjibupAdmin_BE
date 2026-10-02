@@ -2,6 +2,7 @@ package com.example.chookjibupadmin.report.query.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import com.example.chookjibupadmin.admin.command.application.AdminAccountService;
 import com.example.chookjibupadmin.admin.command.application.AdminFestivalRoleService;
@@ -22,6 +23,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddr
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.report.command.application.FestivalReportJobService;
 import com.example.chookjibupadmin.report.command.application.FestivalResultService;
 import com.example.chookjibupadmin.report.command.domain.FestivalReportJob;
@@ -29,6 +31,7 @@ import com.example.chookjibupadmin.report.command.domain.FestivalResult;
 import com.example.chookjibupadmin.report.query.application.dto.FestivalReportStatusView;
 import com.example.chookjibupadmin.report.query.infrastructure.FestivalReviewMetricQueryRepository;
 import com.example.chookjibupadmin.report.support.FestivalReportMetricAssembler;
+import com.example.chookjibupadmin.report.support.dto.FestivalReportMetrics;
 import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService;
 import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCount;
 import com.example.chookjibupadmin.visitor.command.domain.vo.VisitorCount;
@@ -201,9 +204,65 @@ class FestivalReportDetailQueryApplicationServiceTest {
         assertThat(view.performanceAvailable()).isTrue();
     }
 
+    @Test
+    @DisplayName("성과 조회는 날짜보다 수동 종료 상태를 우선한다")
+    void success_GetPerformance_ManualCompletedOverridesOngoingDate() {
+        Festival festival = festival();
+        festival.changeProgressStatus(FestivalProgressStatus.COMPLETED);
+        stubAuth(festival, "2026-10-17T00:00:00Z");
+        given(metricAssembler.assemble(festival))
+                .willReturn(mock(FestivalReportMetrics.class));
+        given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                .willReturn(List.of(FestivalDailyVisitorCount.create(
+                        10L,
+                        LocalDate.of(2026, 10, 16),
+                        VisitorCount.of(100)
+                )));
+        given(reportJobService.findLatestByFestivalId(10L))
+                .willReturn(Optional.empty());
+        given(resultService.findByFestivalId(10L)).willReturn(Optional.empty());
+
+        var view = service.getPerformance(
+                festival.getPublicId(),
+                new AdminPrincipal(1L, "hong@korea.kr")
+        );
+
+        assertThat(view.performanceAvailable()).isFalse();
+    }
+
+    @Test
+    @DisplayName("성과 조회는 날짜보다 수동 진행 상태를 우선한다")
+    void success_GetPerformance_ManualOngoingOverridesCompletedDate() {
+        Festival festival = festival();
+        festival.changeProgressStatus(FestivalProgressStatus.ONGOING);
+        stubAuth(festival);
+        given(metricAssembler.assemble(festival))
+                .willReturn(mock(FestivalReportMetrics.class));
+        given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                .willReturn(List.of(FestivalDailyVisitorCount.create(
+                        10L,
+                        LocalDate.of(2026, 10, 16),
+                        VisitorCount.of(100)
+                )));
+        given(reportJobService.findLatestByFestivalId(10L))
+                .willReturn(Optional.empty());
+        given(resultService.findByFestivalId(10L)).willReturn(Optional.empty());
+
+        var view = service.getPerformance(
+                festival.getPublicId(),
+                new AdminPrincipal(1L, "hong@korea.kr")
+        );
+
+        assertThat(view.performanceAvailable()).isTrue();
+    }
+
     private void stubAuth(Festival festival) {
+        stubAuth(festival, "2026-10-20T00:00:00Z");
+    }
+
+    private void stubAuth(Festival festival, String instant) {
         AdminAccount admin = admin();
-        given(clock.instant()).willReturn(Instant.parse("2026-10-20T00:00:00Z"));
+        given(clock.instant()).willReturn(Instant.parse(instant));
         given(clock.getZone()).willReturn(ZoneOffset.UTC);
         given(adminAccountService.getById(1L)).willReturn(admin);
         given(festivalService.getByPublicId(festival.getPublicId())).willReturn(festival);

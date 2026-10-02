@@ -12,6 +12,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddr
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.report.query.application.port.FestivalReportMetricProvider;
 import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService;
 import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCount;
@@ -159,6 +160,24 @@ class VisitorCountFestivalReportMetricProviderTest {
 
             assertThat(snapshot).isPresent();
             assertThat(snapshot.get().totalVisitorCount()).isEqualTo(400L);
+        }
+
+        @Test
+        @DisplayName("수동 종료 상태에서는 날짜상 진행 중이어도 부분합을 운영 지표로 제공하지 않는다")
+        void success_FindSummary_ManualCompletedDoesNotExposeOngoingPartialSum() {
+            Festival festival = festival(FestivalVisitorCountInputMode.DAILY);
+            festival.changeProgressStatus(FestivalProgressStatus.COMPLETED);
+            given(clock.instant()).willReturn(Instant.parse("2026-10-17T00:00:00Z"));
+            given(clock.getZone()).willReturn(ZoneOffset.UTC);
+            given(festivalService.getById(10L)).willReturn(festival);
+            given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                    .willReturn(List.of(
+                            daily(festival.getId(), LocalDate.of(2026, 10, 16), 400)
+                    ));
+            given(visitorCountService.findTotalByFestivalId(10L))
+                    .willReturn(Optional.empty());
+
+            assertThat(provider.findSummary(10L)).isEmpty();
         }
     }
 

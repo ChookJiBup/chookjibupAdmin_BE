@@ -157,10 +157,8 @@ public class FestivalReportDetailQueryApplicationService {
         boolean jobFailed = job
                 .map(value -> value.getStatus() == FestivalReportJobStatus.FAILED)
                 .orElse(false);
-        FestivalProgressStatus progress = FestivalProgressStatus.from(
-                LocalDate.now(clock),
-                festival.getStartDate(),
-                festival.getEndDate()
+        FestivalProgressStatus progress = festival.progressStatus(
+                LocalDate.now(clock)
         );
         boolean performanceAvailable = !jobFailed
                 && ((progress == FestivalProgressStatus.ONGOING && hasVisitorData)

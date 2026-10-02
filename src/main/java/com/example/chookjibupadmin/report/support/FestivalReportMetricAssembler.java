@@ -108,9 +108,11 @@ public class FestivalReportMetricAssembler {
         int dayIndex = 1;
         LocalDate cursor = festival.getStartDate();
         LocalDate today = LocalDate.now(clock);
-        LocalDate end = progressStatus(festival) == FestivalProgressStatus.ONGOING
-                ? today
-                : festival.getEndDate();
+        LocalDate end = festival.getEndDate();
+        if (progressStatus(festival) == FestivalProgressStatus.ONGOING
+                && today.isBefore(end)) {
+            end = today;
+        }
         while (!cursor.isAfter(end)) {
             Integer currentCount = currentByDate.get(cursor);
             Integer previousCount = previousByDayIndex.get(dayIndex);
@@ -154,11 +156,7 @@ public class FestivalReportMetricAssembler {
     }
 
     private FestivalProgressStatus progressStatus(Festival festival) {
-        return FestivalProgressStatus.from(
-                LocalDate.now(clock),
-                festival.getStartDate(),
-                festival.getEndDate()
-        );
+        return festival.progressStatus(LocalDate.now(clock));
     }
 
     private FestivalTotalVisitorMetric buildTotalVisitors(

@@ -44,11 +44,8 @@ public class VisitorCountFestivalReportMetricProvider
                 && !dailyCounts.isEmpty()
                 && (snapshot.status() == FestivalVisitorInputStatus.PARTIAL
                 || snapshot.status() == FestivalVisitorInputStatus.UNSET)
-                && FestivalProgressStatus.from(
-                        LocalDate.now(clock),
-                        festival.getStartDate(),
-                        festival.getEndDate()
-                ) == FestivalProgressStatus.ONGOING) {
+                && festival.progressStatus(LocalDate.now(clock))
+                == FestivalProgressStatus.ONGOING) {
             LocalDate today = LocalDate.now(clock);
             visitorCount = dailyCounts.stream()
                     .filter(count -> !count.getVisitDate().isBefore(

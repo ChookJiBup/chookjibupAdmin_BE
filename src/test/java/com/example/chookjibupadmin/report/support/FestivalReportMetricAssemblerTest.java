@@ -12,6 +12,7 @@ import com.example.chookjibupadmin.festival.command.domain.vo.FestivalDetailAddr
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalName;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalOperationTime;
 import com.example.chookjibupadmin.festival.command.domain.vo.FestivalPeriod;
+import com.example.chookjibupadmin.festival.support.FestivalProgressStatus;
 import com.example.chookjibupadmin.report.support.dto.FestivalReportMetrics;
 import com.example.chookjibupadmin.visitor.command.application.FestivalVisitorCountService;
 import com.example.chookjibupadmin.visitor.command.domain.FestivalDailyVisitorCount;
@@ -94,6 +95,64 @@ class FestivalReportMetricAssemblerTest {
         assertThat(metrics.dailyTrend()).hasSize(3);
         assertThat(metrics.dailyTrend().get(2).visitDate())
                 .isEqualTo(LocalDate.of(2026, 10, 18));
+    }
+
+    @Test
+    @DisplayName("수동 종료 상태는 날짜상 진행 중이어도 종료 리포트 범위를 사용한다")
+    void success_Assemble_ManualCompletedUsesEffectiveStatus() {
+        Festival festival = festival(
+                LocalDate.of(2026, 10, 16),
+                LocalDate.of(2026, 10, 19)
+        );
+        festival.changeProgressStatus(FestivalProgressStatus.COMPLETED);
+        given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                .willReturn(List.of(
+                        daily(LocalDate.of(2026, 10, 16), 100),
+                        daily(LocalDate.of(2026, 10, 17), 200)
+                ));
+        given(visitorCountService.findTotalByFestivalId(10L))
+                .willReturn(Optional.empty());
+
+        FestivalReportMetrics metrics = assembler("2026-10-17T12:00:00Z")
+                .assemble(festival);
+
+        assertThat(metrics.dailyTrend())
+                .extracting(point -> point.visitDate())
+                .containsExactly(
+                        LocalDate.of(2026, 10, 16),
+                        LocalDate.of(2026, 10, 17),
+                        LocalDate.of(2026, 10, 18),
+                        LocalDate.of(2026, 10, 19)
+                );
+    }
+
+    @Test
+    @DisplayName("종료일 뒤 수동 진행 상태여도 리포트 추이는 축제 기간을 넘지 않는다")
+    void success_Assemble_ManualOngoingClampsTrendToFestivalEnd() {
+        Festival festival = festival(
+                LocalDate.of(2026, 10, 16),
+                LocalDate.of(2026, 10, 18)
+        );
+        festival.changeProgressStatus(FestivalProgressStatus.ONGOING);
+        given(visitorCountService.findDailyByFestivalIdOrderByVisitDateAsc(10L))
+                .willReturn(List.of(
+                        daily(LocalDate.of(2026, 10, 16), 100),
+                        daily(LocalDate.of(2026, 10, 17), 200),
+                        daily(LocalDate.of(2026, 10, 18), 300)
+                ));
+        given(visitorCountService.findTotalByFestivalId(10L))
+                .willReturn(Optional.empty());
+
+        FestivalReportMetrics metrics = assembler("2026-10-20T00:00:00Z")
+                .assemble(festival);
+
+        assertThat(metrics.dailyTrend())
+                .extracting(point -> point.visitDate())
+                .containsExactly(
+                        LocalDate.of(2026, 10, 16),
+                        LocalDate.of(2026, 10, 17),
+                        LocalDate.of(2026, 10, 18)
+                );
     }
 
     private FestivalReportMetricAssembler assembler(String instant) {
