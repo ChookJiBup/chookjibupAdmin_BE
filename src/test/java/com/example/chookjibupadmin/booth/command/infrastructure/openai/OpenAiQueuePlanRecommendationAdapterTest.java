@@ -20,18 +20,23 @@ class OpenAiQueuePlanRecommendationAdapterTest {
             QueueGeometry.point(BigDecimal.valueOf(37),BigDecimal.valueOf(127)),List.of(),List.of(),40,1);
     private final MapAnalysisProperties properties=new MapAnalysisProperties("openai",URI.create("https://api.openai.com"),
             "test-key","configured-model",null,null,1,0,0);
-    @Test void success_Recommend_ParsesCompletedStructuredOutput() throws Exception {
+    @Test void success_Recommend_RequestsMapAwareOpenPolylineAndParsesBentPath() throws Exception {
         var mapper=new ObjectMapper();
         var builder=RestClient.builder().baseUrl("https://api.openai.com");
         var server=MockRestServiceServer.bindTo(builder).build();
-        String text="{\"path\":[{\"lat\":37,\"lng\":127},{\"lat\":37.0004,\"lng\":127}],\"reason\":\"추천\"}";
+        String text="{\"path\":[{\"lat\":37,\"lng\":127},{\"lat\":37.0002,\"lng\":127},"
+                + "{\"lat\":37.0002,\"lng\":127.0002}],\"reason\":\"지도 형상을 따른 추천\"}";
         var response=java.util.Map.of("status","completed","output",List.of(java.util.Map.of("type","message",
                 "content",List.of(java.util.Map.of("type","output_text","text",text)))));
         server.expect(requestTo("https://api.openai.com/v1/responses"))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("configured-model")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("항상 두 점짜리 직선을 기본값으로 삼지 말고")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("필요한 위치에 중간점을 추가")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("마지막 점을 start에 다시 연결하거나 폐곡선으로 만들지 않는다")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("boundary와 facilities의 실제 좌표 배치")))
                 .andRespond(withSuccess(mapper.writeValueAsString(response),MediaType.APPLICATION_JSON));
         var adapter=new OpenAiQueuePlanRecommendationAdapter(builder.build(),mapper,properties);
-        assertThat(adapter.recommend(input).path()).hasSize(2); server.verify();
+        assertThat(adapter.recommend(input).path()).hasSize(3); server.verify();
     }
     @Test void fail_Recommend_HttpFailureAndDisabledProvider() {
         var builder=RestClient.builder().baseUrl("https://api.openai.com");
