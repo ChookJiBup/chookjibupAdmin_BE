@@ -52,6 +52,20 @@ public interface BoothCongestionJpaRepository extends JpaRepository<BoothCongest
 
     @Query(
             value = """
+                    SELECT bc.*
+                    FROM booth_congestion bc
+                    INNER JOIN booth_info bi ON bi.booth_id = bc.booth_id
+                    INNER JOIN festivals f ON f.festival_id = bi.festival_id
+                    WHERE bi.festival_id = :festivalId
+                      AND CAST(bc.created_at AS DATE) BETWEEN f.start_date AND f.end_date
+                    ORDER BY bc.created_at ASC, bc.congestion_id ASC
+                    """,
+            nativeQuery = true
+    )
+    List<BoothCongestion> findAllByFestivalId(@Param("festivalId") Long festivalId);
+
+    @Query(
+            value = """
                     SELECT COUNT(DISTINCT bc.booth_id)
                     FROM booth_congestion bc
                     INNER JOIN booth_info bi ON bi.booth_id = bc.booth_id

@@ -8,7 +8,9 @@ import com.example.chookjibupadmin.booth.command.domain.BoothCongestionLevel;
 import com.example.chookjibupadmin.booth.command.domain.BoothInfo;
 import com.example.chookjibupadmin.booth.query.application.dto.FestivalCongestionView;
 import com.example.chookjibupadmin.booth.query.application.dto.FestivalCongestionView.BoothCongestionItemView;
+import com.example.chookjibupadmin.booth.query.application.dto.FestivalCongestionHistoryView;
 import com.example.chookjibupadmin.operator.command.application.FestivalOperationAccessService;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -90,5 +92,69 @@ public class BoothCongestionQueryApplicationService {
                 waitCount == 0 ? null : waitSum / waitCount,
                 items
         );
+    }
+
+    public FestivalCongestionHistoryView getCongestionHistory(
+            UUID festivalPublicId,
+            FestivalActorPrincipal principal
+    ) {
+        Long festivalId = festivalOperationAccessService.getAuthorizedFestivalId(
+                festivalPublicId,
+                principal
+        );
+        Map<Long, String> boothNames = boothInfoService.findAllByFestivalId(festivalId)
+                .stream()
+                .collect(Collectors.toMap(BoothInfo::getId, BoothInfo::getBoothName));
+        Map<LocalDate, Map<Long, BoothCongestion>> latestByDateAndBooth =
+                new java.util.TreeMap<>();
+
+        for (BoothCongestion congestion : boothCongestionService
+                .findAllByFestivalId(festivalId)) {
+            latestByDateAndBooth
+                    .computeIfAbsent(
+                            congestion.getCreatedAt().toLocalDate(),
+                            ignored -> new java.util.HashMap<>()
+                    )
+                    .merge(
+                            congestion.getBoothId(),
+                            congestion,
+                            (left, right) -> right.getCreatedAt().isAfter(left.getCreatedAt())
+                                    || (right.getCreatedAt().equals(left.getCreatedAt())
+                                    && right.getId() > left.getId())
+                                            ? right : left
+                    );
+        }
+
+        var days = latestByDateAndBooth.entrySet().stream()
+                .map(entry -> {
+                    var booths = entry.getValue().values().stream()
+                            .sorted(Comparator.comparing(BoothCongestion::getBoothId))
+                            .map(congestion ->
+                                    new FestivalCongestionHistoryView.BoothCongestionItemView(
+                                            congestion.getBoothId(),
+                                            boothNames.getOrDefault(
+                                                    congestion.getBoothId(),
+                                                    "삭제된 부스"
+                                            ),
+                                            congestion.getCongestionLevel(),
+                                            congestion.getWaitMinutes(),
+                                            congestion.getCreatedAt()
+                                    ))
+                            .toList();
+                    int waitSum = booths.stream()
+                            .filter(item -> item.waitMinutes() != null)
+                            .mapToInt(item -> item.waitMinutes())
+                            .sum();
+                    long waitCount = booths.stream()
+                            .filter(item -> item.waitMinutes() != null)
+                            .count();
+                    return new FestivalCongestionHistoryView.DailyCongestionView(
+                            entry.getKey(),
+                            waitCount == 0 ? null : (int) (waitSum / waitCount),
+                            booths
+                    );
+                })
+                .toList();
+        return new FestivalCongestionHistoryView(days);
     }
 }

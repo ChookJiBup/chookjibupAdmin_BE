@@ -33,6 +33,11 @@ public class BoothCongestionRepositoryImpl implements BoothCongestionRepository 
     }
 
     @Override
+    public List<BoothCongestion> findAllByFestivalId(Long festivalId) {
+        return jpaRepository.findAllByFestivalId(festivalId);
+    }
+
+    @Override
     public long countDistinctBoothsWithCongestion(Long festivalId) {
         return jpaRepository.countDistinctBoothsWithCongestion(festivalId);
     }

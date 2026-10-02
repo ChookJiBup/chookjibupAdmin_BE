@@ -10,7 +10,9 @@ import com.example.chookjibupadmin.booth.command.domain.BoothCongestion;
 import com.example.chookjibupadmin.booth.command.domain.BoothCongestionLevel;
 import com.example.chookjibupadmin.booth.command.domain.BoothInfo;
 import com.example.chookjibupadmin.booth.query.application.dto.FestivalCongestionView;
+import com.example.chookjibupadmin.booth.query.application.dto.FestivalCongestionHistoryView;
 import com.example.chookjibupadmin.operator.command.application.FestivalOperationAccessService;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -60,5 +62,66 @@ class BoothCongestionQueryApplicationServiceTest {
         assertThat(view.booths().getFirst().waitMinutes()).isEqualTo(20);
         assertThat(view.activeQueueCount()).isEqualTo(1);
         assertThat(view.averageWaitMinutes()).isEqualTo(20);
+    }
+
+    @Test
+    @DisplayName("날짜마다 부스의 마지막 혼잡 이력만 반환한다")
+    void success_GetCongestionHistory_UsesLastObservationPerBoothAndDay() {
+        UUID festivalPublicId = UUID.randomUUID();
+        AdminPrincipal principal = new AdminPrincipal(1L, "a@mapo.go.kr");
+        BoothInfo booth = BoothInfo.create(10L, 100L, "김밥부스");
+        ReflectionTestUtils.setField(booth, "id", 7L);
+        BoothCongestion first = congestion(
+                1L,
+                10,
+                BoothCongestionLevel.LOW,
+                LocalDateTime.of(2026, 8, 30, 10, 0)
+        );
+        BoothCongestion last = congestion(
+                2L,
+                50,
+                BoothCongestionLevel.HIGH,
+                LocalDateTime.of(2026, 8, 30, 18, 0)
+        );
+        BoothCongestion nextDay = congestion(
+                3L,
+                30,
+                BoothCongestionLevel.MEDIUM,
+                LocalDateTime.of(2026, 8, 31, 12, 0)
+        );
+        given(festivalOperationAccessService.getAuthorizedFestivalId(festivalPublicId, principal))
+                .willReturn(10L);
+        given(boothInfoService.findAllByFestivalId(10L)).willReturn(List.of(booth));
+        given(boothCongestionService.findAllByFestivalId(10L))
+                .willReturn(List.of(first, last, nextDay));
+
+        FestivalCongestionHistoryView view = service.getCongestionHistory(
+                festivalPublicId,
+                principal
+        );
+
+        assertThat(view.days()).hasSize(2);
+        assertThat(view.days().getFirst().booths()).hasSize(1);
+        assertThat(view.days().getFirst().booths().getFirst().waitMinutes()).isEqualTo(50);
+        assertThat(view.days().getFirst().averageWaitMinutes()).isEqualTo(50);
+        assertThat(view.days().get(1).booths().getFirst().waitMinutes()).isEqualTo(30);
+    }
+
+    private BoothCongestion congestion(
+            Long id,
+            int waitMinutes,
+            BoothCongestionLevel level,
+            LocalDateTime createdAt
+    ) {
+        BoothCongestion congestion = BoothCongestion.recordByAdmin(
+                7L,
+                1L,
+                waitMinutes,
+                level
+        );
+        ReflectionTestUtils.setField(congestion, "id", id);
+        ReflectionTestUtils.setField(congestion, "createdAt", createdAt);
+        ReflectionTestUtils.setField(congestion, "updatedAt", createdAt);
+        return congestion;
     }
 }

@@ -1,6 +1,7 @@
 package com.example.chookjibupadmin.api.operations;
 
 import com.example.chookjibupadmin.api.operations.dto.FestivalCongestionResponse;
+import com.example.chookjibupadmin.api.operations.dto.FestivalCongestionHistoryResponse;
 import com.example.chookjibupadmin.api.operations.dto.FestivalOperationSuggestionResponse;
 import com.example.chookjibupadmin.api.operations.dto.FestivalOperationsMapResponse;
 import com.example.chookjibupadmin.api.operations.dto.FestivalQueueListResponse;
@@ -74,6 +75,26 @@ public class FestivalOperationsController {
                 FestivalCongestionResponse.from(
                         festivalId,
                         congestionQueryApplicationService.getCongestion(festivalId, actor)
+                )
+        );
+    }
+
+    @Operation(summary = "축제 날짜별 부스 혼잡도 이력 조회")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/congestion/history")
+    public ApiResponse<FestivalCongestionHistoryResponse> getCongestionHistory(
+            @PathVariable UUID festivalId,
+            @AuthenticationPrincipal Object principal
+    ) {
+        FestivalActorPrincipal actor = requireActor(principal);
+        return ApiResponse.success(
+                SuccessCode.FESTIVAL_CONGESTION_READ_SUCCESS,
+                FestivalCongestionHistoryResponse.from(
+                        festivalId,
+                        congestionQueryApplicationService.getCongestionHistory(
+                                festivalId,
+                                actor
+                        )
                 )
         );
     }

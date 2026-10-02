@@ -32,6 +32,10 @@ public class BoothCongestionService {
         return boothCongestionRepository.findLatestByBoothIds(boothIds);
     }
 
+    public List<BoothCongestion> findAllByFestivalId(Long festivalId) {
+        return boothCongestionRepository.findAllByFestivalId(festivalId);
+    }
+
     public long countDistinctBoothsWithCongestion(Long festivalId) {
         return boothCongestionRepository.countDistinctBoothsWithCongestion(festivalId);
     }

@@ -12,5 +12,7 @@ public interface BoothCongestionRepository {
 
     List<BoothCongestion> findLatestByBoothIds(Collection<Long> boothIds);
 
+    List<BoothCongestion> findAllByFestivalId(Long festivalId);
+
     long countDistinctBoothsWithCongestion(Long festivalId);
 }
